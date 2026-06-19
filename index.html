@@ -20,9 +20,7 @@
 
     <!-- Search + Sort -->
     <div class="flex flex-col md:flex-row gap-4 mb-6">
-      <input id="search" type="text" placeholder="Cari judul video..." 
-             class="flex-1 bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-3 text-lg">
-      
+      <input id="search" type="text" placeholder="Cari judul video..." class="flex-1 bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-3 text-lg">
       <select id="sort" class="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3">
         <option value="newest">Terbaru</option>
         <option value="oldest">Terlama</option>
@@ -31,16 +29,24 @@
       </select>
     </div>
 
-    <!-- Category Filters (Otomatis) -->
+    <!-- Category Filters -->
     <div id="category-filters" class="flex flex-wrap gap-2 mb-8"></div>
 
     <!-- Video Grid -->
     <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5"></div>
+
+    <!-- Pagination -->
+    <div class="flex flex-col sm:flex-row items-center justify-between mt-10 gap-4">
+      <div class="text-sm text-zinc-400" id="pagination-info"></div>
+      <div class="flex items-center gap-2" id="pagination-controls"></div>
+    </div>
   </div>
 
   <script>
     let videos = [];
     let activeCategory = 'all';
+    let currentPage = 1;
+    const itemsPerPage = 12;
 
     async function loadVideos() {
       const res = await fetch('videos.json');
@@ -56,7 +62,6 @@
 
       const categories = [...new Set(videos.map(v => v.category))].sort();
 
-      // Tombol Semua
       const allBtn = createCategoryButton('Semua', 'all');
       container.appendChild(allBtn);
 
@@ -75,6 +80,7 @@
       
       btn.onclick = () => {
         activeCategory = value;
+        currentPage = 1;
         renderCategoryFilters();
         render();
       };
@@ -102,14 +108,23 @@
       else if (sortMode === 'az') filtered.sort((a,b) => a.title.localeCompare(b.title));
       else if (sortMode === 'za') filtered.sort((a,b) => b.title.localeCompare(a.title));
 
+      // Pagination
+      const totalPages = Math.ceil(filtered.length / itemsPerPage);
+      if (currentPage > totalPages) currentPage = totalPages || 1;
+
+      const start = (currentPage - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      const pageVideos = filtered.slice(start, end);
+
       grid.innerHTML = '';
 
-      if (filtered.length === 0) {
+      if (pageVideos.length === 0) {
         grid.innerHTML = `<div class="col-span-full text-center py-16 text-zinc-400">Tidak ada video yang cocok.</div>`;
+        updatePagination(0, 0, 0);
         return;
       }
 
-      filtered.forEach(v => {
+      pageVideos.forEach(v => {
         const card = document.createElement('div');
         card.className = 'bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden';
         card.innerHTML = `
@@ -118,17 +133,62 @@
             <div class="text-xs text-emerald-400 mt-2">${v.category} • ${v.source}</div>
           </div>
           <div class="aspect-video bg-black">
-            <iframe src="${v.embed}" class="w-full h-full" allowfullscreen></iframe>
+            <iframe src="${v.embed}" class="w-full h-full" allowfullscreen loading="lazy"></iframe>
           </div>
           <div class="p-4">
-            <a href="${v.direct}" target="_blank" 
-               class="block text-center py-3 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-semibold">
-              Buka &amp; Tonton Langsung
-            </a>
+            <a href="${v.direct}" target="_blank" class="block text-center py-3 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-semibold">Buka &amp; Tonton Langsung</a>
           </div>
         `;
         grid.appendChild(card);
       });
+
+      updatePagination(filtered.length, start + 1, Math.min(end, filtered.length), totalPages);
+    }
+
+    function updatePagination(total, start, end, totalPages) {
+      const info = document.getElementById('pagination-info');
+      const controls = document.getElementById('pagination-controls');
+      controls.innerHTML = '';
+
+      if (total === 0) {
+        info.textContent = '';
+        return;
+      }
+
+      info.textContent = `Menampilkan ${start}–${end} dari ${total} video (Hal ${currentPage}/${totalPages})`;
+
+      if (totalPages <= 1) return;
+
+      // Prev
+      const prev = document.createElement('button');
+      prev.innerHTML = `&larr; Prev`;
+      prev.className = `px-4 py-2 rounded-2xl border border-zinc-700 text-sm ${currentPage === 1 ? 'opacity-40 cursor-not-allowed' : 'hover:bg-zinc-900'}`;
+      prev.disabled = currentPage === 1;
+      prev.onclick = () => { currentPage--; render(); };
+      controls.appendChild(prev);
+
+      // Page numbers
+      const maxPagesToShow = 5;
+      let startPage = Math.max(1, currentPage - 2);
+      let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+      for (let i = startPage; i <= endPage; i++) {
+        const pageBtn = document.createElement('button');
+        pageBtn.textContent = i;
+        pageBtn.className = `px-4 py-2 rounded-2xl border text-sm ${i === currentPage 
+          ? 'bg-emerald-600 border-emerald-600 text-white' 
+          : 'border-zinc-700 hover:bg-zinc-900'}`;
+        pageBtn.onclick = () => { currentPage = i; render(); };
+        controls.appendChild(pageBtn);
+      }
+
+      // Next
+      const next = document.createElement('button');
+      next.innerHTML = `Next &rarr;`;
+      next.className = `px-4 py-2 rounded-2xl border border-zinc-700 text-sm ${currentPage === totalPages ? 'opacity-40 cursor-not-allowed' : 'hover:bg-zinc-900'}`;
+      next.disabled = currentPage === totalPages;
+      next.onclick = () => { currentPage++; render(); };
+      controls.appendChild(next);
     }
 
     document.getElementById('search').addEventListener('input', render);
