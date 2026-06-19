@@ -11,68 +11,143 @@
     <div class="flex items-end justify-between mb-8">
       <div>
         <h1 class="text-5xl font-bold">Koleksi Dr. Pinguin Bokep, M.S.B.</h1>
-        <p class="text-zinc-400 mt-2">IndoAV & UserBokep</p>
+        <p class="text-zinc-400 mt-2">IndoAV &amp; UserBokep</p>
       </div>
       <div class="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-2 text-sm">
         <span id="total">0</span> video
       </div>
     </div>
 
-    <div class="flex gap-4 mb-8">
-      <input id="search" type="text" placeholder="Cari judul..." class="flex-1 bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-3 text-lg">
+    <!-- Search + Sort -->
+    <div class="flex flex-col md:flex-row gap-4 mb-6">
+      <input id="search" type="text" placeholder="Cari judul video..." 
+             class="flex-1 bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-3 text-lg">
+      
       <select id="sort" class="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3">
         <option value="newest">Terbaru</option>
         <option value="oldest">Terlama</option>
+        <option value="az">A - Z</option>
+        <option value="za">Z - A</option>
       </select>
     </div>
 
+    <!-- Dynamic Category Filters -->
+    <div id="category-filters" class="flex flex-wrap gap-2 mb-8"></div>
+
+    <!-- Video Grid -->
     <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5"></div>
   </div>
 
   <script>
     let videos = [];
+    let activeCategory = 'all';
 
     async function loadVideos() {
       const res = await fetch('videos.json');
       videos = await res.json();
       document.getElementById('total').textContent = videos.length;
+      renderCategoryFilters();
       render();
+    }
+
+    function renderCategoryFilters() {
+      const container = document.getElementById('category-filters');
+      container.innerHTML = '';
+
+      // Get unique categories
+      const categories = [...new Set(videos.map(v => v.category))].sort();
+
+      // All button
+      const allBtn = createCategoryButton('Semua', 'all');
+      container.appendChild(allBtn);
+
+      // Category buttons
+      categories.forEach(cat => {
+        const btn = createCategoryButton(cat, cat);
+        container.appendChild(btn);
+      });
+    }
+
+    function createCategoryButton(label, value) {
+      const btn = document.createElement('button');
+      btn.textContent = label;
+      btn.className = `px-5 py-2 rounded-2xl text-sm font-medium border transition ${activeCategory === value 
+        ? 'bg-emerald-600 border-emerald-600 text-white' 
+        : 'bg-zinc-900 border-zinc-700 hover:bg-zinc-800'}`;
+      
+      btn.onclick = () => {
+        activeCategory = value;
+        renderCategoryFilters();
+        render();
+      };
+      
+      return btn;
     }
 
     function render() {
       const grid = document.getElementById('grid');
-      const search = document.getElementById('search').value.toLowerCase();
-      const sort = document.getElementById('sort').value;
+      const searchTerm = document.getElementById('search').value.toLowerCase();
+      const sortMode = document.getElementById('sort').value;
 
-      let filtered = videos.filter(v => v.title.toLowerCase().includes(search));
+      let filtered = videos;
 
-      if (sort === 'newest') filtered.sort((a,b) => b.id - a.id);
-      if (sort === 'oldest') filtered.sort((a,b) => a.id - b.id);
+      // Filter by search
+      if (searchTerm) {
+        filtered = filtered.filter(v => v.title.toLowerCase().includes(searchTerm));
+      }
+
+      // Filter by category
+      if (activeCategory !== 'all') {
+        filtered = filtered.filter(v => v.category === activeCategory);
+      }
+
+      // Sort
+      if (sortMode === 'newest') {
+        filtered.sort((a, b) => b.id - a.id);
+      } else if (sortMode === 'oldest') {
+        filtered.sort((a, b) => a.id - b.id);
+      } else if (sortMode === 'az') {
+        filtered.sort((a, b) => a.title.localeCompare(b.title));
+      } else if (sortMode === 'za') {
+        filtered.sort((a, b) => b.title.localeCompare(a.title));
+      }
 
       grid.innerHTML = '';
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-full text-center py-16 text-zinc-400">Tidak ada video yang cocok.</div>`;
+        return;
+      }
 
       filtered.forEach(v => {
         const card = document.createElement('div');
         card.className = 'bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden';
+
         card.innerHTML = `
           <div class="p-4">
             <div class="text-sm text-zinc-200 line-clamp-3 min-h-[60px]">${v.title}</div>
             <div class="text-xs text-emerald-400 mt-2">${v.category} • ${v.source}</div>
           </div>
           <div class="aspect-video bg-black">
-            <iframe src="${v.embed}" class="w-full h-full" allowfullscreen></iframe>
+            <iframe src="${v.embed}" class="w-full h-full" allowfullscreen loading="lazy"></iframe>
           </div>
           <div class="p-4">
-            <a href="${v.direct}" target="_blank" class="block text-center py-3 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-semibold">Buka & Tonton Langsung</a>
+            <a href="${v.direct}" target="_blank" 
+               class="block text-center py-3 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-semibold transition">
+              Buka &amp; Tonton Langsung
+            </a>
           </div>
         `;
+
         grid.appendChild(card);
       });
     }
 
+    // Event listeners
     document.getElementById('search').addEventListener('input', render);
     document.getElementById('sort').addEventListener('change', render);
 
+    // Initial load
     loadVideos();
   </script>
 </body>
