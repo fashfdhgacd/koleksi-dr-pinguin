@@ -23,7 +23,7 @@
 
       <div class="mb-4">
         <label class="block text-sm text-zinc-400 mb-2">Judul + Link (bergantian)</label>
-        <textarea id="input" rows="12" class="w-full bg-zinc-950 border border-zinc-700 rounded-2xl p-4 font-mono text-sm" 
+        <textarea id="input" rows="10" class="w-full bg-zinc-950 border border-zinc-700 rounded-2xl p-4 font-mono text-sm" 
           placeholder="Judul Video 1
 https://tv1.indoav.app/e/xxxxxx
 
@@ -44,16 +44,30 @@ https://tv1.userbokep.com/e/yyyyyy"></textarea>
         </select>
       </div>
 
-      <button onclick="addVideos()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-bold text-lg">
-        Buat File JSON
+      <button onclick="generateJSON()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-bold text-lg mb-4">
+        Generate JSON
       </button>
 
-      <div id="result" class="mt-6 hidden bg-emerald-900 border border-emerald-700 rounded-2xl p-5 text-emerald-300"></div>
+      <div id="result-area" class="hidden">
+        <label class="block text-sm text-zinc-400 mb-2">Hasil JSON (Copy lalu paste ke videos.json)</label>
+        <textarea id="output" rows="12" class="w-full bg-zinc-950 border border-zinc-700 rounded-2xl p-4 font-mono text-sm" readonly></textarea>
+        
+        <div class="flex gap-3 mt-3">
+          <button onclick="copyToClipboard()" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-semibold">
+            Copy ke Clipboard
+          </button>
+          <button onclick="downloadJSON()" class="flex-1 py-3 bg-zinc-700 hover:bg-zinc-600 rounded-2xl font-semibold">
+            Download File
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
-    function addVideos() {
+    let lastGenerated = [];
+
+    function generateJSON() {
       const input = document.getElementById('input').value.trim();
       const category = document.getElementById('category').value;
       if (!input) return alert('Input kosong');
@@ -83,7 +97,23 @@ https://tv1.userbokep.com/e/yyyyyy"></textarea>
 
       if (newVideos.length === 0) return alert('Tidak ada video valid');
 
+      lastGenerated = newVideos;
       const jsonStr = JSON.stringify(newVideos, null, 2);
+
+      document.getElementById('output').value = jsonStr;
+      document.getElementById('result-area').classList.remove('hidden');
+    }
+
+    function copyToClipboard() {
+      const output = document.getElementById('output');
+      output.select();
+      document.execCommand('copy');
+      alert('JSON berhasil di-copy! Tinggal paste ke videos.json');
+    }
+
+    function downloadJSON() {
+      if (!lastGenerated.length) return;
+      const jsonStr = JSON.stringify(lastGenerated, null, 2);
       const blob = new Blob([jsonStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       
@@ -91,11 +121,6 @@ https://tv1.userbokep.com/e/yyyyyy"></textarea>
       a.href = url;
       a.download = 'new-videos.json';
       a.click();
-      
-      document.getElementById('result').classList.remove('hidden');
-      document.getElementById('result').innerHTML = 
-        `${newVideos.length} video berhasil dibuat.<br>Download file <strong>new-videos.json</strong> lalu gabungkan ke videos.json`;
-      document.getElementById('input').value = '';
     }
   </script>
 </body>
