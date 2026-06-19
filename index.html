@@ -16,7 +16,7 @@
   </style>
 </head>
 <body class="bg-zinc-950 text-white">
-  <div class="max-w-7xl mx-auto px-6 py-8">
+  <div class="max-w-6xl mx-auto px-6 py-8">
     <div class="flex items-end justify-between mb-8">
       <div>
         <h1 class="text-5xl font-bold">Koleksi Dr. Pinguin Bokep, M.S.B.</h1>
@@ -39,7 +39,7 @@
 
     <div id="category-filters" class="flex flex-wrap gap-2 mb-8"></div>
 
-    <div id="grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5"></div>
+    <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
 
     <div class="flex flex-col sm:flex-row items-center justify-between mt-10 gap-4">
       <div class="text-sm text-zinc-400" id="pagination-info"></div>
@@ -51,7 +51,7 @@
     let videos = [];
     let activeCategory = 'all';
     let currentPage = 1;
-    const itemsPerPage = 15;
+    const itemsPerPage = 12;
 
     async function loadVideos() {
       const res = await fetch('videos.json');
