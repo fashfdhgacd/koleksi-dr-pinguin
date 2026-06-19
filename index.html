@@ -31,7 +31,7 @@
       </select>
     </div>
 
-    <!-- Dynamic Category Filters -->
+    <!-- Category Filters (Otomatis) -->
     <div id="category-filters" class="flex flex-wrap gap-2 mb-8"></div>
 
     <!-- Video Grid -->
@@ -54,14 +54,12 @@
       const container = document.getElementById('category-filters');
       container.innerHTML = '';
 
-      // Get unique categories
       const categories = [...new Set(videos.map(v => v.category))].sort();
 
-      // All button
+      // Tombol Semua
       const allBtn = createCategoryButton('Semua', 'all');
       container.appendChild(allBtn);
 
-      // Category buttons
       categories.forEach(cat => {
         const btn = createCategoryButton(cat, cat);
         container.appendChild(btn);
@@ -80,7 +78,6 @@
         renderCategoryFilters();
         render();
       };
-      
       return btn;
     }
 
@@ -91,26 +88,19 @@
 
       let filtered = videos;
 
-      // Filter by search
       if (searchTerm) {
         filtered = filtered.filter(v => v.title.toLowerCase().includes(searchTerm));
       }
 
-      // Filter by category
       if (activeCategory !== 'all') {
         filtered = filtered.filter(v => v.category === activeCategory);
       }
 
       // Sort
-      if (sortMode === 'newest') {
-        filtered.sort((a, b) => b.id - a.id);
-      } else if (sortMode === 'oldest') {
-        filtered.sort((a, b) => a.id - b.id);
-      } else if (sortMode === 'az') {
-        filtered.sort((a, b) => a.title.localeCompare(b.title));
-      } else if (sortMode === 'za') {
-        filtered.sort((a, b) => b.title.localeCompare(a.title));
-      }
+      if (sortMode === 'newest') filtered.sort((a,b) => b.id - a.id);
+      else if (sortMode === 'oldest') filtered.sort((a,b) => a.id - b.id);
+      else if (sortMode === 'az') filtered.sort((a,b) => a.title.localeCompare(b.title));
+      else if (sortMode === 'za') filtered.sort((a,b) => b.title.localeCompare(a.title));
 
       grid.innerHTML = '';
 
@@ -122,32 +112,28 @@
       filtered.forEach(v => {
         const card = document.createElement('div');
         card.className = 'bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden';
-
         card.innerHTML = `
           <div class="p-4">
             <div class="text-sm text-zinc-200 line-clamp-3 min-h-[60px]">${v.title}</div>
             <div class="text-xs text-emerald-400 mt-2">${v.category} • ${v.source}</div>
           </div>
           <div class="aspect-video bg-black">
-            <iframe src="${v.embed}" class="w-full h-full" allowfullscreen loading="lazy"></iframe>
+            <iframe src="${v.embed}" class="w-full h-full" allowfullscreen></iframe>
           </div>
           <div class="p-4">
             <a href="${v.direct}" target="_blank" 
-               class="block text-center py-3 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-semibold transition">
+               class="block text-center py-3 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-semibold">
               Buka &amp; Tonton Langsung
             </a>
           </div>
         `;
-
         grid.appendChild(card);
       });
     }
 
-    // Event listeners
     document.getElementById('search').addEventListener('input', render);
     document.getElementById('sort').addEventListener('change', render);
 
-    // Initial load
     loadVideos();
   </script>
 </body>
