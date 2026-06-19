@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Converter - Dr. Pinguin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-zinc-950 text-white p-8">
+  <div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">Converter Video ke JSON</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <label class="block text-sm mb-2">Judul + Link (bergantian)</label>
+        <textarea id="input" rows="16" class="w-full bg-zinc-900 border border-zinc-700 rounded-2xl p-4 font-mono text-sm"
+          placeholder="Judul Video 1
+https://tv1.indoav.app/e/xxxxxx
+
+Judul Video 2
+https://tv1.userbokep.com/e/yyyyyy"></textarea>
+      </div>
+
+      <div>
+        <label class="block text-sm mb-2">Hasil JSON</label>
+        <textarea id="output" rows="16" class="w-full bg-zinc-900 border border-zinc-700 rounded-2xl p-4 font-mono text-sm" readonly></textarea>
+      </div>
+    </div>
+
+    <div class="flex gap-4 mt-6">
+      <select id="category" class="bg-zinc-900 border border-zinc-700 rounded-2xl px-4 py-3">
+        <option value="Umum">Umum</option>
+        <option value="MILF">MILF</option>
+        <option value="Amatir">Amatir</option>
+        <option value="Live">Live</option>
+        <option value="ABG">ABG</option>
+        <option value="Jilbab">Jilbab</option>
+        <option value="Office">Office</option>
+      </select>
+
+      <button onclick="convert()" class="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-semibold">
+        Convert ke JSON
+      </button>
+
+      <button onclick="copyResult()" class="px-8 py-3 bg-zinc-700 hover:bg-zinc-600 rounded-2xl font-semibold">
+        Copy JSON
+      </button>
+    </div>
+  </div>
+
+  <script>
+    function convert() {
+      const input = document.getElementById('input').value.trim();
+      const category = document.getElementById('category').value;
+      if (!input) return alert('Input kosong');
+
+      const lines = input.split('\n').map(l => l.trim()).filter(Boolean);
+      const result = [];
+      let currentTitle = '';
+      let id = Date.now();
+
+      for (let line of lines) {
+        if (line.startsWith('http')) {
+          if (!currentTitle) continue;
+          const embed = line;
+          result.push({
+            id: id++,
+            title: currentTitle,
+            embed: embed,
+            direct: embed.replace('/e/', '/d/'),
+            source: embed.includes('indoav.app') ? 'IndoAV' : 'UserBokep',
+            category: category
+          });
+          currentTitle = '';
+        } else {
+          currentTitle = line;
+        }
+      }
+
+      document.getElementById('output').value = JSON.stringify(result, null, 2);
+    }
+
+    function copyResult() {
+      const output = document.getElementById('output');
+      output.select();
+      document.execCommand('copy');
+      alert('JSON berhasil di-copy!');
+    }
+  </script>
+</body>
+</html>
