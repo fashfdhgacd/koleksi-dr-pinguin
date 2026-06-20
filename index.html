@@ -13,37 +13,123 @@
       transform: translateY(-4px);
       box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
     }
+    .play-area {
+      transition: background-color 0.2s ease;
+    }
+    .play-area:hover {
+      background-color: #18181b;
+    }
+    .modal {
+      animation: fadeInModal 0.2s ease forwards;
+    }
+    @keyframes fadeInModal {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .video-card .play-overlay {
+      transition: all 0.2s ease;
+    }
+    .video-card:hover .play-overlay {
+      background-color: rgba(0, 0, 0, 0.6);
+    }
   </style>
 </head>
 <body class="bg-zinc-950 text-white">
   <div class="max-w-[1200px] mx-auto px-6 py-8">
+    <!-- Header -->
     <div class="flex items-end justify-between mb-8">
       <div>
         <h1 class="text-5xl font-bold">Koleksi Dr. Pinguin Bokep, M.S.B.</h1>
-        <p class="text-zinc-400 mt-2">IndoAV &amp; UserBokep</p>
+        <p class="text-zinc-400 mt-2">IndoAV &amp; UserBokep • Ribuan video eksklusif</p>
       </div>
-      <div class="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-2 text-sm">
-        <span id="total">0</span> video
+      <div class="flex items-center gap-3">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-2 text-sm flex items-center gap-2">
+          <span id="total">0</span> video
+        </div>
+        
+        <!-- Random Controls -->
+        <button id="random-btn"
+                class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 transition px-5 py-2.5 rounded-2xl text-sm font-semibold shadow-lg">
+          <span>🎲</span>
+          <span>Acak Video</span>
+        </button>
+        
+        <div class="flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-2xl px-3 py-1 text-sm">
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" id="auto-toggle" class="accent-emerald-600 w-4 h-4">
+            <span class="text-zinc-300">Auto 5 menit</span>
+          </label>
+        </div>
       </div>
     </div>
 
+    <!-- Search + Sort -->
     <div class="flex flex-col md:flex-row gap-4 mb-8">
-      <input id="search" type="text" placeholder="Cari judul..." class="flex-1 bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-3 text-lg">
-      <select id="sort" class="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3">
-        <option value="newest">Terbaru</option>
-        <option value="oldest">Terlama</option>
+      <input id="search" type="text" placeholder="Cari judul video..." class="flex-1 bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-3 text-lg focus:outline-none focus:border-emerald-600">
+      <select id="sort" class="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 focus:outline-none focus:border-emerald-600">
+        <option value="newest">新最新</option>
+        <option value="oldest">旧最旧</option>
         <option value="az">A - Z</option>
         <option value="za">Z - A</option>
+        <option value="random">🎲 Acak / Shuffle</option>
       </select>
     </div>
 
+    <!-- Category Filters -->
     <div id="category-filters" class="flex flex-wrap gap-2 mb-8"></div>
 
+    <!-- Info bar for auto mode -->
+    <div id="auto-status" class="hidden mb-4 px-4 py-2 bg-emerald-950 border border-emerald-800 text-emerald-400 text-sm rounded-2xl flex items-center gap-2">
+      <span class="animate-pulse">●</span>
+      <span id="auto-status-text">Mode Acak Otomatis aktif — Video akan berganti setiap 5 menit</span>
+      <button id="stop-auto-btn" class="ml-auto text-xs px-3 py-1 bg-emerald-900 hover:bg-emerald-800 rounded-xl">Matikan</button>
+    </div>
+
+    <!-- Video Grid -->
     <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
 
+    <!-- Pagination -->
     <div class="flex flex-col sm:flex-row items-center justify-between mt-10 gap-4">
       <div class="text-sm text-zinc-400" id="pagination-info"></div>
       <div class="flex items-center gap-2" id="pagination-controls"></div>
+    </div>
+  </div>
+
+  <!-- Video Modal -->
+  <div id="modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-3xl w-full max-w-5xl overflow-hidden modal">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
+        <div class="flex-1 min-w-0">
+          <div id="modal-title" class="text-xl font-semibold line-clamp-2 pr-4"></div>
+          <div id="modal-meta" class="text-xs text-emerald-400 mt-1"></div>
+        </div>
+        <button id="modal-close" class="text-zinc-400 hover:text-white text-3xl leading-none px-2">&times;</button>
+      </div>
+
+      <!-- Player Area -->
+      <div class="aspect-video bg-black" id="modal-player-container">
+        <!-- iframe will be injected here by JS -->
+      </div>
+
+      <!-- Modal Actions -->
+      <div class="p-6 flex flex-col sm:flex-row gap-3 bg-zinc-950">
+        <button id="modal-random-again"
+                class="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 transition px-6 py-3 rounded-2xl font-semibold">
+          <span>🎲</span>
+          <span>Acak Lagi</span>
+        </button>
+        
+        <a id="modal-direct-btn" href="#" target="_blank"
+           class="flex-1 flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 transition px-6 py-3 rounded-2xl font-semibold text-center">
+          Buka Link Langsung
+        </a>
+        
+        <button id="modal-close-btn"
+                class="flex-1 sm:flex-none px-8 py-3 rounded-2xl border border-zinc-700 hover:bg-zinc-800 transition font-medium">
+          Tutup
+        </button>
+      </div>
     </div>
   </div>
 
@@ -52,6 +138,11 @@
     let activeCategory = 'all';
     let currentPage = 1;
     const itemsPerPage = 12;
+    
+    // Random & Auto Mode State
+    let autoTimer = null;
+    let isAutoMode = false;
+    let currentModalVideo = null;
 
     async function loadVideos() {
       const res = await fetch('videos.json');
@@ -107,10 +198,22 @@
         filtered = filtered.filter(v => v.category === activeCategory);
       }
 
-      if (sortMode === 'newest') filtered.sort((a,b) => b.id - a.id);
-      else if (sortMode === 'oldest') filtered.sort((a,b) => a.id - b.id);
-      else if (sortMode === 'az') filtered.sort((a,b) => a.title.localeCompare(b.title));
-      else if (sortMode === 'za') filtered.sort((a,b) => b.title.localeCompare(a.title));
+      // Sorting
+      if (sortMode === 'newest') {
+        filtered.sort((a, b) => b.id - a.id);
+      } else if (sortMode === 'oldest') {
+        filtered.sort((a, b) => a.id - b.id);
+      } else if (sortMode === 'az') {
+        filtered.sort((a, b) => a.title.localeCompare(b.title));
+      } else if (sortMode === 'za') {
+        filtered.sort((a, b) => b.title.localeCompare(a.title));
+      } else if (sortMode === 'random') {
+        // Fisher-Yates shuffle for true random order
+        for (let i = filtered.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [filtered[i], filtered[j]] = [filtered[j], filtered[i]];
+        }
+      }
 
       const totalPages = Math.ceil(filtered.length / itemsPerPage);
       if (currentPage > totalPages) currentPage = totalPages || 1;
@@ -122,28 +225,58 @@
       grid.innerHTML = '';
 
       if (pageVideos.length === 0) {
-        grid.innerHTML = `<div class="col-span-full text-center py-16 text-zinc-400">Tidak ada video yang cocok.</div>`;
+        grid.innerHTML = `<div class="col-span-full text-center py-16 text-zinc-400">没有视频符合过滤器。</div>`;
         updatePagination(0, 0, 0, 0);
         return;
       }
 
       pageVideos.forEach(v => {
         const card = document.createElement('div');
-        card.className = 'video-card bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden';
-
+        card.className = 'video-card bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden cursor-pointer';
+        
         card.innerHTML = `
           <div class="p-4">
             <div class="text-sm text-zinc-200 line-clamp-3 min-h-[60px]">${v.title}</div>
             <div class="text-xs text-emerald-400 mt-2">${v.category} • ${v.source}</div>
           </div>
-          <div class="aspect-video bg-black">
-            <iframe src="${v.embed}" class="w-full h-full" allowfullscreen loading="lazy"></iframe>
+          
+          <!-- Play Area (no inline iframe for better performance) -->
+          <div class="play-area aspect-video bg-zinc-950 flex flex-col items-center justify-center border-t border-zinc-800 relative group" data-id="${v.id}">
+            <div class="play-overlay absolute inset-0 bg-black/40 flex items-center justify-center">
+              <div class="text-center">
+                <div class="text-7xl mb-1 transition group-hover:scale-110">▶</div>
+                <div class="text-xs tracking-widest text-white/70 font-medium">PUTAR VIDEO</div>
+              </div>
+            </div>
           </div>
+          
           <div class="p-4">
-            <a href="${v.direct}" target="_blank" class="block text-center py-3 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-semibold">Buka &amp; Tonton Langsung</a>
+            <a href="${v.direct}" target="_blank" 
+               onclick="event.stopImmediatePropagation()"
+               class="block text-center py-3 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-2xl text-sm font-semibold transition">
+              Buka &amp; Tonton Langsung
+            </a>
           </div>
         `;
+        
         grid.appendChild(card);
+
+        // Make whole card (except direct link) open the modal
+        const playArea = card.querySelector('.play-area');
+        playArea.onclick = (e) => {
+          e.stopImmediatePropagation();
+          openVideoModal(v);
+        };
+        
+        // Also allow clicking title area to play
+        const titleArea = card.querySelector('.p-4:first-child');
+        if (titleArea) {
+          titleArea.onclick = (e) => {
+            if (!e.target.closest('a')) {
+              openVideoModal(v);
+            }
+          };
+        }
       });
 
       updatePagination(filtered.length, start + 1, Math.min(end, filtered.length), totalPages);
@@ -190,10 +323,234 @@
       controls.appendChild(next);
     }
 
-    document.getElementById('search').addEventListener('input', render);
-    document.getElementById('sort').addEventListener('change', render);
+    // ==================== RANDOM & MODAL FUNCTIONS ====================
 
+    function pickRandomVideo() {
+      if (!videos.length) return null;
+      const randomIndex = Math.floor(Math.random() * videos.length);
+      return videos[randomIndex];
+    }
+
+    function openVideoModal(video) {
+      const modal = document.getElementById('modal');
+      const playerContainer = document.getElementById('modal-player-container');
+      const titleEl = document.getElementById('modal-title');
+      const metaEl = document.getElementById('modal-meta');
+      const directBtn = document.getElementById('modal-direct-btn');
+
+      currentModalVideo = video;
+
+      // Set content
+      titleEl.textContent = video.title;
+      metaEl.textContent = `${video.category} • ${video.source} • ID: ${video.id}`;
+      directBtn.href = video.direct;
+
+      // Create fresh iframe (important to avoid old video staying)
+      playerContainer.innerHTML = `
+        <iframe 
+          src="${video.embed}" 
+          class="w-full h-full" 
+          allowfullscreen 
+          loading="lazy"
+          style="border: none;"
+        ></iframe>
+      `;
+
+      // Show modal
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      // Auto mode visual feedback
+      updateAutoStatus();
+    }
+
+    function closeVideoModal() {
+      const modal = document.getElementById('modal');
+      const playerContainer = document.getElementById('modal-player-container');
+      
+      modal.classList.remove('flex');
+      modal.classList.add('hidden');
+      
+      // Clear iframe to stop playback
+      playerContainer.innerHTML = '';
+      currentModalVideo = null;
+      
+      updateAutoStatus();
+    }
+
+    function updateModalWithNewVideo(video) {
+      if (!video) return;
+      
+      const playerContainer = document.getElementById('modal-player-container');
+      const titleEl = document.getElementById('modal-title');
+      const metaEl = document.getElementById('modal-meta');
+      const directBtn = document.getElementById('modal-direct-btn');
+
+      currentModalVideo = video;
+
+      titleEl.textContent = video.title;
+      metaEl.textContent = `${video.category} • ${video.source} • ID: ${video.id}`;
+      directBtn.href = video.direct;
+
+      // Replace iframe
+      playerContainer.innerHTML = `
+        <iframe 
+          src="${video.embed}" 
+          class="w-full h-full" 
+          allowfullscreen 
+          loading="lazy"
+          style="border: none;"
+        ></iframe>
+      `;
+
+    }
+
+    // Main random trigger (from button)
+    function triggerRandom() {
+      const randomVideo = pickRandomVideo();
+      if (randomVideo) {
+        openVideoModal(randomVideo);
+      } else {
+        alert('尚未有视频被加载。');
+      }
+    }
+
+    // ==================== AUTO MODE (every 5 minutes) ====================
+
+    function startAutoMode() {
+      isAutoMode = true;
+      document.getElementById('auto-toggle').checked = true;
+      document.getElementById('auto-status').classList.remove('hidden');
+      document.getElementById('auto-status').classList.add('flex');
+
+      // If modal not open, open one immediately
+      if (!currentModalVideo) {
+        const firstRandom = pickRandomVideo();
+        if (firstRandom) openVideoModal(firstRandom);
+      }
+
+      // Clear any previous timer
+      if (autoTimer) clearInterval(autoTimer);
+
+      // Set new interval: every 5 minutes = 300000 ms
+      autoTimer = setInterval(() => {
+        if (isAutoMode && currentModalVideo) {
+          // Only rotate if modal is currently open
+          const modal = document.getElementById('modal');
+          if (!modal.classList.contains('hidden')) {
+            const newRandom = pickRandomVideo();
+            if (newRandom) {
+              updateModalWithNewVideo(newRandom);
+            }
+          }
+        }
+      }, 5 * 60 * 1000); // 5 minutes
+
+      updateAutoStatus();
+    }
+
+    function stopAutoMode() {
+      isAutoMode = false;
+      document.getElementById('auto-toggle').checked = false;
+      document.getElementById('auto-status').classList.remove('flex');
+      document.getElementById('auto-status').classList.add('hidden');
+
+      if (autoTimer) {
+        clearInterval(autoTimer);
+        autoTimer = null;
+      }
+      
+      updateAutoStatus();
+    }
+
+    function updateAutoStatus() {
+      const statusBar = document.getElementById('auto-status');
+      if (isAutoMode) {
+        statusBar.classList.remove('hidden');
+        statusBar.classList.add('flex');
+      } else {
+        statusBar.classList.remove('flex');
+        statusBar.classList.add('hidden');
+      }
+    }
+
+    // ==================== EVENT LISTENERS ====================
+
+    // Search & Sort
+    document.getElementById('search').addEventListener('input', () => {
+      currentPage = 1;
+      render();
+    });
+    
+    document.getElementById('sort').addEventListener('change', () => {
+      currentPage = 1;
+      render();
+    });
+
+    // Random Button
+    document.getElementById('random-btn').addEventListener('click', triggerRandom);
+
+    // Auto Toggle
+    document.getElementById('auto-toggle').addEventListener('change', (e) => {
+      if (e.target.checked) {
+        startAutoMode();
+      } else {
+        stopAutoMode();
+      }
+    });
+
+    // Stop auto button in status bar
+    document.getElementById('stop-auto-btn').addEventListener('click', stopAutoMode);
+
+    // Modal close handlers
+    document.getElementById('modal-close').addEventListener('click', closeVideoModal);
+    document.getElementById('modal-close-btn').addEventListener('click', closeVideoModal);
+
+    // Close modal when clicking outside the content
+    document.getElementById('modal').addEventListener('click', (e) => {
+      if (e.target.id === 'modal') {
+        closeVideoModal();
+      }
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key.toLowerCase() === 'r' && document.activeElement.tagName === 'BODY') {
+        e.preventDefault();
+        triggerRandom();
+      }
+      
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('modal');
+        if (!modal.classList.contains('hidden')) {
+          closeVideoModal();
+        }
+      }
+      
+      if (e.key.toLowerCase() === '/' && document.activeElement.tagName === 'BODY') {
+        e.preventDefault();
+        document.getElementById('search').focus();
+      }
+    });
+
+    // Random Again button in modal
+    document.getElementById('modal-random-again').addEventListener('click', () => {
+      const newRandom = pickRandomVideo();
+      if (newRandom) {
+        updateModalWithNewVideo(newRandom);
+      }
+    });
+
+    // Initial load
     loadVideos();
+
+    // Optional: Show a small hint on first load (can be removed)
+    setTimeout(() => {
+      const totalEl = document.getElementById('total');
+      if (totalEl && parseInt(totalEl.textContent) > 500) {
+        // Could show a toast, but keeping clean for now
+      }
+    }, 1500);
   </script>
 </body>
 </html>
