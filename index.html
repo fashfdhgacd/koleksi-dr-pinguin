@@ -13,13 +13,6 @@
       transform: translateY(-4px);
       box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
     }
-    .modal {
-      animation: fadeInModal 0.2s ease forwards;
-    }
-    @keyframes fadeInModal {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
   </style>
 </head>
 <body class="bg-zinc-950 text-white">
@@ -35,19 +28,12 @@
           <span id="total">0</span> video
         </div>
         
-        <!-- Random Controls -->
-        <button id="random-btn"
+        <!-- Shuffle Grid Button -->
+        <button id="shuffle-btn"
                 class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 transition px-5 py-2.5 rounded-2xl text-sm font-semibold shadow-lg">
           <span>🎲</span>
-          <span>Acak Video</span>
+          <span>Acak Halaman</span>
         </button>
-        
-        <div class="flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-2xl px-3 py-1 text-sm">
-          <label class="flex items-center gap-2 cursor-pointer select-none">
-            <input type="checkbox" id="auto-toggle" class="accent-emerald-600 w-4 h-4">
-            <span class="text-zinc-300">Auto 5 menit</span>
-          </label>
-        </div>
       </div>
     </div>
 
@@ -59,21 +45,14 @@
         <option value="oldest">旧最旧</option>
         <option value="az">A - Z</option>
         <option value="za">Z - A</option>
-        <option value="random">🎲 Acak / Shuffle</option>
+        <option value="random">🎲 Acak</option>
       </select>
     </div>
 
     <!-- Category Filters -->
     <div id="category-filters" class="flex flex-wrap gap-2 mb-8"></div>
 
-    <!-- Auto mode status -->
-    <div id="auto-status" class="hidden mb-4 px-4 py-2 bg-emerald-950 border border-emerald-800 text-emerald-400 text-sm rounded-2xl flex items-center gap-2">
-      <span class="animate-pulse">●</span>
-      <span>Mode Acak Otomatis aktif — Video akan berganti setiap 5 menit</span>
-      <button id="stop-auto-btn" class="ml-auto text-xs px-3 py-1 bg-emerald-900 hover:bg-emerald-800 rounded-xl">Matikan</button>
-    </div>
-
-    <!-- Video Grid (style seperti asli) -->
+    <!-- Video Grid -->
     <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
 
     <!-- Pagination -->
@@ -83,48 +62,11 @@
     </div>
   </div>
 
-  <!-- Modal Player (untuk tombol Acak) -->
-  <div id="modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
-    <div class="bg-zinc-900 border border-zinc-800 rounded-3xl w-full max-w-5xl overflow-hidden modal">
-      <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
-        <div class="flex-1 min-w-0">
-          <div id="modal-title" class="text-xl font-semibold line-clamp-2 pr-4"></div>
-          <div id="modal-meta" class="text-xs text-emerald-400 mt-1"></div>
-        </div>
-        <button id="modal-close" class="text-zinc-400 hover:text-white text-3xl leading-none px-2">&times;</button>
-      </div>
-
-      <div class="aspect-video bg-black" id="modal-player-container"></div>
-
-      <div class="p-6 flex flex-col sm:flex-row gap-3 bg-zinc-950">
-        <button id="modal-random-again"
-                class="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 transition px-6 py-3 rounded-2xl font-semibold">
-          <span>🎲</span>
-          <span>Acak Lagi</span>
-        </button>
-        
-        <a id="modal-direct-btn" href="#" target="_blank"
-           class="flex-1 flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 transition px-6 py-3 rounded-2xl font-semibold text-center">
-          Buka Link Langsung
-        </a>
-        
-        <button id="modal-close-btn"
-                class="flex-1 sm:flex-none px-8 py-3 rounded-2xl border border-zinc-700 hover:bg-zinc-800 transition font-medium">
-          Tutup
-        </button>
-      </div>
-    </div>
-  </div>
-
   <script>
     let videos = [];
     let activeCategory = 'all';
     let currentPage = 1;
     const itemsPerPage = 12;
-    
-    let autoTimer = null;
-    let isAutoMode = false;
-    let currentModalVideo = null;
 
     async function loadVideos() {
       const res = await fetch('videos.json');
@@ -180,11 +122,17 @@
         filtered = filtered.filter(v => v.category === activeCategory);
       }
 
-      if (sortMode === 'newest') filtered.sort((a,b) => b.id - a.id);
-      else if (sortMode === 'oldest') filtered.sort((a,b) => a.id - b.id);
-      else if (sortMode === 'az') filtered.sort((a,b) => a.title.localeCompare(b.title));
-      else if (sortMode === 'za') filtered.sort((a,b) => b.title.localeCompare(a.title));
-      else if (sortMode === 'random') {
+      // Sorting
+      if (sortMode === 'newest') {
+        filtered.sort((a, b) => b.id - a.id);
+      } else if (sortMode === 'oldest') {
+        filtered.sort((a, b) => a.id - b.id);
+      } else if (sortMode === 'az') {
+        filtered.sort((a, b) => a.title.localeCompare(b.title));
+      } else if (sortMode === 'za') {
+        filtered.sort((a, b) => b.title.localeCompare(a.title));
+      } else if (sortMode === 'random') {
+        // Shuffle
         for (let i = filtered.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
           [filtered[i], filtered[j]] = [filtered[j], filtered[i]];
@@ -210,7 +158,6 @@
         const card = document.createElement('div');
         card.className = 'video-card bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden';
 
-        // KEMBALI KE STYLE ASLI: iframe langsung di dalam card
         card.innerHTML = `
           <div class="p-4">
             <div class="text-sm text-zinc-200 line-clamp-3 min-h-[60px]">${v.title}</div>
@@ -270,136 +217,46 @@
       controls.appendChild(next);
     }
 
-    // ==================== RANDOM + MODAL ====================
-
-    function pickRandomVideo() {
-      if (!videos.length) return null;
-      const randomIndex = Math.floor(Math.random() * videos.length);
-      return videos[randomIndex];
-    }
-
-    function openVideoModal(video) {
-      const modal = document.getElementById('modal');
-      const playerContainer = document.getElementById('modal-player-container');
-      const titleEl = document.getElementById('modal-title');
-      const metaEl = document.getElementById('modal-meta');
-      const directBtn = document.getElementById('modal-direct-btn');
-
-      currentModalVideo = video;
-
-      titleEl.textContent = video.title;
-      metaEl.textContent = `${video.category} • ${video.source} • ID: ${video.id}`;
-      directBtn.href = video.direct;
-
-      playerContainer.innerHTML = `
-        <iframe src="${video.embed}" class="w-full h-full" allowfullscreen style="border: none;"></iframe>
-      `;
-
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    }
-
-    function closeVideoModal() {
-      const modal = document.getElementById('modal');
-      const playerContainer = document.getElementById('modal-player-container');
+    // ==================== SHUFFLE BUTTON ====================
+    function shuffleCurrentGrid() {
+      const searchTerm = document.getElementById('search').value.toLowerCase();
+      const sortSelect = document.getElementById('sort');
       
-      modal.classList.remove('flex');
-      modal.classList.add('hidden');
-      playerContainer.innerHTML = '';
-      currentModalVideo = null;
-    }
-
-    function updateModalWithNewVideo(video) {
-      if (!video) return;
-      const playerContainer = document.getElementById('modal-player-container');
-      const titleEl = document.getElementById('modal-title');
-      const metaEl = document.getElementById('modal-meta');
-      const directBtn = document.getElementById('modal-direct-btn');
-
-      currentModalVideo = video;
-      titleEl.textContent = video.title;
-      metaEl.textContent = `${video.category} • ${video.source} • ID: ${video.id}`;
-      directBtn.href = video.direct;
-
-      playerContainer.innerHTML = `
-        <iframe src="${video.embed}" class="w-full h-full" allowfullscreen style="border: none;"></iframe>
-      `;
-    }
-
-    function triggerRandom() {
-      const randomVideo = pickRandomVideo();
-      if (randomVideo) {
-        openVideoModal(randomVideo);
-      }
-    }
-
-    function startAutoMode() {
-      isAutoMode = true;
-      document.getElementById('auto-toggle').checked = true;
-      document.getElementById('auto-status').classList.remove('hidden');
-      document.getElementById('auto-status').classList.add('flex');
-
-      if (!currentModalVideo) {
-        const first = pickRandomVideo();
-        if (first) openVideoModal(first);
-      }
-
-      if (autoTimer) clearInterval(autoTimer);
-
-      autoTimer = setInterval(() => {
-        if (isAutoMode && currentModalVideo) {
-          const modal = document.getElementById('modal');
-          if (!modal.classList.contains('hidden')) {
-            const newVid = pickRandomVideo();
-            if (newVid) updateModalWithNewVideo(newVid);
-          }
-        }
-      }, 5 * 60 * 1000);
-    }
-
-    function stopAutoMode() {
-      isAutoMode = false;
-      document.getElementById('auto-toggle').checked = false;
-      document.getElementById('auto-status').classList.remove('flex');
-      document.getElementById('auto-status').classList.add('hidden');
-
-      if (autoTimer) {
-        clearInterval(autoTimer);
-        autoTimer = null;
-      }
+      // Set sort to random
+      sortSelect.value = 'random';
+      
+      // Force re-render with shuffle
+      currentPage = 1;
+      render();
+      
+      // Optional: flash effect on grid
+      const grid = document.getElementById('grid');
+      grid.style.transition = 'opacity 0.1s';
+      grid.style.opacity = '0.6';
+      setTimeout(() => {
+        grid.style.opacity = '1';
+      }, 150);
     }
 
     // Event Listeners
-    document.getElementById('search').addEventListener('input', render);
-    document.getElementById('sort').addEventListener('change', render);
-
-    document.getElementById('random-btn').addEventListener('click', triggerRandom);
-    document.getElementById('auto-toggle').addEventListener('change', (e) => {
-      if (e.target.checked) startAutoMode();
-      else stopAutoMode();
+    document.getElementById('search').addEventListener('input', () => {
+      currentPage = 1;
+      render();
     });
-    document.getElementById('stop-auto-btn').addEventListener('click', stopAutoMode);
-
-    document.getElementById('modal-close').addEventListener('click', closeVideoModal);
-    document.getElementById('modal-close-btn').addEventListener('click', closeVideoModal);
-    document.getElementById('modal').addEventListener('click', (e) => {
-      if (e.target.id === 'modal') closeVideoModal();
+    
+    document.getElementById('sort').addEventListener('change', () => {
+      currentPage = 1;
+      render();
     });
 
-    document.getElementById('modal-random-again').addEventListener('click', () => {
-      const newVid = pickRandomVideo();
-      if (newVid) updateModalWithNewVideo(newVid);
-    });
+    // Shuffle button
+    document.getElementById('shuffle-btn').addEventListener('click', shuffleCurrentGrid);
 
-    // Keyboard
+    // Keyboard shortcut: press "r" to shuffle
     document.addEventListener('keydown', (e) => {
       if (e.key.toLowerCase() === 'r' && document.activeElement.tagName === 'BODY') {
         e.preventDefault();
-        triggerRandom();
-      }
-      if (e.key === 'Escape') {
-        const modal = document.getElementById('modal');
-        if (!modal.classList.contains('hidden')) closeVideoModal();
+        shuffleCurrentGrid();
       }
     });
 
