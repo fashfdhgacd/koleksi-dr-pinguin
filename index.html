@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <!-- Vercel Analytics -->
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dr. Pinguin Bokep, M.S.B.</title>
@@ -31,6 +36,35 @@
     </style>
 </head>
 <body class="bg-zinc-950 text-white">
+    <script type="module">
+  import { getFeatureFlags, isFeatureEnabled } from './flags.js';
+
+  async function initFeatureFlags() {
+    const flags = await getFeatureFlags();
+    console.log('%c[Feature Flags]', 'color:#22c55e', flags);
+
+    // Contoh penggunaan:
+    // Sembunyikan kategori Live kalau flag dimatikan
+    if (!flags.showLiveCategory) {
+      const liveFilter = document.querySelector('[data-category="Live"]');
+      if (liveFilter) liveFilter.style.display = 'none';
+    }
+
+    // Maintenance mode
+    if (flags.maintenanceMode) {
+      document.body.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;">
+          <div style="text-align:center;">
+            <h1 style="font-size:2rem;margin-bottom:1rem;">🔧 Maintenance</h1>
+            <p>Koleksi sedang dalam perbaikan. Coba lagi nanti.</p>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  initFeatureFlags();
+</script>
     <div class="max-w-7xl mx-auto px-4 py-6 md:px-8">
         
         <!-- Header with Logo (seperti banner yang kamu kirim) -->
