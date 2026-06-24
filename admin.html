@@ -3,116 +3,331 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin • Koleksi Dr. Pinguin</title>
+  <title>Admin Converter • Dr. Pinguin Bokep, M.S.B.</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script>
     window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
   </script>
   <script defer src="https://va.vercel-scripts.com/v1/script.js"></script>
+  <style>
+    .preview-card { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+    .preview-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
+  </style>
 </head>
 <body class="bg-zinc-950 text-white">
-  <div class="max-w-5xl mx-auto px-6 py-8">
-    <div class="flex items-center justify-between mb-8">
-      <div>
-        <h1 class="text-4xl font-bold">Admin Panel</h1>
-        <p class="text-emerald-400">Koleksi Dr. Pinguin Bokep, M.S.B.</p>
-      </div>
-      <a href="index.html" class="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 rounded-2xl text-sm flex items-center gap-2 border border-zinc-700">
-        Kembali ke Gallery
-      </a>
-    </div>
-
-    <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-8">
-      <h2 class="text-2xl font-semibold mb-6">Tambah Video Massal</h2>
-
-      <div class="mb-4">
-        <label class="block text-sm text-zinc-400 mb-2">Judul + Link (bergantian)</label>
-        <textarea id="input" rows="10" class="w-full bg-zinc-950 border border-zinc-700 rounded-2xl p-4 font-mono text-sm" 
-          placeholder="Judul Video 1
-https://tv1.indoav.app/e/xxxxxx
-
-Judul Video 2
-https://tv1.userbokep.com/e/yyyyyy"></textarea>
-      </div>
-
-      <div class="mb-4">
-        <label class="block text-sm text-zinc-400 mb-2">Kategori</label>
-        <select id="category" class="w-full bg-zinc-950 border border-zinc-700 rounded-2xl px-4 py-3">
-          <option value="Umum">Umum</option>
-          <option value="MILF">MILF</option>
-          <option value="Amatir">Amatir</option>
-          <option value="Live">Live</option>
-          <option value="ABG">ABG</option>
-          <option value="Jilbab">Jilbab</option>
-          <option value="Office">Office</option>
-        </select>
-      </div>
-
-      <button onclick="generateJSON()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-bold text-lg mb-4">
-        Generate JSON
-      </button>
-
-      <div id="result-area" class="hidden">
-        <label class="block text-sm text-zinc-400 mb-2">Hasil JSON (Copy lalu paste ke videos.json)</label>
-        <textarea id="output" rows="12" class="w-full bg-zinc-950 border border-zinc-700 rounded-2xl p-4 font-mono text-sm" readonly></textarea>
+  <!-- Header -->
+  <div class="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-lg sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-6 py-5">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="w-11 h-11 bg-emerald-600 rounded-2xl flex items-center justify-center">
+            <i class="fa-solid fa-video text-white text-2xl"></i>
+          </div>
+          <div>
+            <h1 class="text-3xl font-bold tracking-tight">Admin Converter</h1>
+            <p class="text-emerald-400 text-sm -mt-1">Koleksi Dr. Pinguin Bokep, M.S.B.</p>
+          </div>
+        </div>
         
-        <div class="flex gap-3 mt-3">
-          <button onclick="copyToClipboard()" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-semibold">
-            Copy ke Clipboard
-          </button>
-          <button onclick="downloadJSON()" class="flex-1 py-3 bg-zinc-700 hover:bg-zinc-600 rounded-2xl font-semibold">
-            Download File
-          </button>
+        <div class="flex items-center gap-3">
+          <a href="index.html" class="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-2xl text-sm flex items-center gap-2 transition-colors">
+            <i class="fa-solid fa-images mr-2"></i>
+            <span>Kembali ke Gallery</span>
+          </a>
+          <div class="px-4 py-2 bg-zinc-900 border border-zinc-700 rounded-2xl text-xs flex items-center gap-2">
+            <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+            <span class="text-zinc-400">v2.1 • Improved</span>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
+  <div class="max-w-6xl mx-auto px-6 py-8">
+    
+    <!-- Info Banner -->
+    <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 mb-8 flex items-start gap-4">
+      <div class="w-10 h-10 bg-emerald-900/50 rounded-2xl flex-shrink-0 flex items-center justify-center mt-0.5">
+        <i class="fa-solid fa-info-circle text-emerald-400"></i>
+      </div>
+      <div class="text-sm text-zinc-300">
+        <p class="font-medium text-white mb-1">Cara Kerja Converter Ini</p>
+        <p>Paste <strong>Judul</strong> di baris baru, lalu <strong>Link Embed</strong> (<code>/e/</code> atau <code>/d/</code>) di baris berikutnya. 
+        Bisa campur aduk sedikit, parser otomatis deteksi. Hasil JSON siap langsung di-paste ke <code>videos.json</code>.</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      
+      <!-- INPUT SECTION -->
+      <div class="lg:col-span-7">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-8">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h2 class="text-2xl font-semibold flex items-center gap-3">
+                <i class="fa-solid fa-file-import text-emerald-400"></i>
+                <span>Input Video Massal</span>
+              </h2>
+              <p class="text-zinc-400 text-sm mt-1">Format: Judul di atas, Link di bawahnya (bergantian)</p>
+            </div>
+            <button onclick="clearInput()" class="px-4 py-2 text-sm bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-2xl flex items-center gap-2 transition-colors">
+              <i class="fa-solid fa-trash-can"></i>
+              <span>Clear</span>
+            </button>
+          </div>
+
+          <div class="mb-5">
+            <label class="block text-sm font-medium text-zinc-400 mb-2">Judul + Link Embed</label>
+            <textarea id="input" rows="14" class="w-full bg-zinc-950 border border-zinc-700 focus:border-emerald-600 rounded-2xl p-5 font-mono text-sm resize-y min-h-[280px]"
+              placeholder="ABG Cantik Ngewe di Kamar Kos
+https://tv1.indoav.app/e/abc123xyz
+
+Cewek Jilbab Hyper Sampe Squirt
+https://tv1.userbokep.com/e/def456uvw"></textarea>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-zinc-400 mb-2">Kategori Default</label>
+              <select id="category" class="w-full bg-zinc-950 border border-zinc-700 focus:border-emerald-600 rounded-2xl px-4 py-3 text-sm">
+                <option value="Umum">Umum</option>
+                <option value="ABG">ABG</option>
+                <option value="MILF">MILF</option>
+                <option value="Amatir">Amatir</option>
+                <option value="Jilbab">Jilbab</option>
+                <option value="Live">Live</option>
+                <option value="Office">Office</option>
+                <option value="Hijab">Hijab</option>
+                <option value="Couple">Couple</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-zinc-400 mb-2">Paksa Source (opsional)</label>
+              <select id="forceSource" class="w-full bg-zinc-950 border border-zinc-700 focus:border-emerald-600 rounded-2xl px-4 py-3 text-sm">
+                <option value="">Auto Detect (dari link)</option>
+                <option value="IndoAV">IndoAV (tv1.indoav.app)</option>
+                <option value="UserBokep">UserBokep (tv1.userbokep.com)</option>
+              </select>
+            </div>
+          </div>
+
+          <button onclick="parseAndPreview()" class="mt-6 w-full py-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 transition-all rounded-2xl font-bold text-lg flex items-center justify-center gap-3 shadow-lg shadow-emerald-600/20">
+            <i class="fa-solid fa-magic"></i>
+            <span>Parse &amp; Preview Video</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- STATS & TIPS -->
+      <div class="lg:col-span-5 space-y-6">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-6">
+          <h3 class="font-semibold mb-4 flex items-center gap-2 text-emerald-400">
+            <i class="fa-solid fa-chart-bar"></i>
+            <span>Statistik Cepat</span>
+          </h3>
+          <div class="space-y-3 text-sm">
+            <div class="flex justify-between items-center py-2 border-b border-zinc-800">
+              <span class="text-zinc-400">Total Video di Koleksi</span>
+              <span class="font-mono font-bold text-lg">1,141</span>
+            </div>
+            <div class="flex justify-between items-center py-2 border-b border-zinc-800">
+              <span class="text-zinc-400">Video Baru (preview)</span>
+              <span id="preview-count" class="font-mono font-bold text-lg text-emerald-400">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 text-sm">
+          <h3 class="font-semibold mb-3 text-emerald-400">Tips Parsing</h3>
+          <ul class="space-y-2 text-zinc-300 text-xs leading-relaxed">
+            <li class="flex gap-2"><i class="fa-solid fa-check text-emerald-500 mt-1"></i> Judul di baris sendiri, link di baris berikutnya</li>
+            <li class="flex gap-2"><i class="fa-solid fa-check text-emerald-500 mt-1"></i> Bisa pakai <code>/e/</code> atau <code>/d/</code></li>
+            <li class="flex gap-2"><i class="fa-solid fa-check text-emerald-500 mt-1"></i> Extra enter/spasi otomatis dibersihkan</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- PREVIEW SECTION -->
+      <div id="preview-section" class="lg:col-span-12 hidden">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-8">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h2 class="text-2xl font-semibold flex items-center gap-3">
+                <i class="fa-solid fa-eye text-emerald-400"></i>
+                <span>Preview Video yang Akan Ditambahkan</span>
+              </h2>
+              <p id="preview-subtitle" class="text-sm text-zinc-400 mt-1"></p>
+            </div>
+            
+            <div class="flex gap-3">
+              <button onclick="generateJSON()" class="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-bold flex items-center gap-3 transition-all active:scale-[0.985]">
+                <i class="fa-solid fa-file-export"></i>
+                <span>Generate JSON</span>
+              </button>
+              <button onclick="clearPreview()" class="px-5 py-3 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-2xl flex items-center gap-2">
+                <i class="fa-solid fa-times"></i>
+                <span>Batal</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="preview-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 max-h-[520px] overflow-auto pr-2">
+            <!-- JS will populate cards here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULT SECTION -->
+      <div id="result-section" class="lg:col-span-12 hidden">
+        <div class="bg-zinc-900 border border-emerald-800/60 rounded-3xl p-8">
+          <div class="flex items-center gap-3 mb-6">
+            <i class="fa-solid fa-check-circle text-emerald-400 text-3xl"></i>
+            <div>
+              <h2 class="text-2xl font-semibold">JSON Berhasil Dibuat!</h2>
+              <p class="text-emerald-400 text-sm">Copy atau download, lalu paste ke <code class="bg-zinc-950 px-1.5 py-0.5 rounded">videos.json</code></p>
+            </div>
+          </div>
+
+          <textarea id="output" rows="16" readonly class="w-full bg-black border border-zinc-700 rounded-2xl p-5 font-mono text-xs resize-y"></textarea>
+
+          <div class="flex flex-col sm:flex-row gap-3 mt-4">
+            <button onclick="copyToClipboard()" class="flex-1 py-4 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-bold flex items-center justify-center gap-3 text-lg transition-all">
+              <i class="fa-solid fa-copy"></i>
+              <span>Copy ke Clipboard</span>
+            </button>
+            <button onclick="downloadJSON()" class="flex-1 py-4 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-2xl font-bold flex items-center justify-center gap-3 text-lg transition-all">
+              <i class="fa-solid fa-download"></i>
+              <span>Download new-videos.json</span>
+            </button>
+            <button onclick="resetAll()" class="px-8 py-4 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-2xl font-medium flex items-center justify-center gap-2">
+              <i class="fa-solid fa-redo"></i>
+              <span>Reset</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer class="max-w-6xl mx-auto px-6 pb-10 text-center text-xs text-zinc-500">
+    Made for Dr. Pinguin Collection • Converter v2.1
+  </footer>
+
   <script>
     let lastGenerated = [];
+    let parsedVideos = [];
 
-    function generateJSON() {
+    function parseInput() {
       const input = document.getElementById('input').value.trim();
-      const category = document.getElementById('category').value;
-      if (!input) return alert('Input kosong');
+      const defaultCategory = document.getElementById('category').value;
+      const forceSource = document.getElementById('forceSource').value;
+
+      if (!input) return [];
 
       const lines = input.split('\n').map(l => l.trim()).filter(Boolean);
-      const newVideos = [];
+      const videos = [];
       let currentTitle = '';
-      let id = Date.now();
+      let idCounter = Date.now();
 
       for (let line of lines) {
         if (line.startsWith('http')) {
-          if (!currentTitle) continue;
-          const embed = line;
-          newVideos.push({
-            id: id++,
+          if (!currentTitle) currentTitle = `Video Tanpa Judul ${idCounter}`;
+
+          let embed = line;
+          if (embed.includes('/d/')) embed = embed.replace('/d/', '/e/');
+
+          let source = forceSource || (embed.includes('indoav.app') ? 'IndoAV' : 
+                      embed.includes('userbokep.com') ? 'UserBokep' : 'Unknown');
+
+          let direct = embed.replace('/e/', '/d/');
+
+          videos.push({
+            id: idCounter++,
             title: currentTitle,
             embed: embed,
-            direct: embed.replace('/e/', '/d/'),
-            source: embed.includes('indoav.app') ? 'IndoAV' : 'UserBokep',
-            category: category
+            direct: direct,
+            source: source,
+            category: defaultCategory
           });
           currentTitle = '';
         } else {
           currentTitle = line;
         }
       }
+      return videos;
+    }
 
-      if (newVideos.length === 0) return alert('Tidak ada video valid');
+    function parseAndPreview() {
+      parsedVideos = parseInput();
+      if (parsedVideos.length === 0) {
+        alert('Tidak ada video valid. Pastikan format: Judul lalu link embed di baris berikutnya.');
+        return;
+      }
 
-      lastGenerated = newVideos;
-      const jsonStr = JSON.stringify(newVideos, null, 2);
+      document.getElementById('preview-count').textContent = parsedVideos.length;
 
+      const grid = document.getElementById('preview-grid');
+      grid.innerHTML = '';
+
+      parsedVideos.forEach(video => {
+        const card = document.createElement('div');
+        card.className = `preview-card bg-zinc-950 border border-zinc-800 rounded-2xl p-4 flex flex-col`;
+        card.innerHTML = `
+          <div class="flex items-start justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="px-3 py-1 text-[10px] font-mono bg-zinc-800 text-emerald-400 rounded-full">#${video.id.toString().slice(-6)}</span>
+              <span class="px-3 py-1 text-[10px] font-medium bg-emerald-900/60 text-emerald-300 rounded-full">${video.category}</span>
+            </div>
+            <span class="text-[10px] px-2 py-1 bg-zinc-900 rounded text-zinc-400">${video.source}</span>
+          </div>
+          <div class="flex-1">
+            <p class="font-medium text-sm leading-snug line-clamp-3 mb-3">${video.title}</p>
+          </div>
+          <div class="text-xs space-y-1.5 pt-3 border-t border-zinc-800">
+            <div class="flex items-center gap-2 text-emerald-400">
+              <i class="fa-solid fa-link w-3"></i>
+              <span class="font-mono truncate text-[10px]">${video.embed}</span>
+            </div>
+            <div class="flex items-center gap-2 text-amber-400">
+              <i class="fa-solid fa-download w-3"></i>
+              <span class="font-mono truncate text-[10px]">${video.direct}</span>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      document.getElementById('preview-section').classList.remove('hidden');
+      document.getElementById('preview-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.getElementById('preview-subtitle').innerHTML = 
+        `${parsedVideos.length} video siap ditambahkan • Kategori: <strong>${document.getElementById('category').value}</strong>`;
+    }
+
+    function generateJSON() {
+      if (!parsedVideos.length) {
+        alert('Belum ada video di preview. Klik "Parse & Preview" dulu.');
+        return;
+      }
+      lastGenerated = parsedVideos;
+      const jsonStr = JSON.stringify(parsedVideos, null, 2);
       document.getElementById('output').value = jsonStr;
-      document.getElementById('result-area').classList.remove('hidden');
+      document.getElementById('result-section').classList.remove('hidden');
+      document.getElementById('result-section').scrollIntoView({ behavior: 'smooth' });
     }
 
     function copyToClipboard() {
       const output = document.getElementById('output');
       output.select();
       document.execCommand('copy');
-      alert('JSON berhasil di-copy! Tinggal paste ke videos.json');
+      
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-6 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-sm z-50';
+      toast.innerHTML = `<i class="fa-solid fa-check mr-2"></i> JSON berhasil di-copy! Tinggal paste ke videos.json`;
+      document.body.appendChild(toast);
+      setTimeout(() => { toast.style.transition = 'all 0.2s'; toast.style.opacity = '0'; setTimeout(() => toast.remove(), 200); }, 2200);
     }
 
     function downloadJSON() {
@@ -120,11 +335,48 @@ https://tv1.userbokep.com/e/yyyyyy"></textarea>
       const jsonStr = JSON.stringify(lastGenerated, null, 2);
       const blob = new Blob([jsonStr], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
-      
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'new-videos.json';
+      a.download = `dr-pinguin-new-videos-${new Date().toISOString().slice(0,10)}.json`;
       a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function clearInput() {
+      document.getElementById('input').value = '';
+      clearPreview();
+    }
+
+    function clearPreview() {
+      document.getElementById('preview-section').classList.add('hidden');
+      document.getElementById('preview-grid').innerHTML = '';
+      parsedVideos = [];
+      document.getElementById('preview-count').textContent = '0';
+    }
+
+    function resetAll() {
+      document.getElementById('input').value = '';
+      document.getElementById('preview-section').classList.add('hidden');
+      document.getElementById('result-section').classList.add('hidden');
+      document.getElementById('preview-grid').innerHTML = '';
+      document.getElementById('output').value = '';
+      parsedVideos = [];
+      lastGenerated = [];
+      document.getElementById('preview-count').textContent = '0';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault();
+        const previewVisible = !document.getElementById('preview-section').classList.contains('hidden');
+        if (!previewVisible) parseAndPreview();
+        else generateJSON();
+      }
+    });
+
+    window.onload = function() {
+      document.getElementById('input').focus();
     }
   </script>
 </body>
