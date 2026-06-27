@@ -1,0 +1,12 @@
+{
+  "name": "koleksi-dr-pinguin",
+  "version": "1.0.0",
+  "description": "Koleksi Dr. Pinguin Bokep",
+  "scripts": {
+    "build": "node generate-sitemap.js",
+    "generate-sitemap": "node generate-sitemap.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
