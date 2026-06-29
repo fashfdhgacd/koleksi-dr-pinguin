@@ -36,38 +36,9 @@
     </style>
 </head>
 <body class="bg-zinc-950 text-white">
-    <script type="module">
-  import { getFeatureFlags, isFeatureEnabled } from './flags.js';
-
-  async function initFeatureFlags() {
-    const flags = await getFeatureFlags();
-    console.log('%c[Feature Flags]', 'color:#22c55e', flags);
-
-    // Contoh penggunaan:
-    // Sembunyikan kategori Live kalau flag dimatikan
-    if (!flags.showLiveCategory) {
-      const liveFilter = document.querySelector('[data-category="Live"]');
-      if (liveFilter) liveFilter.style.display = 'none';
-    }
-
-    // Maintenance mode
-    if (flags.maintenanceMode) {
-      document.body.innerHTML = `
-        <div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;">
-          <div style="text-align:center;">
-            <h1 style="font-size:2rem;margin-bottom:1rem;">🔧 Maintenance</h1>
-            <p>Koleksi sedang dalam perbaikan. Coba lagi nanti.</p>
-          </div>
-        </div>
-      `;
-    }
-  }
-
-  initFeatureFlags();
-</script>
     <div class="max-w-7xl mx-auto px-4 py-6 md:px-8">
         
-        <!-- Header with Logo (seperti banner yang kamu kirim) -->
+        <!-- Header with Logo -->
         <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 pb-6 border-b border-zinc-800">
             <div class="flex items-center gap-x-4">
                 <img src="logo.png" class="w-14 h-14 rounded-full border-2 border-yellow-400" alt="Dr. Pinguin"
@@ -105,15 +76,15 @@
             </select>
         </div>
 
-        <!-- Category Filter as Dropdown (seperti yang kamu tunjukin) -->
+        <!-- Category Filter -->
         <div class="mb-6 max-w-xs">
             <label class="block text-xs uppercase tracking-widest text-zinc-500 font-semibold mb-1.5 px-1">Kategori</label>
             <select id="category-select" class="w-full bg-zinc-900 border border-zinc-700 focus:border-yellow-400 rounded-3xl px-5 py-3 text-base outline-none">
-                <!-- Options will be populated by JS -->
+                <!-- Options populated by JS -->
             </select>
         </div>
 
-        <!-- Video Grid - INLINE seperti index 4 -->
+        <!-- Video Grid -->
         <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5"></div>
 
         <!-- Pagination -->
@@ -154,19 +125,15 @@
             const select = document.getElementById('category-select');
             if (!select) return;
 
-            // Clear existing options
             select.innerHTML = '';
 
-            // Get unique categories
             const categories = [...new Set(videos.map(v => v.category).filter(Boolean))].sort();
 
-            // Add "Semua Kategori" option
             const allOption = document.createElement('option');
             allOption.value = 'all';
             allOption.textContent = 'Semua Kategori';
             select.appendChild(allOption);
 
-            // Add other categories
             categories.forEach(cat => {
                 const option = document.createElement('option');
                 option.value = cat;
@@ -174,7 +141,6 @@
                 select.appendChild(option);
             });
 
-            // Event listener
             select.addEventListener('change', () => {
                 activeCategory = select.value;
                 currentPage = 1;
@@ -184,153 +150,104 @@
 
         function render() {
             const grid = document.getElementById('grid');
-            const searchTerm = document.getElementById('search').value.toLowerCase().trim();
+            const searchTerm = document.getElementById('search').value.toLowerCase();
             const sortMode = document.getElementById('sort').value;
 
-            let filtered = videos.filter(v => {
-                const matchSearch = !searchTerm || (v.title && v.title.toLowerCase().includes(searchTerm));
-                const matchCat = activeCategory === 'all' || v.category === activeCategory;
-                return matchSearch && matchCat;
-            });
+            let filtered = videos;
 
-            if (sortMode === 'newest') filtered.sort((a,b) => (b.id||0) - (a.id||0));
-            else if (sortMode === 'oldest') filtered.sort((a,b) => (a.id||0) - (b.id||0));
-            else if (sortMode === 'az') filtered.sort((a,b) => (a.title||'').localeCompare(b.title||''));
-            else if (sortMode === 'za') filtered.sort((a,b) => (b.title||'').localeCompare(a.title||''));
+            if (activeCategory !== 'all') {
+                filtered = filtered.filter(v => v.category === activeCategory);
+            }
 
+            if (searchTerm) {
+                filtered = filtered.filter(v => 
+                    (v.title && v.title.toLowerCase().includes(searchTerm)) || 
+                    (v.category && v.category.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            // Sort
+            if (sortMode === 'newest') {
+                filtered.sort((a, b) => (b.id || 0) - (a.id || 0));
+            } else if (sortMode === 'oldest') {
+                filtered.sort((a, b) => (a.id || 0) - (b.id || 0));
+            } else if (sortMode === 'az') {
+                filtered.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+            } else if (sortMode === 'za') {
+                filtered.sort((a, b) => (b.title || '').localeCompare(a.title || ''));
+            }
+
+            // Pagination
             const totalPages = Math.ceil(filtered.length / perPage);
-            if (currentPage > totalPages) currentPage = totalPages || 1;
-
             const start = (currentPage - 1) * perPage;
             const pageVideos = filtered.slice(start, start + perPage);
 
+            grid.innerHTML = '';
+
             if (pageVideos.length === 0) {
-                grid.innerHTML = `<div class="col-span-full text-center py-10 text-zinc-400">Tidak ada video</div>`;
-                updatePagination(0, 0);
+                grid.innerHTML = `<div class="col-span-full py-12 text-center text-zinc-400">Tidak ada video ditemukan.</div>`;
                 return;
             }
 
-            grid.innerHTML = pageVideos.map((v, i) => {
-                const hasDirect = v.direct && v.direct.trim() !== '';
-                const globalNum = start + i + 1;
-
-                return `
-                    <div class="video-card bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden">
-                        <!-- Top bar: Category + Number -->
-                        <div class="px-4 pt-3.5 pb-2.5 flex items-center justify-between bg-zinc-950/60">
-                            <span class="px-3 py-0.5 text-xs font-bold rounded-full bg-yellow-400 text-black">${v.category || 'Umum'}</span>
-                            <span class="text-[10px] text-zinc-500 font-mono">#${globalNum}</span>
+            pageVideos.forEach(video => {
+                const card = document.createElement('div');
+                card.className = 'video-card bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden';
+                
+                card.innerHTML = `
+                    <div class="video-wrapper">
+                        <iframe 
+                            src="${video.embed}" 
+                            allowfullscreen
+                            loading="lazy"
+                        ></iframe>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex items-start justify-between gap-2">
+                            <h3 class="font-semibold text-sm leading-tight line-clamp-2">${video.title || 'Untitled'}</h3>
                         </div>
-
-                        <!-- INLINE IFRAME -->
-                        <div class="video-wrapper">
-                            <iframe src="${v.embed}" loading="lazy" allowfullscreen></iframe>
-                        </div>
-
-                        <!-- Title + spacing -->
-                        <div class="px-4 pt-4 pb-1">
-                            <div class="text-sm font-medium leading-snug line-clamp-2 min-h-[40px]">
-                                ${v.title || 'Untitled Video'}
-                            </div>
-                        </div>
-
-                        <!-- Source + Button -->
-                        <div class="px-4 pb-4 pt-2 flex items-center justify-between gap-3">
-                            <span class="text-xs text-zinc-400 truncate max-w-[45%]">${v.source || ''}</span>
-                            
-                            <a href="${hasDirect ? v.direct : (v.embed || '#')}" target="_blank"
-                               class="text-xs px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center gap-2 transition whitespace-nowrap">
-                                <i class="fas fa-external-link-alt text-xs"></i>
-                                <span>TONTON LANGSUNG</span>
-                            </a>
-                        </div>
+                        ${video.category ? `<div class="mt-2 inline-block px-2.5 py-0.5 text-[10px] rounded-full bg-zinc-800 text-zinc-400">${video.category}</div>` : ''}
                     </div>
                 `;
-            }).join('');
+                grid.appendChild(card);
+            });
 
-            updatePagination(filtered.length, totalPages);
-        }
+            // Update pagination info
+            document.getElementById('pagination-info').innerHTML = 
+                `Menampilkan <span class="font-medium text-white">${start + 1}-${Math.min(start + perPage, filtered.length)}</span> dari <span class="font-medium text-white">${filtered.length}</span> video`;
 
-        function updatePagination(total, totalPages) {
-            const info = document.getElementById('pagination-info');
+            // Pagination controls
             const controls = document.getElementById('pagination-controls');
-            
-            info.innerHTML = `Menampilkan <span class="text-white font-semibold">${total}</span> video`;
             controls.innerHTML = '';
 
-            if (totalPages <= 1) return;
+            if (totalPages > 1) {
+                const prevBtn = document.createElement('button');
+                prevBtn.className = `px-4 py-2 rounded-2xl border ${currentPage === 1 ? 'border-zinc-800 text-zinc-600 cursor-not-allowed' : 'border-zinc-700 hover:bg-zinc-900'}`;
+                prevBtn.textContent = 'Sebelumnya';
+                prevBtn.disabled = currentPage === 1;
+                prevBtn.onclick = () => { currentPage--; render(); };
+                controls.appendChild(prevBtn);
 
-            // Helper to create page button
-            const createPageBtn = (pageNum, isActive = false) => {
-                const btn = document.createElement('button');
-                btn.textContent = pageNum;
-                btn.className = `px-3.5 py-2 text-sm rounded-2xl border transition min-w-[42px] ${isActive 
-                    ? 'bg-yellow-400 text-black border-yellow-400 font-semibold' 
-                    : 'border-zinc-700 hover:bg-zinc-800 hover:text-white'}`;
-                btn.onclick = () => {
-                    if (currentPage !== pageNum) {
-                        currentPage = pageNum;
-                        render();
-                    }
-                };
-                return btn;
-            };
-
-            // Prev
-            const prev = document.createElement('button');
-            prev.innerHTML = `<i class="fas fa-chevron-left"></i>`;
-            prev.className = `px-3.5 py-2 text-sm rounded-2xl border flex items-center transition ${currentPage === 1 ? 'border-zinc-800 text-zinc-600 cursor-not-allowed' : 'border-zinc-700 hover:bg-yellow-400 hover:text-black'}`;
-            prev.onclick = () => { if (currentPage > 1) { currentPage--; render(); } };
-            controls.appendChild(prev);
-
-            // Page numbers logic (show window around current page)
-            const maxVisible = 5;
-            let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-            let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-
-            if (endPage - startPage < maxVisible - 1) {
-                startPage = Math.max(1, endPage - maxVisible + 1);
+                const nextBtn = document.createElement('button');
+                nextBtn.className = `px-4 py-2 rounded-2xl border ${currentPage === totalPages ? 'border-zinc-800 text-zinc-600 cursor-not-allowed' : 'border-zinc-700 hover:bg-zinc-900'}`;
+                nextBtn.textContent = 'Selanjutnya';
+                nextBtn.disabled = currentPage === totalPages;
+                nextBtn.onclick = () => { currentPage++; render(); };
+                controls.appendChild(nextBtn);
             }
-
-            // First page + ellipsis if needed
-            if (startPage > 1) {
-                controls.appendChild(createPageBtn(1));
-                if (startPage > 2) {
-                    const ellipsis = document.createElement('span');
-                    ellipsis.textContent = '...';
-                    ellipsis.className = 'px-2 py-2 text-zinc-500';
-                    controls.appendChild(ellipsis);
-                }
-            }
-
-            // Visible page numbers
-            for (let i = startPage; i <= endPage; i++) {
-                controls.appendChild(createPageBtn(i, i === currentPage));
-            }
-
-            // Last page + ellipsis if needed
-            if (endPage < totalPages) {
-                if (endPage < totalPages - 1) {
-                    const ellipsis = document.createElement('span');
-                    ellipsis.textContent = '...';
-                    ellipsis.className = 'px-2 py-2 text-zinc-500';
-                    controls.appendChild(ellipsis);
-                }
-                controls.appendChild(createPageBtn(totalPages));
-            }
-
-            // Next
-            const next = document.createElement('button');
-            next.innerHTML = `<i class="fas fa-chevron-right"></i>`;
-            next.className = `px-3.5 py-2 text-sm rounded-2xl border flex items-center transition ${currentPage === totalPages ? 'border-zinc-800 text-zinc-600 cursor-not-allowed' : 'border-zinc-700 hover:bg-yellow-400 hover:text-black'}`;
-            next.onclick = () => { if (currentPage < totalPages) { currentPage++; render(); } };
-            controls.appendChild(next);
         }
 
-        // Events
-        document.getElementById('search').addEventListener('input', () => { currentPage = 1; render(); });
-        document.getElementById('sort').addEventListener('change', () => { currentPage = 1; render(); });
+        // Event listeners
+        document.getElementById('search').addEventListener('input', () => {
+            currentPage = 1;
+            render();
+        });
 
+        document.getElementById('sort').addEventListener('change', () => {
+            currentPage = 1;
+            render();
+        });
+
+        // Initial load
         loadVideos();
     </script>
 </body>
