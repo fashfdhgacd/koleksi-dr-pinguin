@@ -1,383 +1,311 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Converter • Dr. Pinguin Bokep, M.S.B.</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <script>
-    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
-  </script>
-  <script defer src="https://va.vercel-scripts.com/v1/script.js"></script>
-  <style>
-    .preview-card { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-    .preview-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
-  </style>
+    <!-- Vercel Analytics -->
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dr. Pinguin Bokep, M.S.B.</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .logo-font { font-family: 'Poppins', system_ui, sans-serif; font-weight: 700; letter-spacing: -1px; }
+        
+        .video-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .video-card:hover {
+            transform: translateY(-4px);
+        }
+        
+        .video-wrapper {
+            aspect-ratio: 16 / 9;
+            background: #000;
+            overflow: hidden;
+            border-bottom: 1px solid #27272a;
+        }
+        .video-wrapper iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
 </head>
 <body class="bg-zinc-950 text-white">
-  <!-- Header -->
-  <div class="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-lg sticky top-0 z-50">
-    <div class="max-w-6xl mx-auto px-6 py-5">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <div class="w-11 h-11 bg-emerald-600 rounded-2xl flex items-center justify-center">
-            <i class="fa-solid fa-video text-white text-2xl"></i>
-          </div>
-          <div>
-            <h1 class="text-3xl font-bold tracking-tight">Admin Converter</h1>
-            <p class="text-emerald-400 text-sm -mt-1">Koleksi Dr. Pinguin Bokep, M.S.B.</p>
+    <script type="module">
+  import { getFeatureFlags, isFeatureEnabled } from './flags.js';
+
+  async function initFeatureFlags() {
+    const flags = await getFeatureFlags();
+    console.log('%c[Feature Flags]', 'color:#22c55e', flags);
+
+    if (!flags.showLiveCategory) {
+      const liveFilter = document.querySelector('[data-category="Live"]');
+      if (liveFilter) liveFilter.style.display = 'none';
+    }
+
+    if (flags.maintenanceMode) {
+      document.body.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;">
+          <div style="text-align:center;">
+            <h1 style="font-size:2rem;margin-bottom:1rem;">🔧 Maintenance</h1>
+            <p>Koleksi sedang dalam perbaikan. Coba lagi nanti.</p>
           </div>
         </div>
+      `;
+    }
+  }
+
+  initFeatureFlags();
+</script>
+    <div class="max-w-7xl mx-auto px-4 py-6 md:px-8">
         
-        <div class="flex items-center gap-3">
-          <a href="index.html" class="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-2xl text-sm flex items-center gap-2 transition-colors">
-            <i class="fa-solid fa-images mr-2"></i>
-            <span>Kembali ke Gallery</span>
-          </a>
-          <div class="px-4 py-2 bg-zinc-900 border border-zinc-700 rounded-2xl text-xs flex items-center gap-2">
-            <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-            <span class="text-zinc-400">v2.1 • Improved</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="max-w-6xl mx-auto px-6 py-8">
-    
-    <!-- Info Banner -->
-    <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 mb-8 flex items-start gap-4">
-      <div class="w-10 h-10 bg-emerald-900/50 rounded-2xl flex-shrink-0 flex items-center justify-center mt-0.5">
-        <i class="fa-solid fa-info-circle text-emerald-400"></i>
-      </div>
-      <div class="text-sm text-zinc-300">
-        <p class="font-medium text-white mb-1">Cara Kerja Converter Ini</p>
-        <p>Paste <strong>Judul</strong> di baris baru, lalu <strong>Link Embed</strong> (<code>/e/</code> atau <code>/d/</code>) di baris berikutnya. 
-        Bisa campur aduk sedikit, parser otomatis deteksi. Hasil JSON siap langsung di-paste ke <code>videos.json</code>.</p>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-      
-      <!-- INPUT SECTION -->
-      <div class="lg:col-span-7">
-        <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-8">
-          <div class="flex items-center justify-between mb-6">
-            <div>
-              <h2 class="text-2xl font-semibold flex items-center gap-3">
-                <i class="fa-solid fa-file-import text-emerald-400"></i>
-                <span>Input Video Massal</span>
-              </h2>
-              <p class="text-zinc-400 text-sm mt-1">Format: Judul di atas, Link di bawahnya (bergantian)</p>
-            </div>
-            <button onclick="clearInput()" class="px-4 py-2 text-sm bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-2xl flex items-center gap-2 transition-colors">
-              <i class="fa-solid fa-trash-can"></i>
-              <span>Clear</span>
-            </button>
-          </div>
-
-          <div class="mb-5">
-            <label class="block text-sm font-medium text-zinc-400 mb-2">Judul + Link Embed</label>
-            <textarea id="input" rows="14" class="w-full bg-zinc-950 border border-zinc-700 focus:border-emerald-600 rounded-2xl p-5 font-mono text-sm resize-y min-h-[280px]"
-              placeholder="ABG Cantik Ngewe di Kamar Kos
-https://tv1.indoav.app/e/abc123xyz
-
-Cewek Jilbab Hyper Sampe Squirt
-https://tv1.userbokep.com/e/def456uvw"></textarea>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-zinc-400 mb-2">Kategori Default</label>
-              <select id="category" class="w-full bg-zinc-950 border border-zinc-700 focus:border-emerald-600 rounded-2xl px-4 py-3 text-sm">
-                <option value="Umum">Umum</option>
-                <option value="ABG">ABG</option>
-                <option value="MILF">MILF</option>
-                <option value="Amatir">Amatir</option>
-                <option value="Jilbab">Jilbab</option>
-                <option value="Live">Live</option>
-                <option value="Office">Office</option>
-                <option value="Hijab">Hijab</option>
-                <option value="Couple">Couple</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-zinc-400 mb-2">Paksa Source (opsional)</label>
-              <select id="forceSource" class="w-full bg-zinc-950 border border-zinc-700 focus:border-emerald-600 rounded-2xl px-4 py-3 text-sm">
-                <option value="">Auto Detect (dari link)</option>
-                <option value="IndoAV">IndoAV (tv1.indoav.app)</option>
-                <option value="UserBokep">UserBokep (tv1.userbokep.com)</option>
-              </select>
-            </div>
-          </div>
-
-          <button onclick="parseAndPreview()" class="mt-6 w-full py-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 transition-all rounded-2xl font-bold text-lg flex items-center justify-center gap-3 shadow-lg shadow-emerald-600/20">
-            <i class="fa-solid fa-magic"></i>
-            <span>Parse &amp; Preview Video</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- STATS & TIPS -->
-      <div class="lg:col-span-5 space-y-6">
-        <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-6">
-          <h3 class="font-semibold mb-4 flex items-center gap-2 text-emerald-400">
-            <i class="fa-solid fa-chart-bar"></i>
-            <span>Statistik Cepat</span>
-          </h3>
-          <div class="space-y-3 text-sm">
-            <div class="flex justify-between items-center py-2 border-b border-zinc-800">
-              <span class="text-zinc-400">Total Video di Koleksi</span>
-              <span class="font-mono font-bold text-lg">1,141</span>
-            </div>
-            <div class="flex justify-between items-center py-2 border-b border-zinc-800">
-              <span class="text-zinc-400">Video Baru (preview)</span>
-              <span id="preview-count" class="font-mono font-bold text-lg text-emerald-400">0</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 text-sm">
-          <h3 class="font-semibold mb-3 text-emerald-400">Tips Parsing</h3>
-          <ul class="space-y-2 text-zinc-300 text-xs leading-relaxed">
-            <li class="flex gap-2"><i class="fa-solid fa-check text-emerald-500 mt-1"></i> Judul di baris sendiri, link di baris berikutnya</li>
-            <li class="flex gap-2"><i class="fa-solid fa-check text-emerald-500 mt-1"></i> Bisa pakai <code>/e/</code> atau <code>/d/</code></li>
-            <li class="flex gap-2"><i class="fa-solid fa-check text-emerald-500 mt-1"></i> Extra enter/spasi otomatis dibersihkan</li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- PREVIEW SECTION -->
-      <div id="preview-section" class="lg:col-span-12 hidden">
-        <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-8">
-          <div class="flex items-center justify-between mb-6">
-            <div>
-              <h2 class="text-2xl font-semibold flex items-center gap-3">
-                <i class="fa-solid fa-eye text-emerald-400"></i>
-                <span>Preview Video yang Akan Ditambahkan</span>
-              </h2>
-              <p id="preview-subtitle" class="text-sm text-zinc-400 mt-1"></p>
+        <!-- Header with Logo -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 pb-6 border-b border-zinc-800">
+            <div class="flex items-center gap-x-4">
+                <img src="keI0V.png" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl border-2 border-yellow-400 object-contain shadow-xl" 
+                     alt="Dr. Pinguin Bokep, M.S.B.">
+                <div>
+                    <div class="flex items-baseline gap-x-2">
+                        <span class="logo-font text-3xl md:text-4xl font-black text-yellow-400">Dr. Pinguin</span>
+                        <span class="logo-font text-3xl md:text-4xl font-black text-white">Bokep</span>
+                    </div>
+                    <div class="text-[10px] text-yellow-400/70 tracking-[2px] mt-1.5">M.S.B. • KOLEKSI PILIHAN</div>
+                </div>
             </div>
             
-            <div class="flex gap-3">
-              <button onclick="generateJSON()" class="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-bold flex items-center gap-3 transition-all active:scale-[0.985]">
-                <i class="fa-solid fa-file-export"></i>
-                <span>Generate JSON</span>
-              </button>
-              <button onclick="clearPreview()" class="px-5 py-3 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-2xl flex items-center gap-2">
-                <i class="fa-solid fa-times"></i>
-                <span>Batal</span>
-              </button>
+            <div class="bg-zinc-900 border border-zinc-700 rounded-2xl px-5 py-2 text-sm flex items-center gap-2">
+                <span id="total" class="font-bold text-yellow-400 text-xl">0</span>
+                <span class="text-zinc-400 text-sm">video tersedia</span>
             </div>
-          </div>
-
-          <div id="preview-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 max-h-[520px] overflow-auto pr-2">
-            <!-- JS will populate cards here -->
-          </div>
         </div>
-      </div>
 
-      <!-- RESULT SECTION -->
-      <div id="result-section" class="lg:col-span-12 hidden">
-        <div class="bg-zinc-900 border border-emerald-800/60 rounded-3xl p-8">
-          <div class="flex items-center gap-3 mb-6">
-            <i class="fa-solid fa-check-circle text-emerald-400 text-3xl"></i>
-            <div>
-              <h2 class="text-2xl font-semibold">JSON Berhasil Dibuat!</h2>
-              <p class="text-emerald-400 text-sm">Copy atau download, lalu paste ke <code class="bg-zinc-950 px-1.5 py-0.5 rounded">videos.json</code></p>
+        <!-- Controls -->
+        <div class="flex flex-col lg:flex-row gap-3 mb-6">
+            <div class="flex-1 relative">
+                <i class="fas fa-search absolute left-5 top-4 text-zinc-500"></i>
+                <input id="search" type="text" placeholder="Cari judul video..." 
+                       class="w-full bg-zinc-900 border border-zinc-700 focus:border-yellow-400 rounded-3xl pl-12 pr-6 py-3.5 text-base outline-none">
             </div>
-          </div>
-
-          <textarea id="output" rows="16" readonly class="w-full bg-black border border-zinc-700 rounded-2xl p-5 font-mono text-xs resize-y"></textarea>
-
-          <div class="flex flex-col sm:flex-row gap-3 mt-4">
-            <button onclick="copyToClipboard()" class="flex-1 py-4 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-bold flex items-center justify-center gap-3 text-lg transition-all">
-              <i class="fa-solid fa-copy"></i>
-              <span>Copy ke Clipboard</span>
-            </button>
-            <button onclick="downloadJSON()" class="flex-1 py-4 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-2xl font-bold flex items-center justify-center gap-3 text-lg transition-all">
-              <i class="fa-solid fa-download"></i>
-              <span>Download new-videos.json</span>
-            </button>
-            <button onclick="resetAll()" class="px-8 py-4 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-2xl font-medium flex items-center justify-center gap-2">
-              <i class="fa-solid fa-redo"></i>
-              <span>Reset</span>
-            </button>
-          </div>
+            
+            <select id="sort" class="bg-zinc-900 border border-zinc-700 rounded-3xl px-6 py-3.5 text-base">
+                <option value="newest">Terbaru</option>
+                <option value="oldest">Terlama</option>
+                <option value="az">A - Z</option>
+                <option value="za">Z - A</option>
+            </select>
         </div>
-      </div>
 
+        <!-- Category Filter -->
+        <div class="mb-6 max-w-xs">
+            <label class="block text-xs uppercase tracking-widest text-zinc-500 font-semibold mb-1.5 px-1">Kategori</label>
+            <select id="category-select" class="w-full bg-zinc-900 border border-zinc-700 focus:border-yellow-400 rounded-3xl px-5 py-3 text-base outline-none">
+                <!-- Options will be populated by JS -->
+            </select>
+        </div>
+
+        <!-- Video Grid -->
+        <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5"></div>
+
+        <!-- Pagination -->
+        <div class="flex flex-col sm:flex-row items-center justify-between mt-10 gap-4 text-sm text-zinc-400">
+            <div id="pagination-info"></div>
+            <div class="flex gap-2" id="pagination-controls"></div>
+        </div>
     </div>
-  </div>
 
-  <footer class="max-w-6xl mx-auto px-6 pb-10 text-center text-xs text-zinc-500">
-    Made for Dr. Pinguin Collection • Converter v2.1
-  </footer>
+    <script>
+        let videos = [];
+        let activeCategory = 'all';
+        let currentPage = 1;
+        const perPage = 16;
 
-  <script>
-    let lastGenerated = [];
-    let parsedVideos = [];
+        async function loadVideos() {
+            try {
+                const res = await fetch('videos.json');
+                videos = await res.json();
 
-    function parseInput() {
-      const input = document.getElementById('input').value.trim();
-      const defaultCategory = document.getElementById('category').value;
-      const forceSource = document.getElementById('forceSource').value;
+                videos.forEach(v => {
+                    if (v.title) v.title = v.title.replace(/^[\u25B6\uFE0F\s]*/, '').trim();
+                });
 
-      if (!input) return [];
-
-      const lines = input.split('\n').map(l => l.trim()).filter(Boolean);
-      const videos = [];
-      let currentTitle = '';
-      let idCounter = Date.now();
-
-      for (let line of lines) {
-        if (line.startsWith('http')) {
-          if (!currentTitle) currentTitle = `Video Tanpa Judul ${idCounter}`;
-
-          let embed = line;
-          if (embed.includes('/d/')) embed = embed.replace('/d/', '/e/');
-
-          let source = forceSource || (embed.includes('indoav.app') ? 'IndoAV' : 
-                      embed.includes('userbokep.com') ? 'UserBokep' : 'Unknown');
-
-          let direct = embed.replace('/e/', '/d/');
-
-          videos.push({
-            id: idCounter++,
-            title: currentTitle,
-            embed: embed,
-            direct: direct,
-            source: source,
-            category: defaultCategory
-          });
-          currentTitle = '';
-        } else {
-          currentTitle = line;
+                document.getElementById('total').textContent = videos.length;
+                setupCategoryDropdown();
+                render();
+            } catch(err) {
+                document.getElementById('grid').innerHTML = `
+                    <div class="col-span-full py-12 text-center">
+                        <p class="text-zinc-400">Gagal memuat videos.json</p>
+                    </div>
+                `;
+            }
         }
-      }
-      return videos;
-    }
 
-    function parseAndPreview() {
-      parsedVideos = parseInput();
-      if (parsedVideos.length === 0) {
-        alert('Tidak ada video valid. Pastikan format: Judul lalu link embed di baris berikutnya.');
-        return;
-      }
+        function setupCategoryDropdown() {
+            const select = document.getElementById('category-select');
+            if (!select) return;
 
-      document.getElementById('preview-count').textContent = parsedVideos.length;
+            select.innerHTML = '';
 
-      const grid = document.getElementById('preview-grid');
-      grid.innerHTML = '';
+            const categories = [...new Set(videos.map(v => v.category).filter(Boolean))].sort();
 
-      parsedVideos.forEach(video => {
-        const card = document.createElement('div');
-        card.className = `preview-card bg-zinc-950 border border-zinc-800 rounded-2xl p-4 flex flex-col`;
-        card.innerHTML = `
-          <div class="flex items-start justify-between mb-3">
-            <div class="flex items-center gap-2">
-              <span class="px-3 py-1 text-[10px] font-mono bg-zinc-800 text-emerald-400 rounded-full">#${video.id.toString().slice(-6)}</span>
-              <span class="px-3 py-1 text-[10px] font-medium bg-emerald-900/60 text-emerald-300 rounded-full">${video.category}</span>
-            </div>
-            <span class="text-[10px] px-2 py-1 bg-zinc-900 rounded text-zinc-400">${video.source}</span>
-          </div>
-          <div class="flex-1">
-            <p class="font-medium text-sm leading-snug line-clamp-3 mb-3">${video.title}</p>
-          </div>
-          <div class="text-xs space-y-1.5 pt-3 border-t border-zinc-800">
-            <div class="flex items-center gap-2 text-emerald-400">
-              <i class="fa-solid fa-link w-3"></i>
-              <span class="font-mono truncate text-[10px]">${video.embed}</span>
-            </div>
-            <div class="flex items-center gap-2 text-amber-400">
-              <i class="fa-solid fa-download w-3"></i>
-              <span class="font-mono truncate text-[10px]">${video.direct}</span>
-            </div>
-          </div>
-        `;
-        grid.appendChild(card);
-      });
+            const allOption = document.createElement('option');
+            allOption.value = 'all';
+            allOption.textContent = 'Semua Kategori';
+            select.appendChild(allOption);
 
-      document.getElementById('preview-section').classList.remove('hidden');
-      document.getElementById('preview-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
-      document.getElementById('preview-subtitle').innerHTML = 
-        `${parsedVideos.length} video siap ditambahkan • Kategori: <strong>${document.getElementById('category').value}</strong>`;
-    }
+            categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                select.appendChild(option);
+            });
 
-    function generateJSON() {
-      if (!parsedVideos.length) {
-        alert('Belum ada video di preview. Klik "Parse & Preview" dulu.');
-        return;
-      }
-      lastGenerated = parsedVideos;
-      const jsonStr = JSON.stringify(parsedVideos, null, 2);
-      document.getElementById('output').value = jsonStr;
-      document.getElementById('result-section').classList.remove('hidden');
-      document.getElementById('result-section').scrollIntoView({ behavior: 'smooth' });
-    }
+            select.addEventListener('change', () => {
+                activeCategory = select.value;
+                currentPage = 1;
+                render();
+            });
+        }
 
-    function copyToClipboard() {
-      const output = document.getElementById('output');
-      output.select();
-      document.execCommand('copy');
-      
-      const toast = document.createElement('div');
-      toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-6 py-3 rounded-2xl shadow-xl flex items-center gap-2 text-sm z-50';
-      toast.innerHTML = `<i class="fa-solid fa-check mr-2"></i> JSON berhasil di-copy! Tinggal paste ke videos.json`;
-      document.body.appendChild(toast);
-      setTimeout(() => { toast.style.transition = 'all 0.2s'; toast.style.opacity = '0'; setTimeout(() => toast.remove(), 200); }, 2200);
-    }
+        function render() {
+            const grid = document.getElementById('grid');
+            const searchTerm = document.getElementById('search').value.toLowerCase().trim();
+            const sortMode = document.getElementById('sort').value;
 
-    function downloadJSON() {
-      if (!lastGenerated.length) return;
-      const jsonStr = JSON.stringify(lastGenerated, null, 2);
-      const blob = new Blob([jsonStr], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `dr-pinguin-new-videos-${new Date().toISOString().slice(0,10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
+            let filtered = videos.filter(v => {
+                const matchSearch = !searchTerm || (v.title && v.title.toLowerCase().includes(searchTerm));
+                const matchCat = activeCategory === 'all' || v.category === activeCategory;
+                return matchSearch && matchCat;
+            });
 
-    function clearInput() {
-      document.getElementById('input').value = '';
-      clearPreview();
-    }
+            if (sortMode === 'newest') filtered.sort((a,b) => (b.id||0) - (a.id||0));
+            else if (sortMode === 'oldest') filtered.sort((a,b) => (a.id||0) - (b.id||0));
+            else if (sortMode === 'az') filtered.sort((a,b) => (a.title||'').localeCompare(b.title||''));
+            else if (sortMode === 'za') filtered.sort((a,b) => (b.title||'').localeCompare(a.title||''));
 
-    function clearPreview() {
-      document.getElementById('preview-section').classList.add('hidden');
-      document.getElementById('preview-grid').innerHTML = '';
-      parsedVideos = [];
-      document.getElementById('preview-count').textContent = '0';
-    }
+            const totalPages = Math.ceil(filtered.length / perPage);
+            if (currentPage > totalPages) currentPage = totalPages || 1;
 
-    function resetAll() {
-      document.getElementById('input').value = '';
-      document.getElementById('preview-section').classList.add('hidden');
-      document.getElementById('result-section').classList.add('hidden');
-      document.getElementById('preview-grid').innerHTML = '';
-      document.getElementById('output').value = '';
-      parsedVideos = [];
-      lastGenerated = [];
-      document.getElementById('preview-count').textContent = '0';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+            const start = (currentPage - 1) * perPage;
+            const pageVideos = filtered.slice(start, start + perPage);
 
-    document.addEventListener('keydown', function(e) {
-      if (e.ctrlKey && e.key === 'Enter') {
-        e.preventDefault();
-        const previewVisible = !document.getElementById('preview-section').classList.contains('hidden');
-        if (!previewVisible) parseAndPreview();
-        else generateJSON();
-      }
-    });
+            if (pageVideos.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-10 text-zinc-400">Tidak ada video</div>`;
+                updatePagination(0, 0);
+                return;
+            }
 
-    window.onload = function() {
-      document.getElementById('input').focus();
-    }
-  </script>
+            grid.innerHTML = pageVideos.map((v, i) => {
+                const hasDirect = v.direct && v.direct.trim() !== '';
+                const globalNum = start + i + 1;
+
+                return `
+                    <div class="video-card bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden">
+                        <div class="px-4 pt-3.5 pb-2.5 flex items-center justify-between bg-zinc-950/60">
+                            <span class="px-3 py-0.5 text-xs font-bold rounded-full bg-yellow-400 text-black">${v.category || 'Umum'}</span>
+                            <span class="text-[10px] text-zinc-500 font-mono">#${globalNum}</span>
+                        </div>
+                        <div class="video-wrapper">
+                            <iframe src="${v.embed}" loading="lazy" allowfullscreen></iframe>
+                        </div>
+                        <div class="px-4 pt-4 pb-1">
+                            <div class="text-sm font-medium leading-snug line-clamp-2 min-h-[40px]">
+                                ${v.title || 'Untitled Video'}
+                            </div>
+                        </div>
+                        <div class="px-4 pb-4 pt-2 flex items-center justify-between gap-3">
+                            <span class="text-xs text-zinc-400 truncate max-w-[45%]">${v.source || ''}</span>
+                            <a href="${hasDirect ? v.direct : (v.embed || '#')}" target="_blank"
+                               class="text-xs px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center gap-2 transition whitespace-nowrap">
+                                <i class="fas fa-external-link-alt text-xs"></i>
+                                <span>TONTON LANGSUNG</span>
+                            </a>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            updatePagination(filtered.length, totalPages);
+        }
+
+        function updatePagination(total, totalPages) {
+            const info = document.getElementById('pagination-info');
+            const controls = document.getElementById('pagination-controls');
+            
+            info.innerHTML = `Menampilkan <span class="text-white font-semibold">${total}</span> video`;
+            controls.innerHTML = '';
+
+            if (totalPages <= 1) return;
+
+            const createPageBtn = (pageNum, isActive = false) => {
+                const btn = document.createElement('button');
+                btn.textContent = pageNum;
+                btn.className = `px-3.5 py-2 text-sm rounded-2xl border transition min-w-[42px] ${isActive 
+                    ? 'bg-yellow-400 text-black border-yellow-400 font-semibold' 
+                    : 'border-zinc-700 hover:bg-zinc-800 hover:text-white'}`;
+                btn.onclick = () => {
+                    if (currentPage !== pageNum) {
+                        currentPage = pageNum;
+                        render();
+                    }
+                };
+                return btn;
+            };
+
+            const prev = document.createElement('button');
+            prev.innerHTML = `<i class="fas fa-chevron-left"></i>`;
+            prev.className = `px-3.5 py-2 text-sm rounded-2xl border flex items-center transition ${currentPage === 1 ? 'border-zinc-800 text-zinc-600 cursor-not-allowed' : 'border-zinc-700 hover:bg-yellow-400 hover:text-black'}`;
+            prev.onclick = () => { if (currentPage > 1) { currentPage--; render(); } };
+            controls.appendChild(prev);
+
+            const maxVisible = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+
+            if (endPage - startPage < maxVisible - 1) {
+                startPage = Math.max(1, endPage - maxVisible + 1);
+            }
+
+            if (startPage > 1) {
+                controls.appendChild(createPageBtn(1));
+                if (startPage > 2) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.textContent = '...';
+                    ellipsis.className = 'px-2 py-2 text-zinc-500';
+                    controls.appendChild(ellipsis);
+                }
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                controls.appendChild(createPageBtn(i, i === currentPage));
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.textContent = '...';
+                    ellipsis.className = 'px-2 py-2 text-zinc-500';
+                    controls.appendChild(ellipsis);
+                }
+                controls.appendChild(createPageBtn(totalPages));
+            }
+
+            const next = document.createElement('button');
+            next.innerHTML = `<i class="fas fa-chevron-right"></i>`;
+            next.className = `px-3.5 py-2 text-sm rounded-2xl border flex items-center transition ${currentPage === totalPages ? 'border-zinc-800 text-zinc-600 cursor-not-allowed' : 'border-zinc-700 hover:bg-yellow-400 hover:text-black'}`;
+            next.onclick = () => { if (currentPage < totalPages) { currentPage++; render(); } };
+            controls.appendChild(next);
+        }
+
+        document.getElementById('search').addEventListener('input', () => { currentPage = 1; render(); });
+        document.getElementById('sort').addEventListener('change', () => { currentPage = 1; render(); });
+
+        loadVideos();
+    </script>
 </body>
 </html>
