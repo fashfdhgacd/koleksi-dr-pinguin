@@ -187,7 +187,7 @@
 
     el.innerHTML = pageCats.map(c => `
       <button class="genre-card group" data-cat="${escapeHtml(c.name)}">
-        <div class="w-10 h-10 rounded-xl bg-red-600/20 text-red-500 flex items-center justify-center mb-3 group-hover:bg-red-600 group-hover:text-white transition-colors">
+        <div class="w-10 h-10 rounded-xl bg-[#ff9000]/20 text-[#ff9000] flex items-center justify-center mb-3 group-hover:bg-[#ff9000] group-hover:text-black transition-colors">
           <i class="fas ${icons[c.name] || 'fa-film'} text-sm"></i>
         </div>
         <div class="font-semibold text-sm truncate">${escapeHtml(c.name)}</div>
@@ -294,7 +294,7 @@
     const src = v.embedUrl || '';
     return `
       <article class="video-card group cursor-pointer" data-id="${v.id}">
-        <div class="relative aspect-video rounded-xl overflow-hidden bg-black border border-neutral-800/80 group-hover:border-red-600/50 transition-colors">
+        <div class="relative aspect-video rounded-xl overflow-hidden bg-black border border-neutral-800/80 group-hover:border-[#ff9000] transition-colors">
           <iframe
             data-src="${escapeHtml(src)}"
             class="absolute inset-0 w-full h-full pointer-events-none opacity-90"
@@ -304,14 +304,14 @@
             allow="autoplay; encrypted-media; picture-in-picture"
           ></iframe>
           <div class="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
-            <div class="w-12 h-12 rounded-full bg-red-600/90 flex items-center justify-center opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all shadow-lg">
+            <div class="w-12 h-12 rounded-full bg-[#ff9000] flex items-center justify-center opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all shadow-lg">
               <i class="fas fa-play text-white text-sm ml-0.5"></i>
             </div>
           </div>
           <span class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/70 text-[10px] font-medium tracking-wide z-10">${escapeHtml(v.category)}</span>
         </div>
         <div class="mt-2.5 px-0.5">
-          <h3 class="text-sm font-medium leading-snug line-clamp-2 group-hover:text-red-400 transition-colors">${escapeHtml(v.title)}</h3>
+          <h3 class="text-sm font-medium leading-snug line-clamp-2 group-hover:text-[#ff9000] transition-colors">${escapeHtml(v.title)}</h3>
         </div>
       </article>
     `;
