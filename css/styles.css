@@ -36,3 +36,57 @@ footer { background:#000 !important; border-top:2px solid var(--ph) !important; 
 ::-webkit-scrollbar-track { background:#0a0a0a; }
 ::-webkit-scrollbar-thumb { background:#2a2a2a; }
 ::-webkit-scrollbar-thumb:hover { background:var(--ph); }
+
+/* ===== Responsive video player ===== */
+#videoModal { overscroll-behavior: none; }
+.player-shell { max-height: 100dvh; max-height: 100vh; }
+.player-stage {
+  /* leave room for top bar (~52px) + optional mobile footer */
+  min-height: 0;
+}
+.player-frame {
+  /* width constrained by viewport; height by 16:9 and max viewport */
+  width: min(100%, 1100px);
+  max-height: min(calc(100dvh - 56px), calc(100vh - 56px));
+  aspect-ratio: 16 / 9;
+  margin: 0 auto;
+  position: relative;
+}
+@media (max-width: 639px) {
+  .player-frame {
+    width: 100%;
+    max-height: min(calc(100dvh - 96px), calc(100vh - 96px));
+    /* if very tall phone, still 16:9; if short landscape, limit height */
+    aspect-ratio: 16 / 9;
+    border-radius: 0;
+  }
+  .player-shell { justify-content: stretch; }
+}
+@media (max-width: 639px) and (orientation: landscape) {
+  .player-topbar { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+  .player-frame {
+    max-height: min(calc(100dvh - 44px), calc(100vh - 44px));
+    width: auto;
+    height: min(calc(100dvh - 44px), calc(100vh - 44px));
+    aspect-ratio: 16 / 9;
+  }
+  /* hide mobile footer link in landscape to maximize video */
+  #videoModal .sm\\:hidden { display: none !important; }
+}
+.player-iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  background: #000;
+}
+/* safe area for notched phones */
+@supports (padding: max(0px)) {
+  .player-topbar {
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+}
