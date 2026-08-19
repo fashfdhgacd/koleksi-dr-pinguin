@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const PER_PAGE = 20;
+  const PER_PAGE = 30;
   const HERO_COUNT = 6;
 
   let allVideos = [];
@@ -14,7 +14,7 @@
   let currentPage = 1;
   let currentCategory = 'All';
   let currentGenrePage = 1;
-  const GENRE_PER_PAGE = 12;
+  const GENRE_PER_PAGE = 18;
   let heroIndex = 0;
   let heroTimer = null;
   let currentHeroVideo = null;
@@ -187,7 +187,7 @@
 
     el.innerHTML = pageCats.map(c => `
       <button class="genre-card group" data-cat="${escapeHtml(c.name)}">
-        <div class="w-10 h-10 rounded-xl bg-[#ff9000]/20 text-[#ff9000] flex items-center justify-center mb-3 group-hover:bg-[#ff9000] group-hover:text-black transition-colors">
+        <div class="w-10 h-10 rounded bg-[#ff9000]/15 text-[#ff9000] flex items-center justify-center mb-3 group-hover:bg-[#ff9000] group-hover:text-black transition-colors">
           <i class="fas ${icons[c.name] || 'fa-film'} text-sm"></i>
         </div>
         <div class="font-semibold text-sm truncate">${escapeHtml(c.name)}</div>
@@ -294,7 +294,7 @@
     const src = v.embedUrl || '';
     return `
       <article class="video-card group cursor-pointer" data-id="${v.id}">
-        <div class="relative aspect-video rounded-xl overflow-hidden bg-black border border-neutral-800/80 group-hover:border-[#ff9000]/50 transition-colors">
+        <div class="relative aspect-video rounded overflow-hidden bg-black border border-neutral-800 group-hover:border-[#ff9000] transition-colors">
           <iframe
             data-src="${escapeHtml(src)}"
             class="absolute inset-0 w-full h-full pointer-events-none opacity-90"
