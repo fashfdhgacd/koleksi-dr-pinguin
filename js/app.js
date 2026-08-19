@@ -88,27 +88,10 @@
 
     const slidesEl = $('#heroSlides');
     slidesEl.innerHTML = heroes.map((v, i) => {
-      const letter = (v.category || 'V').charAt(0).toUpperCase();
-      return `<div class="hero-slide absolute inset-0 transition-opacity duration-500 ${i === 0 ? 'opacity-100' : 'opacity-0'} flex items-center justify-center cursor-pointer" data-idx="${i}" data-id="${v.id}">
-        <div class="absolute inset-0 bg-gradient-to-br from-neutral-900 via-black to-neutral-800"></div>
-        <div class="absolute inset-0 opacity-30" style="background:radial-gradient(circle at 30% 40%, #ff900055, transparent 50%)"></div>
-        <div class="relative z-10 text-center px-4">
-          <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-ph text-black flex items-center justify-center shadow-lg shadow-orange-900/40">
-            <i class="fas fa-play text-xl ml-1"></i>
-          </div>
-          <p class="text-ph text-xs font-black uppercase tracking-widest">${escapeHtml(v.category || '')}</p>
-        </div>
+      return `<div class="hero-slide absolute inset-0 transition-opacity duration-700 ${i === 0 ? 'opacity-100' : 'opacity-0'}" data-idx="${i}">
+        <iframe src="${i === 0 ? escapeHtml(v.embedUrl) : ''}" data-src="${escapeHtml(v.embedUrl)}" class="w-full h-full pointer-events-none" frameborder="0" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture"></iframe>
       </div>`;
     }).join('');
-
-    // click featured to open modal
-    slidesEl.querySelectorAll('.hero-slide').forEach(el => {
-      el.addEventListener('click', () => {
-        const id = el.dataset.id;
-        const v = allVideos.find(x => String(x.id) === String(id));
-        if (v) openModal(v);
-      });
-    });
 
     updateHeroContent(heroes[0]);
     currentHeroVideo = heroes[0];
@@ -118,7 +101,7 @@
     heroTimer = setInterval(() => {
       heroIndex = (heroIndex + 1) % heroes.length;
       showHeroSlide(heroes);
-    }, 6000);
+    }, 8000);
 
     $('#prevSlide').onclick = () => {
       heroIndex = (heroIndex - 1 + heroes.length) % heroes.length;
@@ -137,6 +120,11 @@
     $$('.hero-slide').forEach((el, i) => {
       el.classList.toggle('opacity-100', i === heroIndex);
       el.classList.toggle('opacity-0', i !== heroIndex);
+      const iframe = el.querySelector('iframe');
+      if (iframe && i === heroIndex) {
+        const src = iframe.dataset.src || '';
+        if (src && iframe.getAttribute('src') !== src) iframe.src = src;
+      }
     });
     updateHeroContent(heroes[heroIndex]);
     currentHeroVideo = heroes[heroIndex];
@@ -150,18 +138,7 @@
     if (m) m.textContent = (v.category || '').trim();
   }
 
-function getCategories() {
-    const counts = {};
-    allVideos.forEach(v => {
-      const c = v.category || 'Umum';
-      counts[c] = (counts[c] || 0) + 1;
-    });
-    return Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .map(([name, count]) => ({ name, count }));
-  }
-
-  function renderCategoryPills() {
+function renderCategoryPills() {
     const cats = getCategories();
     const el = $('#categoryPills');
     const show = cats.slice(0, 24);
@@ -299,6 +276,7 @@ function getCategories() {
 
     el.innerHTML = pageItems.map(v => cardHTML(v)).join('');
     bindCardClicks(el);
+    lazyLoadIframes(el);
   }
 
   function renderTrending() {
@@ -307,17 +285,27 @@ function getCategories() {
     if (!el) return;
     el.innerHTML = list.map(v => cardHTML(v)).join('');
     bindCardClicks(el);
+    lazyLoadIframes(el);
   }
 
   function cardHTML(v) {
+    const src = v.embedUrl || '';
     const cat = v.category || 'Umum';
     return `
       <article class="video-card group cursor-pointer" data-id="${v.id}">
-        <div class="relative aspect-video overflow-hidden bg-neutral-900 border border-neutral-800 group-hover:border-ph transition-colors">
-          <div class="absolute inset-0 bg-gradient-to-br from-neutral-800 via-neutral-900 to-black"></div>
-          <div class="absolute inset-0 flex items-center justify-center">
-            <div class="w-11 h-11 rounded-full bg-black/60 border border-white/10 group-hover:bg-ph group-hover:text-black group-hover:border-ph flex items-center justify-center transition-all">
-              <i class="fas fa-play text-sm ml-0.5 text-white group-hover:text-black"></i>
+        <div class="relative aspect-video overflow-hidden bg-black border border-neutral-800 group-hover:border-ph transition-colors">
+          <iframe
+            data-src="${escapeHtml(src)}"
+            class="absolute inset-0 w-full h-full pointer-events-none"
+            loading="lazy"
+            allowfullscreen
+            frameborder="0"
+            allow="autoplay; encrypted-media; picture-in-picture"
+          ></iframe>
+          <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none"></div>
+          <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            <div class="w-10 h-10 rounded-full bg-ph text-black flex items-center justify-center shadow-lg">
+              <i class="fas fa-play text-xs ml-0.5"></i>
             </div>
           </div>
           <span class="absolute bottom-1.5 right-1.5 text-[9px] font-black uppercase bg-black/85 text-ph px-1.5 py-0.5 tracking-wide">${escapeHtml(cat)}</span>
@@ -326,6 +314,26 @@ function getCategories() {
           <h3 class="text-[12px] sm:text-[13px] font-semibold leading-snug line-clamp-2 group-hover:text-ph transition-colors">${escapeHtml(v.title)}</h3>
         </div>
       </article>`;
+  }
+
+
+  function lazyLoadIframes(container) {
+    const iframes = container.querySelectorAll('iframe[data-src]');
+    if (!('IntersectionObserver' in window)) {
+      iframes.forEach(f => { if (!f.src) f.src = f.dataset.src || ''; });
+      return;
+    }
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(en => {
+        if (!en.isIntersecting) return;
+        const f = en.target;
+        if (f.dataset.src && !f.src) {
+          f.src = f.dataset.src;
+        }
+        io.unobserve(f);
+      });
+    }, { rootMargin: '200px' });
+    iframes.forEach(f => io.observe(f));
   }
 
 function bindCardClicks(container) {
