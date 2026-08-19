@@ -1,311 +1,293 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="dark">
 <head>
-    <!-- Vercel Analytics -->
-<script>
-  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
-</script>
-<script defer src="/_vercel/insights/script.js"></script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dr. Pinguin Bokep, M.S.B.</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <style>
-        body { font-family: 'Inter', system-ui, sans-serif; }
-        .logo-font { font-family: 'Poppins', system_ui, sans-serif; font-weight: 700; letter-spacing: -1px; }
-        
-        .video-card {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel • Embed Video Gallery</title>
+  <meta name="robots" content="noindex, nofollow">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            surface: { 900: '#0a0a0b', 800: '#121214', 700: '#1a1a1e', 600: '#232328' }
+          }
         }
-        .video-card:hover {
-            transform: translateY(-4px);
-        }
-        
-        .video-wrapper {
-            aspect-ratio: 16 / 9;
-            background: #000;
-            overflow: hidden;
-            border-bottom: 1px solid #27272a;
-        }
-        .video-wrapper iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-    </style>
-</head>
-<body class="bg-zinc-950 text-white">
-    <script type="module">
-  import { getFeatureFlags, isFeatureEnabled } from './flags.js';
-
-  async function initFeatureFlags() {
-    const flags = await getFeatureFlags();
-    console.log('%c[Feature Flags]', 'color:#22c55e', flags);
-
-    if (!flags.showLiveCategory) {
-      const liveFilter = document.querySelector('[data-category="Live"]');
-      if (liveFilter) liveFilter.style.display = 'none';
+      }
     }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .admin-card { transition: border-color 0.15s ease; }
+    .admin-card:hover { border-color: #e11d48; }
+  </style>
+</head>
+<body class="bg-surface-900 text-zinc-200 min-h-screen font-sans">
+  <!-- Login Screen -->
+  <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-surface-800 border border-zinc-700 rounded-3xl p-8 shadow-2xl">
+      <div class="text-center mb-8">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center text-white text-xl mb-4">
+          <i class="fas fa-lock"></i>
+        </div>
+        <h1 class="text-2xl font-bold">Admin Panel</h1>
+        <p class="text-zinc-400 text-sm mt-1">Masuk untuk mengelola video</p>
+        <a href="index.html" class="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-rose-400 mt-3 transition">
+          <i class="fas fa-arrow-left"></i> Kembali ke Gallery
+        </a>
+      </div>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm text-zinc-400 mb-1.5">Password</label>
+          <input type="password" id="loginPassword" placeholder="Masukkan password admin" 
+                 class="w-full bg-surface-900 border border-zinc-700 rounded-xl px-4 py-3 outline-none focus:border-rose-500 transition">
+        </div>
+        <button id="loginBtn" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-medium py-3 rounded-xl transition">
+          Masuk
+        </button>
+      </div>
+    </div>
+  </div>
 
-    if (flags.maintenanceMode) {
-      document.body.innerHTML = `
-        <div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;">
-          <div style="text-align:center;">
-            <h1 style="font-size:2rem;margin-bottom:1rem;">🔧 Maintenance</h1>
-            <p>Koleksi sedang dalam perbaikan. Coba lagi nanti.</p>
+  <!-- Admin Dashboard -->
+  <div id="adminApp" class="hidden min-h-screen">
+    <!-- Header -->
+    <header class="sticky top-0 z-40 border-b border-zinc-800 bg-surface-900/95 backdrop-blur">
+      <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <a href="index.html" class="flex items-center gap-2 text-zinc-400 hover:text-white transition text-sm">
+            <i class="fas fa-arrow-left"></i>
+            <span class="hidden sm:inline">Kembali ke Gallery</span>
+          </a>
+          <h1 class="font-bold text-lg">Admin Panel</h1>
+        </div>
+        <div class="flex items-center gap-3">
+          <span id="adminVideoCount" class="text-sm text-zinc-400"><span class="text-emerald-400 font-mono">0</span> video</span>
+          <button id="logoutBtn" class="px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-sm hover:border-rose-500/50 transition">
+            <i class="fas fa-sign-out-alt mr-1"></i> Logout
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-8">
+      <!-- Stats -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <div class="bg-surface-800 border border-zinc-800 rounded-2xl p-4">
+          <div class="text-zinc-500 text-xs uppercase tracking-wider">Total Video</div>
+          <div id="statTotal" class="text-2xl font-bold mt-1">0</div>
+        </div>
+        <div class="bg-surface-800 border border-zinc-800 rounded-2xl p-4">
+          <div class="text-zinc-500 text-xs uppercase tracking-wider">Kategori</div>
+          <div id="statCats" class="text-2xl font-bold mt-1">0</div>
+        </div>
+        <div class="bg-surface-800 border border-zinc-800 rounded-2xl p-4">
+          <div class="text-zinc-500 text-xs uppercase tracking-wider">Mode</div>
+          <div class="text-sm font-medium mt-2 text-emerald-400">GitHub Auto-Save</div>
+        </div>
+        <div class="bg-surface-800 border border-zinc-800 rounded-2xl p-4">
+          <div class="text-zinc-500 text-xs uppercase tracking-wider">Status</div>
+          <div class="text-sm font-medium mt-2 text-emerald-400">Ready</div>
+        </div>
+      </div>
+
+      <!-- Info Banner -->
+      <div class="mb-8 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-sm">
+        <div class="flex gap-3">
+          <i class="fas fa-info-circle text-amber-400 mt-0.5"></i>
+          <div>
+            <strong class="text-amber-300">Cara simpan perubahan (Static Site)</strong>
+            <p class="text-zinc-400 mt-1">
+              Perubahan disimpan di <strong>localStorage</strong> browser ini saja. Untuk membuat permanen:
+            </p>
+            <ol class="list-decimal list-inside text-zinc-400 mt-2 space-y-1">
+              <li>Klik <strong>Export JSON</strong> setelah menambah/edit video</li>
+              <li>Ganti file <code class="text-zinc-300">data/videos.json</code> di repository</li>
+              <li>Commit & push, lalu redeploy</li>
+            </ol>
           </div>
         </div>
-      `;
-    }
-  }
+      </div>
 
-  initFeatureFlags();
-</script>
-    <div class="max-w-7xl mx-auto px-4 py-6 md:px-8">
-        
-        <!-- Header with Logo -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 pb-6 border-b border-zinc-800">
-            <div class="flex items-center gap-x-4">
-                <img src="keI0V.png" class="w-16 h-16 md:w-20 md:h-20 rounded-2xl border-2 border-yellow-400 object-contain shadow-xl" 
-                     alt="Dr. Pinguin Bokep, M.S.B.">
+      <!-- Tabs -->
+      <div class="flex gap-2 mb-6 border-b border-zinc-800 pb-2 overflow-x-auto">
+        <button class="admin-tab active px-4 py-2 rounded-xl text-sm font-medium bg-rose-600 text-white" data-tab="list">Daftar Video</button>
+        <button class="admin-tab px-4 py-2 rounded-xl text-sm font-medium bg-surface-800 border border-zinc-700" data-tab="add">Tambah Video</button>
+        <button class="admin-tab px-4 py-2 rounded-xl text-sm font-medium bg-surface-800 border border-zinc-700" data-tab="bulk">Bulk Import</button>
+        <button class="admin-tab px-4 py-2 rounded-xl text-sm font-medium bg-surface-800 border border-zinc-700" data-tab="export">Export / Import</button>
+      </div>
+
+      <!-- TAB: List -->
+      <div id="tab-list" class="tab-content">
+        <div class="flex flex-col sm:flex-row gap-3 mb-4">
+          <input type="search" id="adminSearch" placeholder="Cari video..." class="flex-1 bg-surface-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-rose-500">
+          <select id="adminCatFilter" class="bg-surface-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm outline-none">
+            <option value="All">Semua Kategori</option>
+          </select>
+        </div>
+        <div id="adminVideoList" class="space-y-3"></div>
+      </div>
+
+      <!-- TAB: Add / Edit -->
+      <div id="tab-add" class="tab-content hidden">
+        <div class="bg-surface-800 border border-zinc-800 rounded-2xl p-6 max-w-2xl">
+          <h2 class="text-lg font-semibold mb-4" id="formTitle">Tambah Video Baru</h2>
+          <form id="videoForm" class="space-y-4">
+            <input type="hidden" id="editId">
+            <div>
+              <label class="block text-sm text-zinc-400 mb-1">Judul *</label>
+              <input type="text" id="formTitleInput" required class="w-full bg-surface-900 border border-zinc-700 rounded-xl px-4 py-2.5 outline-none focus:border-rose-500" placeholder="Judul video">
+            </div>
+            <div>
+              <label class="block text-sm text-zinc-400 mb-1">Embed / Direct URL *</label>
+              <input type="url" id="formEmbed" required class="w-full bg-surface-900 border border-zinc-700 rounded-xl px-4 py-2.5 outline-none focus:border-rose-500" placeholder="https://tv1.indoav.app/e/xxxxx">
+            </div>
+            <div>
+              <label class="block text-sm text-zinc-400 mb-1">Thumbnail URL</label>
+              <input type="url" id="formThumb" class="w-full bg-surface-900 border border-zinc-700 rounded-xl px-4 py-2.5 outline-none focus:border-rose-500" placeholder="Opsional">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm text-zinc-400 mb-1">Kategori</label>
+                <input type="text" id="formCategory" list="catList" class="w-full bg-surface-900 border border-zinc-700 rounded-xl px-4 py-2.5 outline-none focus:border-rose-500" placeholder="Umum, Jilbab, ABG, dll">
+                <datalist id="catList">
+                  <option value="Umum"><option value="Jilbab"><option value="ABG"><option value="STW"><option value="Viral"><option value="Colmek">
+                </datalist>
+              </div>
+              <div>
+                <label class="block text-sm text-zinc-400 mb-1">Tanggal</label>
+                <input type="date" id="formDate" class="w-full bg-surface-900 border border-zinc-700 rounded-xl px-4 py-2.5 outline-none focus:border-rose-500">
+              </div>
+            </div>
+            <div class="flex gap-3 pt-2">
+              <button type="submit" class="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-medium py-2.5 rounded-xl transition">Simpan</button>
+              <button type="button" id="cancelEdit" class="px-5 py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 hover:border-zinc-500 transition">Batal</button>
+            </div>
+          </form>
+          <div id="previewBox" class="mt-6 hidden">
+            <h3 class="text-sm font-medium text-zinc-400 mb-2">Preview</h3>
+            <div class="aspect-video bg-black rounded-xl overflow-hidden border border-zinc-700">
+              <iframe id="previewIframe" class="w-full h-full" frameborder="0" allowfullscreen></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: Bulk Import -->
+      <div id="tab-bulk" class="tab-content hidden">
+        <div class="bg-surface-800 border border-zinc-800 rounded-2xl p-6">
+          <h2 class="text-lg font-semibold mb-2">Bulk Import Embed URLs</h2>
+          <p class="text-sm text-zinc-400 mb-4">Paste satu URL per baris.</p>
+          <textarea id="bulkInput" rows="10" class="w-full bg-surface-900 border border-zinc-700 rounded-xl px-4 py-3 text-sm font-mono outline-none focus:border-rose-500" placeholder="https://tv1.indoav.app/e/xxx"></textarea>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+            <div>
+              <label class="block text-sm text-zinc-400 mb-1">Prefix Judul</label>
+              <input type="text" id="bulkTitlePrefix" value="Video" class="w-full bg-surface-900 border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none">
+            </div>
+            <div>
+              <label class="block text-sm text-zinc-400 mb-1">Kategori Default</label>
+              <input type="text" id="bulkCategory" value="Umum" class="w-full bg-surface-900 border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none">
+            </div>
+            <div>
+              <label class="block text-sm text-zinc-400 mb-1">Tanggal</label>
+              <input type="date" id="bulkDate" class="w-full bg-surface-900 border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none">
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-3 mt-5">
+            <button id="bulkPreviewBtn" class="px-5 py-2.5 rounded-xl bg-zinc-700 hover:bg-zinc-600 transition text-sm">Preview & Validasi</button>
+            <button id="bulkImportBtn" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 transition text-sm font-medium" disabled>Import Selected</button>
+          </div>
+          <div id="bulkPreview" class="mt-6 hidden">
+            <h3 class="text-sm font-medium mb-3">Preview hasil validasi</h3>
+            <div id="bulkPreviewList" class="space-y-2 max-h-80 overflow-y-auto text-sm"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: Export / Import -->
+      <div id="tab-export" class="tab-content hidden">
+        <div class="bg-surface-800 border border-zinc-800 rounded-2xl p-6 max-w-xl space-y-6">
+
+          <!-- AUTO SAVE TO GITHUB -->
+          <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30">
+            <h2 class="text-lg font-semibold mb-1 text-emerald-400">
+              <i class="fab fa-github mr-2"></i>Simpan ke GitHub (Otomatis)
+            </h2>
+            <p class="text-sm text-zinc-400 mb-4">
+              Push langsung ke <code class="text-zinc-300">data/videos.json</code>. Vercel akan redeploy otomatis.
+            </p>
+
+            <div class="space-y-3 mb-4">
+              <div>
+                <label class="block text-xs text-zinc-500 mb-1">GitHub Token (PAT)</label>
+                <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxx"
+                       class="w-full bg-surface-900 border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-emerald-500">
+              </div>
+              <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <div class="flex items-baseline gap-x-2">
-                        <span class="logo-font text-3xl md:text-4xl font-black text-yellow-400">Dr. Pinguin</span>
-                        <span class="logo-font text-3xl md:text-4xl font-black text-white">Bokep</span>
-                    </div>
-                    <div class="text-[10px] text-yellow-400/70 tracking-[2px] mt-1.5">M.S.B. • KOLEKSI PILIHAN</div>
+                  <label class="block text-xs text-zinc-500 mb-1">Owner</label>
+                  <input type="text" id="ghOwner" value="fashfdhgacd"
+                         class="w-full bg-surface-900 border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-emerald-500">
                 </div>
+                <div>
+                  <label class="block text-xs text-zinc-500 mb-1">Repo</label>
+                  <input type="text" id="ghRepo" value="koleksi-dr-pinguin"
+                         class="w-full bg-surface-900 border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-emerald-500">
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs text-zinc-500 mb-1">Path file</label>
+                  <input type="text" id="ghPath" value="data/videos.json"
+                         class="w-full bg-surface-900 border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                  <label class="block text-xs text-zinc-500 mb-1">Branch</label>
+                  <input type="text" id="ghBranch" value="main"
+                         class="w-full bg-surface-900 border border-zinc-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-emerald-500">
+                </div>
+              </div>
             </div>
-            
-            <div class="bg-zinc-900 border border-zinc-700 rounded-2xl px-5 py-2 text-sm flex items-center gap-2">
-                <span id="total" class="font-bold text-yellow-400 text-xl">0</span>
-                <span class="text-zinc-400 text-sm">video tersedia</span>
+
+            <div class="flex flex-wrap gap-2">
+              <button id="ghPushBtn" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium transition">
+                <i class="fas fa-cloud-upload-alt mr-2"></i> Simpan ke GitHub
+              </button>
+              <button id="ghSaveConfig" class="px-4 py-2.5 rounded-xl bg-zinc-800 border border-zinc-600 text-sm hover:border-emerald-500/50 transition">
+                Simpan Config
+              </button>
             </div>
+            <div id="ghStatus" class="text-sm mt-3"></div>
+          </div>
+
+          <div class="border-t border-zinc-700 pt-6">
+            <h2 class="text-lg font-semibold mb-2">Export Manual</h2>
+            <p class="text-sm text-zinc-400 mb-4">Download file JSON (backup).</p>
+            <button id="exportBtn" class="px-5 py-2.5 rounded-xl bg-zinc-700 hover:bg-zinc-600 text-white font-medium transition">
+              <i class="fas fa-download mr-2"></i> Download videos.json
+            </button>
+          </div>
+          <div class="border-t border-zinc-700 pt-6">
+            <h2 class="text-lg font-semibold mb-2">Import dari file</h2>
+            <p class="text-sm text-zinc-400 mb-4">Load file videos.json dari komputer.</p>
+            <input type="file" id="importFile" accept=".json,application/json" class="block w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-zinc-700 file:text-white hover:file:bg-zinc-600">
+          </div>
+          <div class="border-t border-zinc-700 pt-6">
+            <h2 class="text-lg font-semibold mb-2 text-rose-400">Reset Data</h2>
+            <p class="text-sm text-zinc-400 mb-4">Hapus localStorage dan reload dari videos.json.</p>
+            <button id="resetBtn" class="px-5 py-2.5 rounded-xl bg-zinc-800 border border-rose-500/50 text-rose-400 hover:bg-rose-500/10 transition">
+              Reset ke videos.json
+            </button>
+          </div>
         </div>
+      </div>
+    </main>
+  </div>
 
-        <!-- Controls -->
-        <div class="flex flex-col lg:flex-row gap-3 mb-6">
-            <div class="flex-1 relative">
-                <i class="fas fa-search absolute left-5 top-4 text-zinc-500"></i>
-                <input id="search" type="text" placeholder="Cari judul video..." 
-                       class="w-full bg-zinc-900 border border-zinc-700 focus:border-yellow-400 rounded-3xl pl-12 pr-6 py-3.5 text-base outline-none">
-            </div>
-            
-            <select id="sort" class="bg-zinc-900 border border-zinc-700 rounded-3xl px-6 py-3.5 text-base">
-                <option value="newest">Terbaru</option>
-                <option value="oldest">Terlama</option>
-                <option value="az">A - Z</option>
-                <option value="za">Z - A</option>
-            </select>
-        </div>
-
-        <!-- Category Filter -->
-        <div class="mb-6 max-w-xs">
-            <label class="block text-xs uppercase tracking-widest text-zinc-500 font-semibold mb-1.5 px-1">Kategori</label>
-            <select id="category-select" class="w-full bg-zinc-900 border border-zinc-700 focus:border-yellow-400 rounded-3xl px-5 py-3 text-base outline-none">
-                <!-- Options will be populated by JS -->
-            </select>
-        </div>
-
-        <!-- Video Grid -->
-        <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5"></div>
-
-        <!-- Pagination -->
-        <div class="flex flex-col sm:flex-row items-center justify-between mt-10 gap-4 text-sm text-zinc-400">
-            <div id="pagination-info"></div>
-            <div class="flex gap-2" id="pagination-controls"></div>
-        </div>
-    </div>
-
-    <script>
-        let videos = [];
-        let activeCategory = 'all';
-        let currentPage = 1;
-        const perPage = 16;
-
-        async function loadVideos() {
-            try {
-                const res = await fetch('videos.json');
-                videos = await res.json();
-
-                videos.forEach(v => {
-                    if (v.title) v.title = v.title.replace(/^[\u25B6\uFE0F\s]*/, '').trim();
-                });
-
-                document.getElementById('total').textContent = videos.length;
-                setupCategoryDropdown();
-                render();
-            } catch(err) {
-                document.getElementById('grid').innerHTML = `
-                    <div class="col-span-full py-12 text-center">
-                        <p class="text-zinc-400">Gagal memuat videos.json</p>
-                    </div>
-                `;
-            }
-        }
-
-        function setupCategoryDropdown() {
-            const select = document.getElementById('category-select');
-            if (!select) return;
-
-            select.innerHTML = '';
-
-            const categories = [...new Set(videos.map(v => v.category).filter(Boolean))].sort();
-
-            const allOption = document.createElement('option');
-            allOption.value = 'all';
-            allOption.textContent = 'Semua Kategori';
-            select.appendChild(allOption);
-
-            categories.forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat;
-                option.textContent = cat;
-                select.appendChild(option);
-            });
-
-            select.addEventListener('change', () => {
-                activeCategory = select.value;
-                currentPage = 1;
-                render();
-            });
-        }
-
-        function render() {
-            const grid = document.getElementById('grid');
-            const searchTerm = document.getElementById('search').value.toLowerCase().trim();
-            const sortMode = document.getElementById('sort').value;
-
-            let filtered = videos.filter(v => {
-                const matchSearch = !searchTerm || (v.title && v.title.toLowerCase().includes(searchTerm));
-                const matchCat = activeCategory === 'all' || v.category === activeCategory;
-                return matchSearch && matchCat;
-            });
-
-            if (sortMode === 'newest') filtered.sort((a,b) => (b.id||0) - (a.id||0));
-            else if (sortMode === 'oldest') filtered.sort((a,b) => (a.id||0) - (b.id||0));
-            else if (sortMode === 'az') filtered.sort((a,b) => (a.title||'').localeCompare(b.title||''));
-            else if (sortMode === 'za') filtered.sort((a,b) => (b.title||'').localeCompare(a.title||''));
-
-            const totalPages = Math.ceil(filtered.length / perPage);
-            if (currentPage > totalPages) currentPage = totalPages || 1;
-
-            const start = (currentPage - 1) * perPage;
-            const pageVideos = filtered.slice(start, start + perPage);
-
-            if (pageVideos.length === 0) {
-                grid.innerHTML = `<div class="col-span-full text-center py-10 text-zinc-400">Tidak ada video</div>`;
-                updatePagination(0, 0);
-                return;
-            }
-
-            grid.innerHTML = pageVideos.map((v, i) => {
-                const hasDirect = v.direct && v.direct.trim() !== '';
-                const globalNum = start + i + 1;
-
-                return `
-                    <div class="video-card bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden">
-                        <div class="px-4 pt-3.5 pb-2.5 flex items-center justify-between bg-zinc-950/60">
-                            <span class="px-3 py-0.5 text-xs font-bold rounded-full bg-yellow-400 text-black">${v.category || 'Umum'}</span>
-                            <span class="text-[10px] text-zinc-500 font-mono">#${globalNum}</span>
-                        </div>
-                        <div class="video-wrapper">
-                            <iframe src="${v.embed}" loading="lazy" allowfullscreen></iframe>
-                        </div>
-                        <div class="px-4 pt-4 pb-1">
-                            <div class="text-sm font-medium leading-snug line-clamp-2 min-h-[40px]">
-                                ${v.title || 'Untitled Video'}
-                            </div>
-                        </div>
-                        <div class="px-4 pb-4 pt-2 flex items-center justify-between gap-3">
-                            <span class="text-xs text-zinc-400 truncate max-w-[45%]">${v.source || ''}</span>
-                            <a href="${hasDirect ? v.direct : (v.embed || '#')}" target="_blank"
-                               class="text-xs px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center gap-2 transition whitespace-nowrap">
-                                <i class="fas fa-external-link-alt text-xs"></i>
-                                <span>TONTON LANGSUNG</span>
-                            </a>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            updatePagination(filtered.length, totalPages);
-        }
-
-        function updatePagination(total, totalPages) {
-            const info = document.getElementById('pagination-info');
-            const controls = document.getElementById('pagination-controls');
-            
-            info.innerHTML = `Menampilkan <span class="text-white font-semibold">${total}</span> video`;
-            controls.innerHTML = '';
-
-            if (totalPages <= 1) return;
-
-            const createPageBtn = (pageNum, isActive = false) => {
-                const btn = document.createElement('button');
-                btn.textContent = pageNum;
-                btn.className = `px-3.5 py-2 text-sm rounded-2xl border transition min-w-[42px] ${isActive 
-                    ? 'bg-yellow-400 text-black border-yellow-400 font-semibold' 
-                    : 'border-zinc-700 hover:bg-zinc-800 hover:text-white'}`;
-                btn.onclick = () => {
-                    if (currentPage !== pageNum) {
-                        currentPage = pageNum;
-                        render();
-                    }
-                };
-                return btn;
-            };
-
-            const prev = document.createElement('button');
-            prev.innerHTML = `<i class="fas fa-chevron-left"></i>`;
-            prev.className = `px-3.5 py-2 text-sm rounded-2xl border flex items-center transition ${currentPage === 1 ? 'border-zinc-800 text-zinc-600 cursor-not-allowed' : 'border-zinc-700 hover:bg-yellow-400 hover:text-black'}`;
-            prev.onclick = () => { if (currentPage > 1) { currentPage--; render(); } };
-            controls.appendChild(prev);
-
-            const maxVisible = 5;
-            let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-            let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-
-            if (endPage - startPage < maxVisible - 1) {
-                startPage = Math.max(1, endPage - maxVisible + 1);
-            }
-
-            if (startPage > 1) {
-                controls.appendChild(createPageBtn(1));
-                if (startPage > 2) {
-                    const ellipsis = document.createElement('span');
-                    ellipsis.textContent = '...';
-                    ellipsis.className = 'px-2 py-2 text-zinc-500';
-                    controls.appendChild(ellipsis);
-                }
-            }
-
-            for (let i = startPage; i <= endPage; i++) {
-                controls.appendChild(createPageBtn(i, i === currentPage));
-            }
-
-            if (endPage < totalPages) {
-                if (endPage < totalPages - 1) {
-                    const ellipsis = document.createElement('span');
-                    ellipsis.textContent = '...';
-                    ellipsis.className = 'px-2 py-2 text-zinc-500';
-                    controls.appendChild(ellipsis);
-                }
-                controls.appendChild(createPageBtn(totalPages));
-            }
-
-            const next = document.createElement('button');
-            next.innerHTML = `<i class="fas fa-chevron-right"></i>`;
-            next.className = `px-3.5 py-2 text-sm rounded-2xl border flex items-center transition ${currentPage === totalPages ? 'border-zinc-800 text-zinc-600 cursor-not-allowed' : 'border-zinc-700 hover:bg-yellow-400 hover:text-black'}`;
-            next.onclick = () => { if (currentPage < totalPages) { currentPage++; render(); } };
-            controls.appendChild(next);
-        }
-
-        document.getElementById('search').addEventListener('input', () => { currentPage = 1; render(); });
-        document.getElementById('sort').addEventListener('change', () => { currentPage = 1; render(); });
-
-        loadVideos();
-    </script>
+  <script src="js/admin.js"></script>
 </body>
 </html>
