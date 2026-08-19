@@ -88,19 +88,37 @@
 
     const slidesEl = $('#heroSlides');
     slidesEl.innerHTML = heroes.map((v, i) => {
-      return `<div class="hero-slide absolute inset-0 transition-opacity duration-700 ${i === 0 ? 'opacity-100' : 'opacity-0'}" data-idx="${i}">
-        <iframe src="${i === 0 ? escapeHtml(v.embedUrl) : ''}" data-src="${escapeHtml(v.embedUrl)}" class="w-full h-full pointer-events-none" frameborder="0" allowfullscreen></iframe>
+      const letter = (v.category || 'V').charAt(0).toUpperCase();
+      return `<div class="hero-slide absolute inset-0 transition-opacity duration-500 ${i === 0 ? 'opacity-100' : 'opacity-0'} flex items-center justify-center cursor-pointer" data-idx="${i}" data-id="${v.id}">
+        <div class="absolute inset-0 bg-gradient-to-br from-neutral-900 via-black to-neutral-800"></div>
+        <div class="absolute inset-0 opacity-30" style="background:radial-gradient(circle at 30% 40%, #ff900055, transparent 50%)"></div>
+        <div class="relative z-10 text-center px-4">
+          <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-ph text-black flex items-center justify-center shadow-lg shadow-orange-900/40">
+            <i class="fas fa-play text-xl ml-1"></i>
+          </div>
+          <p class="text-ph text-xs font-black uppercase tracking-widest">${escapeHtml(v.category || '')}</p>
+        </div>
       </div>`;
     }).join('');
 
+    // click featured to open modal
+    slidesEl.querySelectorAll('.hero-slide').forEach(el => {
+      el.addEventListener('click', () => {
+        const id = el.dataset.id;
+        const v = allVideos.find(x => String(x.id) === String(id));
+        if (v) openModal(v);
+      });
+    });
+
     updateHeroContent(heroes[0]);
     currentHeroVideo = heroes[0];
+    heroIndex = 0;
 
     clearInterval(heroTimer);
     heroTimer = setInterval(() => {
       heroIndex = (heroIndex + 1) % heroes.length;
       showHeroSlide(heroes);
-    }, 8000);
+    }, 6000);
 
     $('#prevSlide').onclick = () => {
       heroIndex = (heroIndex - 1 + heroes.length) % heroes.length;
@@ -119,21 +137,20 @@
     $$('.hero-slide').forEach((el, i) => {
       el.classList.toggle('opacity-100', i === heroIndex);
       el.classList.toggle('opacity-0', i !== heroIndex);
-      const iframe = el.querySelector('iframe');
-      if (iframe && i === heroIndex && !iframe.src) {
-        iframe.src = iframe.dataset.src || '';
-      }
     });
     updateHeroContent(heroes[heroIndex]);
     currentHeroVideo = heroes[heroIndex];
   }
 
   function updateHeroContent(v) {
-    $('#heroTitle').textContent = v.title;
-    $('#heroMeta').textContent = `${v.category}`.trim();
+    if (!v) return;
+    const t = $('#heroTitle');
+    const m = $('#heroMeta');
+    if (t) t.textContent = v.title || '';
+    if (m) m.textContent = (v.category || '').trim();
   }
 
-  function getCategories() {
+function getCategories() {
     const counts = {};
     allVideos.forEach(v => {
       const c = v.category || 'Umum';
@@ -272,6 +289,9 @@
     const pageItems = filtered.slice(start, start + PER_PAGE);
     const el = $('#videoGrid');
 
+    const countEl = $('#videoCount');
+    if (countEl) countEl.textContent = `${filtered.length} video`;
+
     if (!pageItems.length) {
       el.innerHTML = `<div class="col-span-full text-center py-16 text-neutral-500">Tidak ada video ditemukan.</div>`;
       return;
@@ -279,8 +299,6 @@
 
     el.innerHTML = pageItems.map(v => cardHTML(v)).join('');
     bindCardClicks(el);
-    lazyLoadIframes(el);
-    $('#videoCount').textContent = `${filtered.length} video`;
   }
 
   function renderTrending() {
@@ -289,37 +307,28 @@
     if (!el) return;
     el.innerHTML = list.map(v => cardHTML(v)).join('');
     bindCardClicks(el);
-    lazyLoadIframes(el);
   }
 
   function cardHTML(v) {
-    const src = v.embedUrl || '';
+    const cat = v.category || 'Umum';
     return `
       <article class="video-card group cursor-pointer" data-id="${v.id}">
-        <div class="relative aspect-video overflow-hidden bg-black">
-          <iframe
-            data-src="${escapeHtml(src)}"
-            class="absolute inset-0 w-full h-full pointer-events-none"
-            loading="lazy"
-            allowfullscreen
-            frameborder="0"
-            allow="autoplay; encrypted-media; picture-in-picture"
-          ></iframe>
-          <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80 group-hover:opacity-100 pointer-events-none"></div>
-          <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-            <div class="w-10 h-10 rounded-full bg-ph text-black flex items-center justify-center shadow-lg">
-              <i class="fas fa-play text-xs ml-0.5"></i>
+        <div class="relative aspect-video overflow-hidden bg-neutral-900 border border-neutral-800 group-hover:border-ph transition-colors">
+          <div class="absolute inset-0 bg-gradient-to-br from-neutral-800 via-neutral-900 to-black"></div>
+          <div class="absolute inset-0 flex items-center justify-center">
+            <div class="w-11 h-11 rounded-full bg-black/60 border border-white/10 group-hover:bg-ph group-hover:text-black group-hover:border-ph flex items-center justify-center transition-all">
+              <i class="fas fa-play text-sm ml-0.5 text-white group-hover:text-black"></i>
             </div>
           </div>
-          <span class="absolute bottom-1 right-1 text-[10px] font-black uppercase bg-black/80 text-ph px-1.5 py-0.5 rounded-sm">${escapeHtml(v.category || 'Umum')}</span>
+          <span class="absolute bottom-1.5 right-1.5 text-[9px] font-black uppercase bg-black/85 text-ph px-1.5 py-0.5 tracking-wide">${escapeHtml(cat)}</span>
         </div>
         <div class="pt-1.5 px-0.5 pb-1">
-          <h3 class="card-title text-[12px] sm:text-[13px] font-semibold leading-snug line-clamp-2 group-hover:text-ph transition-colors">${escapeHtml(v.title)}</h3>
+          <h3 class="text-[12px] sm:text-[13px] font-semibold leading-snug line-clamp-2 group-hover:text-ph transition-colors">${escapeHtml(v.title)}</h3>
         </div>
       </article>`;
   }
 
-  function bindCardClicks(container) {
+function bindCardClicks(container) {
     container.querySelectorAll('.video-card').forEach(card => {
       card.addEventListener('click', () => {
         const id = parseInt(card.dataset.id, 10);
