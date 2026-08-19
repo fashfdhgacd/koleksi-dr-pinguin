@@ -6,15 +6,15 @@
 (function () {
   'use strict';
 
-  const PER_PAGE = 20;
-  const HERO_COUNT = 6;
+  const PER_PAGE = 30;
+  const HERO_COUNT = 8;
 
   let allVideos = [];
   let filtered = [];
   let currentPage = 1;
   let currentCategory = 'All';
   let currentGenrePage = 1;
-  const GENRE_PER_PAGE = 12;
+  const GENRE_PER_PAGE = 18;
   let heroIndex = 0;
   let heroTimer = null;
   let currentHeroVideo = null;
@@ -186,12 +186,14 @@
     const pageCats = cats.slice(start, start + GENRE_PER_PAGE);
 
     el.innerHTML = pageCats.map(c => `
-      <button class="genre-card group" data-cat="${escapeHtml(c.name)}">
-        <div class="w-10 h-10 rounded-xl bg-[#ff9000]/20 text-[#ff9000] flex items-center justify-center mb-3 group-hover:bg-[#ff9000] group-hover:text-black transition-colors">
-          <i class="fas ${icons[c.name] || 'fa-film'} text-sm"></i>
-        </div>
-        <div class="font-semibold text-sm truncate">${escapeHtml(c.name)}</div>
-        <div class="text-xs text-neutral-500 mt-0.5">${c.count} video</div>
+      <button class="genre-card group text-left px-3 py-2.5 flex items-center gap-2.5" data-cat="${escapeHtml(c.name)}">
+        <span class="w-8 h-8 shrink-0 rounded bg-black border border-ink-700 group-hover:border-ph group-hover:bg-ph group-hover:text-black flex items-center justify-center text-ph transition-colors">
+          <i class="fas ${icons[c.name] || 'fa-film'} text-xs"></i>
+        </span>
+        <span class="min-w-0">
+          <span class="block font-bold text-xs uppercase truncate group-hover:text-ph">${escapeHtml(c.name)}</span>
+          <span class="block text-[10px] text-neutral-500">${c.count} videos</span>
+        </span>
       </button>
     `).join('');
 
@@ -294,48 +296,27 @@
     const src = v.embedUrl || '';
     return `
       <article class="video-card group cursor-pointer" data-id="${v.id}">
-        <div class="relative aspect-video rounded-xl overflow-hidden bg-black border border-neutral-800/80 group-hover:border-[#ff9000] transition-colors">
+        <div class="relative aspect-video overflow-hidden bg-black">
           <iframe
             data-src="${escapeHtml(src)}"
-            class="absolute inset-0 w-full h-full pointer-events-none opacity-90"
+            class="absolute inset-0 w-full h-full pointer-events-none"
             loading="lazy"
             allowfullscreen
             frameborder="0"
             allow="autoplay; encrypted-media; picture-in-picture"
           ></iframe>
-          <div class="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
-            <div class="w-12 h-12 rounded-full bg-[#ff9000] flex items-center justify-center opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all shadow-lg">
-              <i class="fas fa-play text-white text-sm ml-0.5"></i>
+          <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80 group-hover:opacity-100 pointer-events-none"></div>
+          <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            <div class="w-10 h-10 rounded-full bg-ph text-black flex items-center justify-center shadow-lg">
+              <i class="fas fa-play text-xs ml-0.5"></i>
             </div>
           </div>
-          <span class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/70 text-[10px] font-medium tracking-wide z-10">${escapeHtml(v.category)}</span>
+          <span class="absolute bottom-1 right-1 text-[10px] font-black uppercase bg-black/80 text-ph px-1.5 py-0.5 rounded-sm">${escapeHtml(v.category || 'Umum')}</span>
         </div>
-        <div class="mt-2.5 px-0.5">
-          <h3 class="text-sm font-medium leading-snug line-clamp-2 group-hover:text-[#ff9000] transition-colors">${escapeHtml(v.title)}</h3>
+        <div class="pt-1.5 px-0.5 pb-1">
+          <h3 class="card-title text-[12px] sm:text-[13px] font-semibold leading-snug line-clamp-2 group-hover:text-ph transition-colors">${escapeHtml(v.title)}</h3>
         </div>
-      </article>
-    `;
-  }
-
-  function lazyLoadIframes(container) {
-    const iframes = container.querySelectorAll('iframe[data-src]');
-    if (!('IntersectionObserver' in window)) {
-      iframes.forEach(f => { f.src = f.dataset.src; });
-      return;
-    }
-    const obs = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const f = entry.target;
-          if (f.dataset.src) {
-            f.src = f.dataset.src;
-            f.removeAttribute('data-src');
-          }
-          obs.unobserve(f);
-        }
-      });
-    }, { rootMargin: '200px' });
-    iframes.forEach(f => obs.observe(f));
+      </article>`;
   }
 
   function bindCardClicks(container) {
