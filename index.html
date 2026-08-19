@@ -140,27 +140,35 @@
     </footer>
   </main>
 
-  <div id="videoModal" class="fixed inset-0 z-[80] hidden">
-    <div id="modalBackdrop" class="absolute inset-0 bg-black/90"></div>
-    <div class="relative z-10 max-w-5xl mx-auto mt-[6vh] px-3">
-      <div class="bg-ink-900 border border-ink-700 rounded overflow-hidden">
-        <div class="flex items-center justify-between px-3 py-2 border-b border-ink-700 bg-black">
-          <div class="min-w-0 pr-3">
-            <h3 id="modalTitle" class="text-sm font-bold truncate"></h3>
-            <p id="modalMeta" class="text-[11px] text-ph font-bold uppercase"></p>
-          </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <a id="modalOpenExternal" href="#" target="_blank" rel="noopener" class="text-[11px] font-bold text-neutral-400 hover:text-ph uppercase">Open</a>
-            <button id="modalClose" class="w-8 h-8 bg-ph text-black font-black rounded text-sm">✕</button>
-          </div>
+  
+  <!-- Responsive video player modal -->
+  <div id="videoModal" class="fixed inset-0 z-[80] hidden" role="dialog" aria-modal="true">
+    <div id="modalBackdrop" class="absolute inset-0 bg-black/95"></div>
+    <div class="player-shell relative z-10 w-full h-full flex flex-col">
+      <!-- Top bar -->
+      <div class="player-topbar flex items-center justify-between gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-black/90 border-b border-white/10 shrink-0">
+        <div class="min-w-0 flex-1">
+          <h3 id="modalTitle" class="text-xs sm:text-sm font-bold truncate text-white"></h3>
+          <p id="modalMeta" class="text-[10px] sm:text-[11px] text-ph font-bold uppercase tracking-wide"></p>
         </div>
-        <div class="aspect-video bg-black">
-          <iframe id="modalIframe" class="w-full h-full" allowfullscreen allow="autoplay; fullscreen"></iframe>
+        <div class="flex items-center gap-2 shrink-0">
+          <a id="modalOpenExternal" href="#" target="_blank" rel="noopener" class="hidden sm:inline-flex items-center px-2.5 py-1.5 text-[11px] font-bold text-neutral-300 hover:text-ph uppercase border border-white/15 rounded">Open</a>
+          <button id="modalClose" type="button" aria-label="Tutup" class="w-10 h-10 sm:w-9 sm:h-9 flex items-center justify-center bg-ph text-black font-black rounded text-base touch-manipulation">✕</button>
         </div>
+      </div>
+      <!-- Stage: centers 16:9 player within viewport -->
+      <div class="player-stage flex-1 flex items-center justify-center p-0 sm:p-4 md:p-6 min-h-0">
+        <div class="player-frame w-full bg-black shadow-2xl overflow-hidden sm:rounded-lg border-0 sm:border sm:border-white/10">
+          <iframe id="modalIframe" class="player-iframe" allowfullscreen allow="autoplay; fullscreen; encrypted-media; picture-in-picture" playsinline webkit-playsinline></iframe>
+        </div>
+      </div>
+      <!-- Mobile open link -->
+      <div class="sm:hidden shrink-0 px-3 py-2 bg-black/90 border-t border-white/10 flex justify-center">
+        <a id="modalOpenExternalMobile" href="#" target="_blank" rel="noopener" class="text-[11px] font-bold text-ph uppercase tracking-wide py-2">Buka di tab baru</a>
       </div>
     </div>
   </div>
 
-  <script src="js/app.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>
