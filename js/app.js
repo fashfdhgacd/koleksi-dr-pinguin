@@ -394,22 +394,34 @@
     const modal = $('#videoModal');
     const iframe = $('#modalIframe');
     const external = $('#modalOpenExternal');
+    const externalMob = $('#modalOpenExternalMobile');
     const rawUrl = video.embedUrl || video.direct || '';
     const embedUrl = toEmbedUrl(rawUrl);
-    $('#modalTitle').textContent = video.title;
+    $('#modalTitle').textContent = video.title || '';
     $('#modalMeta').textContent = video.category || '';
-    iframe.src = embedUrl;
-    if (external) external.href = rawUrl || embedUrl || '#';
+    // reset then set src for clean load on mobile
+    iframe.src = 'about:blank';
+    requestAnimationFrame(() => {
+      iframe.src = embedUrl;
+    });
+    const href = rawUrl || embedUrl || '#';
+    if (external) external.href = href;
+    if (externalMob) externalMob.href = href;
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    // iOS rubber-band lock
+    document.body.style.touchAction = 'none';
   }
 
   function closeModal() {
     const modal = $('#videoModal');
     const iframe = $('#modalIframe');
-    iframe.src = '';
-    modal.classList.add('hidden');
+    if (iframe) iframe.src = 'about:blank';
+    if (modal) modal.classList.add('hidden');
     document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
+    document.body.style.touchAction = '';
   }
 
   function initSearch() {
