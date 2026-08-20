@@ -46,30 +46,54 @@
     main.classList.add('opacity-100');
   }
 
-  async function loadVideos() {
+  async function loadVideos(attempt = 1) {
+    const urls = [
+      'data/videos.json?t=' + Date.now(),
+      '/data/videos.json?t=' + Date.now()
+    ];
     try {
-      const res = await fetch('data/videos.json?t=' + Date.now());
-      if (!res.ok) throw new Error('fetch failed');
-      const data = await res.json();
+      let data = null;
+      let lastErr = null;
+      for (const url of urls) {
+        try {
+          const res = await fetch(url, { cache: 'no-store' });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          data = await res.json();
+          break;
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      if (!data) throw lastErr || new Error('fetch failed');
+
       allVideos = Array.isArray(data) ? data : [];
       allVideos = allVideos.map((v, i) => ({
         id: v.id || i + 1,
         title: v.title || 'Untitled',
         thumbnail: v.thumbnail || '',
-        embedUrl: v.direct || v.embed || v.embedUrl || '',
+        embedUrl: (v.direct || v.embed || v.embedUrl || '').trim(),
         category: v.category || 'Umum',
         date: v.date || '',
         _idx: i
       })).filter(v => v.embedUrl);
 
-      // Urutan beda per pengunjung/sesi (acak tapi stabil selama tab masih dibuka)
       allVideos = shuffleVideos(allVideos);
     } catch (e) {
       console.error('Load videos error:', e);
+      if (attempt < 3) {
+        await new Promise(r => setTimeout(r, 600 * attempt));
+        return loadVideos(attempt + 1);
+      }
       allVideos = [];
     }
     filtered = [...allVideos];
-    renderAll();
+    try {
+      renderAll();
+    } catch (re) {
+      console.error('Render error:', re);
+    }
+    const countEl = document.querySelector('#videoCount');
+    if (countEl) countEl.textContent = allVideos.length + ' video';
   }
 
   /** Fisher–Yates dengan seed per session — tiap orang beda, satu orang konsisten saat browse */
@@ -525,21 +549,34 @@
   }
 
   function init() {
-    initAgeGate();
-    initSearch();
+    try {
+      initAgeGate();
+    } catch (e) { console.error(e); }
+    try {
+      initSearch();
+    } catch (e) { console.error(e); }
 
-    $('#modalClose').addEventListener('click', closeModal);
-    $('#modalBackdrop').addEventListener('click', closeModal);
+    const modalClose = $('#modalClose');
+    const modalBackdrop = $('#modalBackdrop');
+    if (modalClose) modalClose.addEventListener('click', closeModal);
+    if (modalBackdrop) modalBackdrop.addEventListener('click', closeModal);
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closeModal();
     });
 
-    $('#mobileMenuBtn').addEventListener('click', () => {
-      $('#mobileMenu').classList.toggle('hidden');
-    });
+    const menuBtn = $('#mobileMenuBtn');
+    if (menuBtn) {
+      menuBtn.addEventListener('click', () => {
+        const m = $('#mobileMenu');
+        if (m) m.classList.toggle('hidden');
+      });
+    }
 
     $$('#mobileMenu a').forEach(a => {
-      a.addEventListener('click', () => $('#mobileMenu').classList.add('hidden'));
+      a.addEventListener('click', () => {
+        const m = $('#mobileMenu');
+        if (m) m.classList.add('hidden');
+      });
     });
 
     loadVideos();
