@@ -395,10 +395,11 @@
 
   function cardHTML(v) {
     const src = v.embedUrl || '';
-    return `
-      <article class="video-card group cursor-pointer" data-id="${v.id}">
-        <div class="relative aspect-video rounded overflow-hidden bg-black border border-neutral-800 group-hover:border-[#ff9000] transition-colors">
-          <iframe
+    const poster = v.thumbnail || '/logo.png';
+    const thumb = isBlockedEmbedHost(src)
+      ? `<img src="${escapeHtml(poster)}" alt="" class="absolute inset-0 w-full h-full object-contain bg-black opacity-90">
+          <div class="absolute inset-0 flex items-center justify-center"><span class="w-12 h-12 rounded-full bg-black/60 text-white flex items-center justify-center text-xl">▶</span></div>`
+      : `<iframe
             data-src="${escapeHtml(src)}"
             class="absolute inset-0 w-full h-full pointer-events-none opacity-90"
             loading="lazy"
@@ -523,10 +524,12 @@
         try { window.open(embedUrl, '_blank', 'noopener'); } catch (_) {}
         if (gate) {
           gate.style.display = 'flex';
+          const poster = (video && video.thumbnail) ? video.thumbnail : '/logo.png';
           gate.innerHTML = `
             <div class="embed-gate-inner">
-              <button type="button" id="embedGatePlay" class="embed-gate-btn">▶ Lanjut di tab baru</button>
-              <p class="embed-gate-note">Player dibuka di tab baru. Kalau belum muncul, ketuk tombol ini.</p>
+              <img class="embed-gate-img" src="${poster}" alt="">
+              <button type="button" id="embedGatePlay" class="embed-gate-btn">▶ Putar Video</button>
+              <p class="embed-gate-note">Ketuk untuk menonton di tab player.</p>
             </div>`;
           const btn = document.getElementById('embedGatePlay');
           if (btn) btn.onclick = () => window.open(embedUrl, '_blank', 'noopener');
