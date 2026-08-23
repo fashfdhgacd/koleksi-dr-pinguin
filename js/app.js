@@ -516,9 +516,32 @@
     $('#modalMeta').textContent = video.category || '';
     // reset then set src for clean load on mobile
     iframe.src = 'about:blank';
+    const frameWrap = iframe.parentElement;
+    let gate = document.getElementById('embedGate');
+    if (!gate && frameWrap) {
+      gate = document.createElement('div');
+      gate.id = 'embedGate';
+      frameWrap.appendChild(gate);
+    }
     requestAnimationFrame(() => {
-      iframe.setAttribute('referrerpolicy', 'no-referrer');
-      iframe.src = embedUrl;
+      if (isBlockedEmbedHost(embedUrl)) {
+        iframe.style.display = 'none';
+        if (gate) {
+          gate.style.display = 'flex';
+          gate.innerHTML = `
+            <div class="embed-gate-inner">
+              <button type="button" id="embedGatePlay" class="embed-gate-btn">▶ Putar Video</button>
+              <p class="embed-gate-note">Player host memblokir embed. Ketuk tombol untuk menonton.</p>
+            </div>`;
+          const btn = document.getElementById('embedGatePlay');
+          if (btn) btn.onclick = () => window.open(embedUrl, '_blank', 'noopener');
+        }
+      } else {
+        if (gate) gate.style.display = 'none';
+        iframe.style.display = '';
+        iframe.setAttribute('referrerpolicy', 'no-referrer');
+        iframe.src = embedUrl;
+      }
     });
     const href = rawUrl || embedUrl || '#';
     if (external) external.href = href;
@@ -533,7 +556,9 @@
   function closeModal() {
     const modal = $('#videoModal');
     const iframe = $('#modalIframe');
-    if (iframe) iframe.src = 'about:blank';
+    if (iframe) { iframe.src = 'about:blank'; iframe.style.display = ''; }
+    const gate = document.getElementById('embedGate');
+    if (gate) gate.style.display = 'none';
     if (modal) modal.classList.add('hidden');
     document.body.style.overflow = '';
     document.documentElement.style.overflow = '';
