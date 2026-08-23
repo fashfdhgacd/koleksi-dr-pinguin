@@ -519,10 +519,6 @@
     requestAnimationFrame(() => {
       iframe.setAttribute('referrerpolicy', 'no-referrer');
       iframe.src = embedUrl;
-      // IndoAV sering blokir iframe → buka player asli di tab baru (gesture klik masih valid)
-      if (isBlockedEmbedHost(embedUrl)) {
-        try { window.open(embedUrl, '_blank', 'noopener'); } catch (_) {}
-      }
     });
     const href = rawUrl || embedUrl || '#';
     if (external) external.href = href;
