@@ -481,17 +481,29 @@
     });
   }
 
+  
   function toEmbedUrl(url) {
     if (!url) return '';
     try {
       const u = new URL(url);
-      if (u.hostname.includes('indoav.app') && u.pathname.startsWith('/d/')) {
+      // IndoAV / userbokep: /d/ = halaman copy-link, /e/ = player
+      if ((u.hostname.includes('indoav.app') || u.hostname.includes('userbokep.com')) && u.pathname.startsWith('/d/')) {
         u.pathname = u.pathname.replace(/^\/d\//, '/e/');
         return u.toString();
       }
     } catch (_) {}
     return url;
   }
+
+  function isBlockedEmbedHost(url) {
+    try {
+      const h = new URL(url).hostname;
+      return h.includes('indoav.app') || h.includes('userbokep.com');
+    } catch (_) {
+      return /indoav\.app|userbokep\.com/i.test(url || '');
+    }
+  }
+
 
   function openModal(video) {
     const modal = $('#videoModal');
@@ -505,7 +517,12 @@
     // reset then set src for clean load on mobile
     iframe.src = 'about:blank';
     requestAnimationFrame(() => {
+      iframe.setAttribute('referrerpolicy', 'no-referrer');
       iframe.src = embedUrl;
+      // IndoAV sering blokir iframe → buka player asli di tab baru (gesture klik masih valid)
+      if (isBlockedEmbedHost(embedUrl)) {
+        try { window.open(embedUrl, '_blank', 'noopener'); } catch (_) {}
+      }
     });
     const href = rawUrl || embedUrl || '#';
     if (external) external.href = href;
