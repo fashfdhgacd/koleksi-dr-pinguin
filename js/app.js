@@ -517,30 +517,13 @@
     $('#modalTitle').textContent = video.title || '';
     $('#modalMeta').textContent = video.category || '';
     // reset then set src for clean load on mobile
-    iframe.src = 'about:blank';
+    iframe.style.display = '';
     const gate = document.getElementById('embedGate');
+    if (gate) gate.style.display = 'none';
+    iframe.setAttribute('referrerpolicy', 'no-referrer');
+    iframe.src = 'about:blank';
     requestAnimationFrame(() => {
-      if (isBlockedEmbedHost(embedUrl)) {
-        iframe.style.display = 'none';
-        try { window.open(embedUrl, '_blank', 'noopener'); } catch (_) {}
-        if (gate) {
-          gate.style.display = 'flex';
-          const poster = (video && video.thumbnail) ? video.thumbnail : '/logo.png';
-          gate.innerHTML = `
-            <div class="embed-gate-inner">
-              <img class="embed-gate-img" src="${poster}" alt="">
-              <button type="button" id="embedGatePlay" class="embed-gate-btn">▶ Putar Video</button>
-              <p class="embed-gate-note">Ketuk untuk menonton di tab player.</p>
-            </div>`;
-          const btn = document.getElementById('embedGatePlay');
-          if (btn) btn.onclick = () => window.open(embedUrl, '_blank', 'noopener');
-        }
-      } else {
-        if (gate) gate.style.display = 'none';
-        iframe.style.display = '';
-        iframe.setAttribute('referrerpolicy', 'no-referrer');
-        iframe.src = embedUrl;
-      }
+      iframe.src = embedUrl;
     });
     const href = rawUrl || embedUrl || '#';
     if (external) external.href = href;
