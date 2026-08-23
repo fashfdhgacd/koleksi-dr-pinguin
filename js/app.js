@@ -516,22 +516,17 @@
     $('#modalMeta').textContent = video.category || '';
     // reset then set src for clean load on mobile
     iframe.src = 'about:blank';
-    const frameWrap = iframe.parentElement;
-    let gate = document.getElementById('embedGate');
-    if (!gate && frameWrap) {
-      gate = document.createElement('div');
-      gate.id = 'embedGate';
-      frameWrap.appendChild(gate);
-    }
+    const gate = document.getElementById('embedGate');
     requestAnimationFrame(() => {
       if (isBlockedEmbedHost(embedUrl)) {
         iframe.style.display = 'none';
+        try { window.open(embedUrl, '_blank', 'noopener'); } catch (_) {}
         if (gate) {
           gate.style.display = 'flex';
           gate.innerHTML = `
             <div class="embed-gate-inner">
-              <button type="button" id="embedGatePlay" class="embed-gate-btn">▶ Putar Video</button>
-              <p class="embed-gate-note">Player host memblokir embed. Ketuk tombol untuk menonton.</p>
+              <button type="button" id="embedGatePlay" class="embed-gate-btn">▶ Lanjut di tab baru</button>
+              <p class="embed-gate-note">Player dibuka di tab baru. Kalau belum muncul, ketuk tombol ini.</p>
             </div>`;
           const btn = document.getElementById('embedGatePlay');
           if (btn) btn.onclick = () => window.open(embedUrl, '_blank', 'noopener');
