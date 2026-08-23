@@ -395,13 +395,10 @@
 
   function cardHTML(v) {
     const src = v.embedUrl || '';
-    const poster = v.thumbnail || '/logo.png';
-    const media = isBlockedEmbedHost(src)
-      ? `<img src="${escapeHtml(poster)}" alt="" class="absolute inset-0 w-full h-full object-contain bg-black">
-          <div class="absolute inset-0 flex items-center justify-center bg-black/20">
-            <span class="w-12 h-12 rounded-full bg-[#ff9000] text-white flex items-center justify-center text-sm shadow-lg">▶</span>
-          </div>`
-      : `<iframe
+    return `
+      <article class="video-card group cursor-pointer" data-id="${v.id}">
+        <div class="relative aspect-video rounded overflow-hidden bg-black border border-neutral-800 group-hover:border-[#ff9000] transition-colors">
+          <iframe
             data-src="${escapeHtml(src)}"
             class="absolute inset-0 w-full h-full pointer-events-none opacity-90"
             loading="lazy"
@@ -413,11 +410,7 @@
             <div class="w-12 h-12 rounded-full bg-[#ff9000] flex items-center justify-center opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all shadow-lg">
               <i class="fas fa-play text-white text-sm ml-0.5"></i>
             </div>
-          </div>`;
-    return `
-      <article class="video-card group cursor-pointer" data-id="${v.id}">
-        <div class="relative aspect-video rounded overflow-hidden bg-black border border-neutral-800 group-hover:border-[#ff9000] transition-colors">
-          ${media}
+          </div>
           <span class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/70 text-[10px] font-medium tracking-wide z-10">${escapeHtml(v.category)}</span>
         </div>
         <div class="mt-2.5 px-0.5">
@@ -426,6 +419,7 @@
       </article>
     `;
   }
+
 
 
   function lazyLoadIframes(container) {
