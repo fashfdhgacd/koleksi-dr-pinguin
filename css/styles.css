@@ -115,3 +115,14 @@ footer { background:#000 !important; border-top:2px solid var(--ph) !important; 
 }
 .embed-gate-btn:hover { filter: brightness(1.08); }
 .embed-gate-note { margin-top: 12px; font-size: 12px; color: #888; max-width: 280px; margin-left: auto; margin-right: auto; }
+
+.embed-gate-inner { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.embed-gate-img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: contain;
+  background: #111;
+  opacity: 0.85;
+  pointer-events: none;
+}
+.embed-gate-btn { position: relative; z-index: 2; }
+.embed-gate-note { position: relative; z-index: 2; }
