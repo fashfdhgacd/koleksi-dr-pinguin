@@ -44,7 +44,7 @@ footer { background:#000 !important; border-top:2px solid var(--ph) !important; 
   /* leave room for top bar (~52px) + optional mobile footer */
   min-height: 0;
 }
-.player-frame {
+.player-frame { position: relative;
   /* width constrained by viewport; height by 16:9 and max viewport */
   width: min(100%, 1100px);
   max-height: min(calc(100dvh - 56px), calc(100vh - 56px));
@@ -90,3 +90,28 @@ footer { background:#000 !important; border-top:2px solid var(--ph) !important; 
     padding-top: max(0.5rem, env(safe-area-inset-top));
   }
 }
+
+
+/* IndoAV blocked-embed gate (no copy-link page inside modal) */
+#embedGate {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  align-items: center;
+  justify-content: center;
+  background: #0a0a0a;
+}
+.embed-gate-inner { text-align: center; padding: 1.5rem; }
+.embed-gate-btn {
+  background: #e11d48;
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+  padding: 14px 28px;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.embed-gate-btn:hover { filter: brightness(1.08); }
+.embed-gate-note { margin-top: 12px; font-size: 12px; color: #888; max-width: 280px; margin-left: auto; margin-right: auto; }
