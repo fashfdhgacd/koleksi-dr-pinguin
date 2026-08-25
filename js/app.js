@@ -443,7 +443,8 @@
   function cardHTML(v) {
     const src = v.embedUrl || '';
     const poster = v.thumbnail || '/logo.png';
-    const usePoster = isBlockedEmbedHost(src) || isVideyUrl(src) || isVideyUrl(v.direct || '');
+    // Poster hanya untuk Videy (biar tidak autoplay di grid). IndoAV tetap iframe preview.
+    const usePoster = isVideyUrl(src) || isVideyUrl(v.direct || '');
     const media = usePoster
       ? `<img src="${escapeHtml(poster)}" alt="" class="absolute inset-0 w-full h-full object-contain bg-black">
           <div class="absolute inset-0 flex items-center justify-center bg-black/25">
@@ -474,6 +475,7 @@
       </article>
     `;
   }
+
 
 
 
