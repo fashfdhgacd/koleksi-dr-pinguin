@@ -194,8 +194,36 @@
     const cat = (v.category || '').toLowerCase();
     const url = (v.embedUrl || v.direct || v.embed || '').toLowerCase();
     return cat === 'vicek' || cat === 'vicek.id' || cat.includes('exastream')
-      || url.includes('vicek.id') || url.includes('exastream');
+      || cat === 'videy' || cat.includes('videy')
+      || url.includes('vicek.id') || url.includes('exastream')
+      || url.includes('videy.co') || url.includes('cdn.videy.co');
   }
+
+  function isVideyCat(name) {
+    const c = (name || '').toLowerCase();
+    return c === 'videy' || c.includes('videy');
+  }
+
+  function isVideyUrl(url) {
+    return /videy\.co|cdn\.videy\.co/i.test(url || '');
+  }
+
+  function toVideyMp4(url) {
+    if (!url) return '';
+    try {
+      const u = new URL(url);
+      if (u.hostname.includes('cdn.videy.co') && /\.(mp4|mov)($|\?)/i.test(u.pathname)) return url;
+      if (u.hostname.includes('videy.co')) {
+        const id = u.searchParams.get('id');
+        if (id) {
+          const ext = (id.length === 9 && id[8] === '2') ? '.mov' : '.mp4';
+          return 'https://cdn.videy.co/' + id + ext;
+        }
+      }
+    } catch (_) {}
+    return '';
+  }
+
 
   function isExaStreamCat(name) {
     const c = (name || '').toLowerCase();
@@ -232,6 +260,15 @@
     if (exaCount > 0) {
       cats.unshift({ name: "ExaStream", count: exaCount });
     }
+    const videyCount = allVideos.filter(v => isVideyCat(v.category) || isVideyUrl(v.embedUrl || '')).length;
+    if (videyCount > 0) {
+      // insert after ExaStream (index 0 currently Exa if upload not yet unshifted)
+      const idx = cats.findIndex(c => c.name === 'ExaStream');
+      const item = { name: 'Videy', count: videyCount };
+      if (idx >= 0) cats.splice(idx + 1, 0, item);
+      else cats.unshift(item);
+    }
+
     if (newCount > 0) {
       cats.unshift({ name: 'Upload Terbaru', count: newCount });
     }
@@ -360,7 +397,13 @@
         return (b._idx || 0) - (a._idx || 0);
       });
     } else if (isExaStreamCat(currentCategory)) {
-      filtered = allVideos.filter(isHiddenHome);
+      filtered = allVideos.filter(v => {
+        const cat = (v.category || '').toLowerCase();
+        const url = (v.embedUrl || '').toLowerCase();
+        return cat.includes('exastream') || cat === 'vicek' || url.includes('vicek.id');
+      });
+    } else if (isVideyCat(currentCategory)) {
+      filtered = allVideos.filter(v => isVideyCat(v.category) || isVideyUrl(v.embedUrl || v.direct || ''));
     } else {
       filtered = mainPool().filter(v => (v.category || '').toLowerCase() === currentCategory.toLowerCase());
     }
@@ -517,14 +560,32 @@
     $('#modalTitle').textContent = video.title || '';
     $('#modalMeta').textContent = video.category || '';
     // reset then set src for clean load on mobile
-    iframe.style.display = '';
     const gate = document.getElementById('embedGate');
     if (gate) gate.style.display = 'none';
-    iframe.setAttribute('referrerpolicy', 'no-referrer');
-    iframe.src = 'about:blank';
-    requestAnimationFrame(() => {
-      iframe.src = embedUrl;
-    });
+    let native = document.getElementById('modalNativeVideo');
+    const frameWrap = iframe && iframe.parentElement;
+    if (!native && frameWrap) {
+      native = document.createElement('video');
+      native.id = 'modalNativeVideo';
+      native.controls = true;
+      native.playsInline = true;
+      native.className = 'player-iframe';
+      native.style.display = 'none';
+      frameWrap.appendChild(native);
+    }
+    const mp4 = toVideyMp4(embedUrl) || toVideyMp4(rawUrl);
+    if (mp4 && native) {
+      iframe.style.display = 'none';
+      iframe.src = 'about:blank';
+      native.style.display = 'block';
+      native.src = mp4;
+    } else {
+      if (native) { native.pause(); native.removeAttribute('src'); native.style.display = 'none'; }
+      iframe.style.display = '';
+      iframe.setAttribute('referrerpolicy', 'no-referrer');
+      iframe.src = 'about:blank';
+      requestAnimationFrame(() => { iframe.src = embedUrl; });
+    }
     const href = rawUrl || embedUrl || '#';
     if (external) external.href = href;
     if (externalMob) externalMob.href = href;
@@ -539,6 +600,8 @@
     const modal = $('#videoModal');
     const iframe = $('#modalIframe');
     if (iframe) { iframe.src = 'about:blank'; iframe.style.display = ''; }
+    const nv = document.getElementById('modalNativeVideo');
+    if (nv) { try { nv.pause(); } catch(_){} nv.removeAttribute('src'); nv.style.display = 'none'; }
     const gate = document.getElementById('embedGate');
     if (gate) gate.style.display = 'none';
     if (modal) modal.classList.add('hidden');
