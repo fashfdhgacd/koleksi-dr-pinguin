@@ -446,9 +446,10 @@
     // Poster hanya untuk Videy (biar tidak autoplay di grid). IndoAV tetap iframe preview.
     const usePoster = isVideyUrl(src) || isVideyUrl(v.direct || '');
     const media = usePoster
-      ? `<img src="${escapeHtml(poster)}" alt="" class="absolute inset-0 w-full h-full object-contain bg-black">
-          <div class="absolute inset-0 flex items-center justify-center bg-black/25">
-            <span class="w-12 h-12 rounded-full text-white flex items-center justify-center text-sm shadow-lg" style="background:$#ff9000">▶</span>
+      ? `<div class="absolute inset-0 bg-gradient-to-br from-neutral-900 via-neutral-800 to-black"></div>
+          <img src="${escapeHtml(poster)}" alt="" class="absolute inset-0 w-full h-full object-contain opacity-40">
+          <div class="absolute inset-0 flex items-center justify-center bg-transparent">
+            <span class="w-12 h-12 rounded-full text-white flex items-center justify-center text-sm shadow-lg" style="background:#ff9000">▶</span>
           </div>`
       : `<iframe
             data-src="${escapeHtml(src)}"
