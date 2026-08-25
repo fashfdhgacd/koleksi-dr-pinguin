@@ -442,16 +442,22 @@
 
   function cardHTML(v) {
     const src = v.embedUrl || '';
-    const poster = v.thumbnail || '/logo.png';
-    // Poster hanya untuk Videy (biar tidak autoplay di grid). IndoAV tetap iframe preview.
-    const usePoster = isVideyUrl(src) || isVideyUrl(v.direct || '');
-    const media = usePoster
-      ? `<div class="absolute inset-0 bg-gradient-to-br from-neutral-900 via-neutral-800 to-black"></div>
-          <img src="${escapeHtml(poster)}" alt="" class="absolute inset-0 w-full h-full object-contain opacity-40">
-          <div class="absolute inset-0 flex items-center justify-center bg-transparent">
+    const mp4 = (typeof toVideyMp4 === 'function') ? (toVideyMp4(src) || toVideyMp4(v.direct || '')) : '';
+    let media;
+    if (mp4) {
+      // Videy: tampilkan frame video asli (preload metadata), tanpa autoplay
+      media = `<video
+            src="${escapeHtml(mp4)}"
+            muted
+            playsinline
+            preload="metadata"
+            class="absolute inset-0 w-full h-full object-contain bg-black pointer-events-none"
+          ></video>
+          <div class="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
             <span class="w-12 h-12 rounded-full text-white flex items-center justify-center text-sm shadow-lg" style="background:#ff9000">▶</span>
-          </div>`
-      : `<iframe
+          </div>`;
+    } else {
+      media = `<iframe
             data-src="${escapeHtml(src)}"
             class="absolute inset-0 w-full h-full pointer-events-none opacity-90"
             loading="lazy"
@@ -460,10 +466,11 @@
             allow="encrypted-media; picture-in-picture"
           ></iframe>
           <div class="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
-            <div class="w-12 h-12 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all shadow-lg" style="background:$#ff9000">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all shadow-lg" style="background:#ff9000">
               <i class="fas fa-play text-white text-sm ml-0.5"></i>
             </div>
           </div>`;
+    }
     return `
       <article class="video-card group cursor-pointer" data-id="${v.id}">
         <div class="relative aspect-video rounded overflow-hidden bg-black border border-neutral-800 transition-colors">
@@ -476,6 +483,7 @@
       </article>
     `;
   }
+
 
 
 
