@@ -256,7 +256,11 @@
       .sort((a, b) => b[1] - a[1])
       .map(([name, count]) => ({ name, count }));
     const newCount = allVideos.filter(isNewUpload).length;
-    const exaCount = allVideos.filter(isHiddenHome).length;
+    const exaCount = allVideos.filter(v => {
+      const cat = (v.category || '').toLowerCase();
+      const url = (v.embedUrl || '').toLowerCase();
+      return cat.includes('exastream') || cat === 'vicek' || cat === 'vicek.id' || url.includes('vicek.id');
+    }).length;
     if (exaCount > 0) {
       cats.unshift({ name: "ExaStream", count: exaCount });
     }
