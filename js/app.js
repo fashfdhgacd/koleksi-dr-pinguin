@@ -581,8 +581,15 @@
     if (mp4 && native) {
       iframe.style.display = 'none';
       iframe.src = 'about:blank';
+      native.autoplay = false;
+      native.removeAttribute('autoplay');
+      native.muted = false;
+      native.controls = true;
       native.style.display = 'block';
+      native.pause();
       native.src = mp4;
+      native.load();
+      try { native.pause(); } catch (_) {}
     } else {
       if (native) { native.pause(); native.removeAttribute('src'); native.style.display = 'none'; }
       iframe.style.display = '';
