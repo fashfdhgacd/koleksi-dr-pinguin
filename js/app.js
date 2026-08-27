@@ -613,7 +613,6 @@
     } else {
       if (native) { native.pause(); native.removeAttribute('src'); native.style.display = 'none'; }
       iframe.style.display = '';
-      iframe.setAttribute('referrerpolicy', 'no-referrer');
       iframe.src = 'about:blank';
       requestAnimationFrame(() => { iframe.src = embedUrl; });
     }
