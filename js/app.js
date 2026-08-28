@@ -212,7 +212,7 @@
     if (!url) return '';
     try {
       const u = new URL(url);
-      if (u.hostname.includes('cdn.videy.co') && /\.(mp4|mov)($|\?)/i.test(u.pathname)) return url;
+      if ((u.hostname.includes('videy.co') && u.hostname.includes('cdn')) && /\.(mp4|mov)($|\?)/i.test(u.pathname)) return url;
       if (u.hostname.includes('videy.co')) {
         const id = u.searchParams.get('id');
         if (id) {
