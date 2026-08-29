@@ -126,3 +126,13 @@ footer { background:#000 !important; border-top:2px solid var(--ph) !important; 
 }
 .embed-gate-btn { position: relative; z-index: 2; }
 .embed-gate-note { position: relative; z-index: 2; }
+
+
+.share-app {
+  display:flex; align-items:center; justify-content:center;
+  min-height:44px; padding:8px 6px; border-radius:12px;
+  background:#1a1a1a; border:1px solid rgba(255,255,255,.08);
+  font-weight:700; cursor:pointer;
+}
+.share-app:hover { background:#262626; }
+#shareCopy.copied { background:#16a34a; }
