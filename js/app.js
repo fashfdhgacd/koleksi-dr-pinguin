@@ -445,9 +445,14 @@
     lazyLoadIframes(el);
   }
 
+  function isMobileView() {
+    return window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+  }
+
   function cardHTML(v) {
     const src = v.embedUrl || '';
     const mp4 = (typeof toVideyMp4 === 'function') ? (toVideyMp4(src) || toVideyMp4(v.direct || '')) : '';
+    const lightCard = isMobileView();
     let media;
     if (mp4) {
       // Videy: tampilkan frame video asli (preload metadata), tanpa autoplay
@@ -461,6 +466,8 @@
           <div class="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
             <span class="w-12 h-12 rounded-full text-white flex items-center justify-center text-sm shadow-lg" style="background:#ff9000">▶</span>
           </div>`;
+    } else if (lightCard) {
+      media = `<div class="absolute inset-0 bg-neutral-900"></div>\n          <div class="absolute inset-0 flex items-center justify-center"><span class="w-12 h-12 rounded-full bg-black/60 text-white flex items-center justify-center text-sm">▶</span></div>`;
     } else {
       media = `<iframe
             data-src="${escapeHtml(src)}"
