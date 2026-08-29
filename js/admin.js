@@ -64,6 +64,11 @@
         if (Array.isArray(data)) {
           videos = data.map(normalizeVideo);
           saveToStorage();
+      // Auto-push GitHub setelah bulk jika token sudah disimpan
+      const gh = getGhConfig();
+      if (gh && gh.token) {
+        pushToGitHub().catch(() => {});
+      }
           return;
         }
       }
@@ -96,6 +101,10 @@
     const t = (title + ' ' + url).toLowerCase();
 
     // Urutan penting: yang lebih spesifik dulu
+    const u = (url || '').toLowerCase();
+    if (u.includes('videy.co') || u.includes('cdn.videy.co') || u.includes('cdn2.videy.co')) return 'Videy';
+    if (u.includes('vicek.id') || u.includes('exastream')) return 'ExaStream';
+
     const rules = [
       { cat: 'AI', keys: [' ai ', 'ai-', 'a.i', 'deepfake', 'secrets ai', 'buatan secrets'] },
       { cat: 'Jilbab', keys: ['jilbab', 'hijab', 'ukhti', 'ukhty', 'tudung', 'berhijab', 'syar', 'cadar', 'kerudung'] },
