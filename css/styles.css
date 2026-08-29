@@ -136,3 +136,49 @@ footer { background:#000 !important; border-top:2px solid var(--ph) !important; 
 }
 .share-app:hover { background:#262626; }
 #shareCopy.copied { background:#16a34a; }
+
+
+/* Responsive polish */
+html, body { max-width: 100%; overflow-x: hidden; }
+img, video, iframe { max-width: 100%; }
+#videoGrid { width: 100%; }
+.video-card h3 { word-break: break-word; }
+
+#categoryPills {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+#categoryPills::-webkit-scrollbar { display: none; }
+
+@media (max-width: 640px) {
+  #categoryPills {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 0.4rem;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .cat-pill { padding: 0.45rem 0.8rem; font-size: 11px; min-height: 36px; }
+  .card-share { width: 36px; height: 36px; }
+  #pagination { gap: 0.35rem; }
+  #pagination button { min-width: 36px; min-height: 36px; }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .cat-pill { font-size: 12px; }
+}
+
+@media (max-width: 380px) {
+  #videoGrid { gap: 0.4rem; }
+  .video-card h3 { font-size: 11px; }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .player-topbar { min-height: 40px; }
+}
+
+@supports (padding: max(0px)) {
+  body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+  .player-topbar { padding-top: max(0.5rem, env(safe-area-inset-top)); }
+}
