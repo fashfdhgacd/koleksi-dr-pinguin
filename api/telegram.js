@@ -33,6 +33,12 @@ async function handleUpdate(update, env) {
     console.error("BOT_TOKEN missing");
     return;
   }
+  const allowed = String(env.TELEGRAM_USER_ID || "7747474006").trim();
+  const fromId = String((msg.from && msg.from.id) || "");
+  if (allowed && fromId && fromId !== allowed && String(chatId) !== allowed) {
+    await reply(env, chatId, "Akses ditolak.");
+    return;
+  }
   if (text.startsWith("/start") || text.startsWith("/help")) {
     await reply(env, chatId, "Bot aktif.\nKirim link videy.co / vicek.id / indoav.");
     return;
