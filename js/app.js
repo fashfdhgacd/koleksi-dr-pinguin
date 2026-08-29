@@ -79,6 +79,11 @@
       })).filter(v => v.embedUrl);
 
       allVideos = shuffleVideos(allVideos);
+      const qv = new URLSearchParams(location.search).get('v');
+      if (qv) {
+        const hit = findVideoByShareKey(qv);
+        if (hit) setTimeout(() => openModal(hit), 250);
+      }
     } catch (e) {
       console.error('Load videos error:', e);
       if (attempt < 3) {
@@ -476,6 +481,7 @@
         <div class="relative aspect-video rounded overflow-hidden bg-black border border-neutral-800 transition-colors">
           ${media}
           <span class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/70 text-[10px] font-medium tracking-wide z-10">${escapeHtml(v.category)}</span>
+          <button type="button" class="card-share absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-black/70 text-white text-xs" aria-label="Share">↗</button>
         </div>
         <div class="mt-2.5 px-0.5">
           <h3 class="text-sm font-medium leading-snug line-clamp-2 transition-colors">${escapeHtml(v.title)}</h3>
@@ -512,10 +518,18 @@
 
   function bindCardClicks(container) {
     container.querySelectorAll('.video-card').forEach(card => {
-      card.addEventListener('click', () => {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.card-share')) return;
         const id = parseInt(card.dataset.id, 10);
         const video = allVideos.find(v => v.id === id);
         if (video) openModal(video);
+      });
+      const sh = card.querySelector('.card-share');
+      if (sh) sh.addEventListener('click', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const id = parseInt(card.dataset.id, 10);
+        const video = allVideos.find(v => v.id === id);
+        if (video) openShareSheet(video);
       });
     });
   }
@@ -574,6 +588,100 @@
   }
 
 
+  
+  let currentShareVideo = null;
+
+  function videoShareKey(v) {
+    const u = v.embedUrl || v.direct || '';
+    try {
+      const url = new URL(u, location.origin);
+      const qid = url.searchParams.get('id');
+      if (qid) return qid;
+      const parts = url.pathname.split('/').filter(Boolean);
+      const last = parts[parts.length - 1] || '';
+      return last.replace(/\.(mp4|mov)$/i, '') || String(v.id);
+    } catch (_) {
+      return String(v.id);
+    }
+  }
+
+  function videoShareUrl(v) {
+    const key = encodeURIComponent(videoShareKey(v));
+    return location.origin + location.pathname + '?v=' + key;
+  }
+
+  function findVideoByShareKey(key) {
+    if (!key) return null;
+    const k = decodeURIComponent(key).toLowerCase();
+    return allVideos.find(v => videoShareKey(v).toLowerCase() === k) || null;
+  }
+
+  function openShareSheet(video) {
+    currentShareVideo = video;
+    const sheet = document.getElementById('shareSheet');
+    if (!sheet) return;
+    const prev = document.getElementById('shareTitlePreview');
+    if (prev) prev.textContent = video.title || '';
+    sheet.classList.remove('hidden');
+    sheet.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeShareSheet() {
+    const sheet = document.getElementById('shareSheet');
+    if (!sheet) return;
+    sheet.classList.add('hidden');
+    sheet.setAttribute('aria-hidden', 'true');
+  }
+
+  function shareTargets(url, title) {
+    const t = encodeURIComponent(title || 'Koleksi Dr. Pinguin');
+    const u = encodeURIComponent(url);
+    return {
+      facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + u,
+      whatsapp: 'https://wa.me/?text=' + t + '%20' + u,
+      twitter: 'https://twitter.com/intent/tweet?text=' + t + '&url=' + u,
+      reddit: 'https://www.reddit.com/submit?url=' + u + '&title=' + t,
+      telegram: 'https://t.me/share/url?url=' + u + '&text=' + t,
+      gmail: 'https://mail.google.com/mail/?view=cm&fs=1&su=' + t + '&body=' + u
+    };
+  }
+
+  function bindShareUI() {
+    const closeBtn = document.getElementById('shareClose');
+    const backdrop = document.getElementById('shareBackdrop');
+    const copyBtn = document.getElementById('shareCopy');
+    if (closeBtn) closeBtn.addEventListener('click', closeShareSheet);
+    if (backdrop) backdrop.addEventListener('click', closeShareSheet);
+    document.querySelectorAll('.share-app').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!currentShareVideo) return;
+        const url = videoShareUrl(currentShareVideo);
+        const maps = shareTargets(url, currentShareVideo.title);
+        const href = maps[btn.dataset.app];
+        if (href) window.open(href, '_blank', 'noopener');
+      });
+    });
+    if (copyBtn) copyBtn.addEventListener('click', async () => {
+      if (!currentShareVideo) return;
+      const url = videoShareUrl(currentShareVideo);
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch (_) {
+        const ta = document.createElement('textarea');
+        ta.value = url; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+      }
+      copyBtn.textContent = 'Link disalin';
+      copyBtn.classList.add('copied');
+      setTimeout(() => { copyBtn.textContent = 'Salin link'; copyBtn.classList.remove('copied'); }, 1500);
+    });
+    const modalShare = document.getElementById('modalShare');
+    if (modalShare) modalShare.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (currentShareVideo) openShareSheet(currentShareVideo);
+    });
+  }
+
   function openModal(video) {
     const modal = $('#videoModal');
     const iframe = $('#modalIframe');
@@ -581,6 +689,7 @@
     const externalMob = $('#modalOpenExternalMobile');
     const rawUrl = video.embedUrl || video.direct || '';
     const embedUrl = toEmbedUrl(rawUrl);
+    currentShareVideo = video;
     $('#modalTitle').textContent = video.title || '';
     $('#modalMeta').textContent = video.category || '';
     // reset then set src for clean load on mobile
