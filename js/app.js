@@ -646,41 +646,56 @@
     };
   }
 
+
   function bindShareUI() {
-    const closeBtn = document.getElementById('shareClose');
-    const backdrop = document.getElementById('shareBackdrop');
-    const copyBtn = document.getElementById('shareCopy');
-    if (closeBtn) closeBtn.addEventListener('click', closeShareSheet);
-    if (backdrop) backdrop.addEventListener('click', closeShareSheet);
-    document.querySelectorAll('.share-app').forEach(btn => {
-      btn.addEventListener('click', () => {
-        if (!currentShareVideo) return;
+    if (window.__shareBound) return;
+    window.__shareBound = true;
+    document.addEventListener('click', (e) => {
+      const closeEl = e.target.closest('#shareClose, #shareBackdrop');
+      if (closeEl) { closeShareSheet(); return; }
+
+      const appBtn = e.target.closest('.share-app');
+      if (appBtn && currentShareVideo) {
         const url = videoShareUrl(currentShareVideo);
         const maps = shareTargets(url, currentShareVideo.title);
-        const href = maps[btn.dataset.app];
+        const href = maps[appBtn.dataset.app];
         if (href) window.open(href, '_blank', 'noopener');
-      });
-    });
-    if (copyBtn) copyBtn.addEventListener('click', async () => {
-      if (!currentShareVideo) return;
-      const url = videoShareUrl(currentShareVideo);
-      try {
-        await navigator.clipboard.writeText(url);
-      } catch (_) {
-        const ta = document.createElement('textarea');
-        ta.value = url; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+        return;
       }
-      copyBtn.textContent = 'Link disalin';
-      copyBtn.classList.add('copied');
-      setTimeout(() => { copyBtn.textContent = 'Salin link'; copyBtn.classList.remove('copied'); }, 1500);
-    });
-    const modalShare = document.getElementById('modalShare');
-    if (modalShare) modalShare.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (currentShareVideo) openShareSheet(currentShareVideo);
-    });
+
+      const copyBtn = e.target.closest('#shareCopy');
+      if (copyBtn && currentShareVideo) {
+        const url = videoShareUrl(currentShareVideo);
+        const done = () => {
+          copyBtn.textContent = 'Link disalin';
+          copyBtn.classList.add('copied');
+          setTimeout(() => { copyBtn.textContent = 'Salin link'; copyBtn.classList.remove('copied'); }, 1500);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(done).catch(done);
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = url; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+          done();
+        }
+        return;
+      }
+
+      const shareBtn = e.target.closest('#modalShare, #modalShareMobile, .card-share');
+      if (shareBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        let video = currentShareVideo;
+        const card = shareBtn.closest('.video-card');
+        if (card) {
+          const id = card.dataset.id;
+          video = allVideos.find(v => String(v.id) === String(id));
+        }
+        if (video) openShareSheet(video);
+      }
+    }, true);
   }
+
 
   function openModal(video) {
     const modal = $('#videoModal');
@@ -850,7 +865,8 @@
       });
     });
 
-    loadVideos();
+    bindShareUI();
+  loadVideos();
   }
 
   if (document.readyState === 'loading') {
