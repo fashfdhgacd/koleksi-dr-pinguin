@@ -117,7 +117,18 @@ async function mergeAndPush(env, repo, items) {
   const path = env.GH_PATH || "data/videos.json";
   const branch = env.GH_BRANCH || "main";
   const meta = await gh(env, "/repos/" + owner + "/" + repo + "/contents/" + path + "?ref=" + branch);
-  const videos = JSON.parse(Buffer.from(meta.content, "base64").toString("utf8"));
+  let raw = "";
+  if (meta.content) {
+    raw = Buffer.from(meta.content.replace(/\n/g, ""), "base64").toString("utf8");
+  } else {
+    const dl = meta.download_url || ("https://raw.githubusercontent.com/" + owner + "/" + repo + "/" + branch + "/" + path);
+    const rr = await fetch(dl + (dl.includes("?") ? "&" : "?") + "t=" + Date.now(), {
+      headers: { Authorization: "token " + env.GH_TOKEN, "User-Agent": "dr-pinguin-tg-bot", Accept: "application/vnd.github.v3.raw" }
+    });
+    raw = await rr.text();
+  }
+  if (!raw || !raw.trim()) throw new Error("videos.json kosong / gagal dibaca");
+  const videos = JSON.parse(raw);
   const exist = new Set(videos.map(videoKey));
   let added = 0, skipped = 0;
   const fresh = [];
