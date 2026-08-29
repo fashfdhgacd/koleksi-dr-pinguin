@@ -36,20 +36,29 @@ async function handleUpdate(update, env) {
   const allowed = String(env.TELEGRAM_USER_ID || "7747474006").trim();
   const fromId = String((msg.from && msg.from.id) || "");
   if (allowed && fromId && fromId !== allowed && String(chatId) !== allowed) {
-    await reply(env, chatId, "Akses ditolak.");
+    await reply(env, chatId, "Akses ditolak.\nBot ini hanya untuk admin.");
     return;
   }
   if (text.startsWith("/start") || text.startsWith("/help")) {
-    await reply(env, chatId, "Bot aktif.\nKirim link videy.co / vicek.id / indoav.");
+    await reply(env, chatId, [
+      "Bot upload Dr. Pinguin aktif.",
+      "",
+      "Kirim link, satu atau banyak:",
+      "- videy.co  → Videy",
+      "- vicek.id  → ExaStream",
+      "- indoav / userbokep → gallery utama",
+      "",
+      "Duplikat otomatis di-skip."
+    ].join("\n"));
     return;
   }
   const links = extractLinks(text);
   if (!links.length) {
-    await reply(env, chatId, "Tidak ada link yang dikenali.");
+    await reply(env, chatId, "Tidak ada link yang dikenali.\nPakai videy.co, vicek.id, indoav.app, atau userbokep.com.");
     return;
   }
   if (!env.GH_TOKEN || !env.GH_OWNER || !env.GH_REPO) {
-    await reply(env, chatId, "Env GitHub belum lengkap. Cek Vercel + Redeploy.");
+    await reply(env, chatId, "Env GitHub belum lengkap.\nCek Environment Variables Vercel, lalu Redeploy.");
     return;
   }
   const items = links.map(toItem);
@@ -59,7 +68,13 @@ async function handleUpdate(update, env) {
     const r = await mergeAndPush(env, repo, items);
     results.push(repo + ": +" + r.added + " skip " + r.skipped);
   }
-  await reply(env, chatId, "Selesai (" + items.length + " link)\n" + results.join("\n") + "\nTunggu Vercel 1-2 menit.");
+  await reply(env, chatId, [
+      "Selesai diproses.",
+      "Link diterima: " + items.length,
+      results.join("\n"),
+      "",
+      "Tunggu deploy 1-2 menit, lalu hard refresh site."
+    ].join("\n"));
 }
 
 function extractLinks(text) {
