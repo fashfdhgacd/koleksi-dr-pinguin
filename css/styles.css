@@ -190,3 +190,11 @@ img, video, iframe { max-width: 100%; }
 }
 
 
+
+#videoGrid {
+  grid-template-columns: 1fr !important;
+  gap: 1.1rem !important;
+}
+@media (min-width: 640px) {
+  #videoGrid { grid-template-columns: 1fr 1fr !important; }
+}
