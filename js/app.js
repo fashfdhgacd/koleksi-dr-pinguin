@@ -520,6 +520,11 @@
 
 
 
+  function isMoneyHost(url) {
+    const u = (url || '').toLowerCase();
+    return u.includes('indoav') || u.includes('userbokep');
+  }
+
   function lazyLoadIframes(container) {
     const iframes = container.querySelectorAll('iframe[data-src]');
     const videos = container.querySelectorAll('video[data-src]');
@@ -528,40 +533,26 @@
       el.src = el.dataset.src;
       el.removeAttribute('data-src');
     };
+    iframes.forEach(f => {
+      if (isMoneyHost(f.dataset.src || '')) load(f);
+    });
+    const rest = container.querySelectorAll('iframe[data-src]');
     if (!('IntersectionObserver' in window)) {
-      iframes.forEach(load);
+      rest.forEach(load);
       videos.forEach(load);
       return;
     }
-    const obsIframe = new IntersectionObserver((entries) => {
+    const obs = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (!entry.isIntersecting) return;
         load(entry.target);
-        obsIframe.unobserve(entry.target);
+        obs.unobserve(entry.target);
       });
-    }, { rootMargin: '300px' });
-    iframes.forEach(f => obsIframe.observe(f));
-
-    let inflight = 0;
-    const queue = [];
-    const pump = () => {
-      while (inflight < 2 && queue.length) {
-        const el = queue.shift();
-        inflight++;
-        load(el);
-        setTimeout(() => { inflight = Math.max(0, inflight - 1); pump(); }, 400);
-      }
-    };
-    const obsVid = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (!entry.isIntersecting) return;
-        obsVid.unobserve(entry.target);
-        queue.push(entry.target);
-        pump();
-      });
-    }, { rootMargin: '80px' });
-    videos.forEach(v => obsVid.observe(v));
+    }, { rootMargin: '250px' });
+    rest.forEach(f => obs.observe(f));
+    videos.forEach(v => obs.observe(v));
   }
+
 
 
 
