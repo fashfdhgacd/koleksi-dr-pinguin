@@ -531,9 +531,8 @@
           </div>`;
     } else {
       media = `<iframe
-            data-src="${escapeHtml(src)}" referrerpolicy="${(typeof isDoodUrl==='function' && isDoodUrl(src)) ? 'no-referrer' : 'origin'}"
+            src="${escapeHtml(src)}" referrerpolicy="${(typeof isDoodUrl==='function' && isDoodUrl(src)) ? 'no-referrer' : 'origin'}"
             class="absolute inset-0 w-full h-full pointer-events-none opacity-90"
-            loading="lazy"
             allowfullscreen
             frameborder="0"
             allow="encrypted-media; picture-in-picture"
