@@ -104,6 +104,7 @@
     const u = (url || '').toLowerCase();
     if (u.includes('videy.co') || u.includes('cdn.videy.co') || u.includes('cdn2.videy.co')) return 'Videy';
     if (u.includes('vicek.id') || u.includes('exastream')) return 'ExaStream';
+    if (u.includes('playmogo.com') || u.includes('doodstream') || u.includes('dood.watch')) return 'AI Bokep';
 
     const rules = [
       { cat: 'AI', keys: [' ai ', 'ai-', 'a.i', 'deepfake', 'secrets ai', 'buatan secrets'] },
