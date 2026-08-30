@@ -14,7 +14,7 @@
   let currentPage = 1;
   let currentCategory = 'All';
   let currentGenrePage = 1;
-  const GENRE_PER_PAGE = 10;
+  const GENRE_PER_PAGE = 200;
   let heroIndex = 0;
   let heroTimer = null;
   let currentHeroVideo = null;
@@ -332,7 +332,7 @@
     if (!el) return;
 
     const icons = {
-      Amatir: 'fa-user', Umum: 'fa-globe', STW: 'fa-heart', Jilbab: 'fa-mosque',
+      'Upload Terbaru': 'fa-clock', ExaStream: 'fa-play-circle', Videy: 'fa-video', 'AI Bokep': 'fa-robot', Amatir: 'fa-user', Umum: 'fa-globe', STW: 'fa-heart', Jilbab: 'fa-mosque',
       ABG: 'fa-graduation-cap', Viral: 'fa-fire', Colmek: 'fa-play', Tobrut: 'fa-star',
       Live: 'fa-broadcast-tower', Chindo: 'fa-flag', Doggy: 'fa-paw', Outdoor: 'fa-tree',
       Toilet: 'fa-restroom', AI: 'fa-robot', Bumil: 'fa-baby', Lesbian: 'fa-venus-double',
