@@ -521,39 +521,48 @@
 
 
   function lazyLoadIframes(container) {
-    const nodes = container.querySelectorAll('iframe[data-src], video[data-src]');
-    if (!nodes.length) return;
-    const loadOne = (el) => {
-      const src = el.dataset.src;
-      if (!src) return;
-      el.src = src;
+    const iframes = container.querySelectorAll('iframe[data-src]');
+    const videos = container.querySelectorAll('video[data-src]');
+    const load = (el) => {
+      if (!el.dataset.src) return;
+      el.src = el.dataset.src;
       el.removeAttribute('data-src');
     };
     if (!('IntersectionObserver' in window)) {
-      nodes.forEach(loadOne);
+      iframes.forEach(load);
+      videos.forEach(load);
       return;
     }
-    let inflight = 0;
-    const queue = [];
-    const MAX = 4;
-    const pump = () => {
-      while (inflight < MAX && queue.length) {
-        const el = queue.shift();
-        inflight++;
-        loadOne(el);
-        setTimeout(() => { inflight = Math.max(0, inflight - 1); pump(); }, 350);
-      }
-    };
-    const obs = new IntersectionObserver((entries) => {
+    const obsIframe = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (!entry.isIntersecting) return;
-        obs.unobserve(entry.target);
+        load(entry.target);
+        obsIframe.unobserve(entry.target);
+      });
+    }, { rootMargin: '300px' });
+    iframes.forEach(f => obsIframe.observe(f));
+
+    let inflight = 0;
+    const queue = [];
+    const pump = () => {
+      while (inflight < 2 && queue.length) {
+        const el = queue.shift();
+        inflight++;
+        load(el);
+        setTimeout(() => { inflight = Math.max(0, inflight - 1); pump(); }, 400);
+      }
+    };
+    const obsVid = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        obsVid.unobserve(entry.target);
         queue.push(entry.target);
         pump();
       });
     }, { rootMargin: '80px' });
-    nodes.forEach(el => obs.observe(el));
+    videos.forEach(v => obsVid.observe(v));
   }
+
 
 
   function bindCardClicks(container) {
