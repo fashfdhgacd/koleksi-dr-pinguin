@@ -99,7 +99,7 @@
       console.error('Render error:', re);
     }
     const countEl = document.querySelector('#videoCount');
-    if (countEl) countEl.textContent = allVideos.length + ' video';
+    if (countEl) countEl.textContent = mainPool().length + ' video';
   }
 
   /** Fisher–Yates dengan seed per session — tiap orang beda, satu orang konsisten saat browse */
