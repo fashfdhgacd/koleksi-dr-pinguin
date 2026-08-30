@@ -200,10 +200,19 @@
     const url = (v.embedUrl || v.direct || v.embed || '').toLowerCase();
     return cat === 'vicek' || cat === 'vicek.id' || cat.includes('exastream')
       || cat === 'videy' || cat.includes('videy')
+      || cat.includes('doodstream') || cat.includes('ai bokep')
       || url.includes('vicek.id') || url.includes('exastream')
-      || url.includes('videy.co') || url.includes('cdn.videy.co');
+      || url.includes('videy.co') || url.includes('cdn.videy.co')
+      || url.includes('playmogo.com') || url.includes('doodstream') || url.includes('dood.watch');
   }
 
+  function isDoodCat(name) {
+    const c = (name || '').toLowerCase();
+    return c.includes('doodstream') || c.includes('ai bokep');
+  }
+  function isDoodUrl(url) {
+    return /playmogo\.com|doodstream|dood\.watch|dood\.so|dood\.to/i.test(url || '');
+  }
   function isVideyCat(name) {
     const c = (name || '').toLowerCase();
     return c === 'videy' || c.includes('videy');
@@ -259,7 +268,7 @@
     const cats = Object.entries(counts)
       .filter(([name]) => {
         const n = String(name).toLowerCase();
-        return n !== 'vicek' && n !== 'vicek.id' && !n.includes('exastream') && n !== 'videy' && !n.includes('videy');
+        return n !== 'vicek' && n !== 'vicek.id' && !n.includes('exastream') && n !== 'videy' && !n.includes('videy') && !n.includes('doodstream') && n !== 'ai bokep' && !n.includes('ai bokep');
       })
       .sort((a, b) => b[1] - a[1])
       .map(([name, count]) => ({ name, count }));
@@ -279,6 +288,13 @@
       const item = { name: 'Videy', count: videyCount };
       if (idx >= 0) cats.splice(idx + 1, 0, item);
       else cats.unshift(item);
+    }
+    const doodCount = allVideos.filter(v => isDoodCat(v.category) || isDoodUrl(v.embedUrl || v.direct || '')).length;
+    if (doodCount > 0) {
+      const itemD = { name: 'AI Bokep', count: doodCount };
+      const idxV = cats.findIndex(c => c.name === 'Videy');
+      if (idxV >= 0) cats.splice(idxV + 1, 0, itemD);
+      else cats.unshift(itemD);
     }
 
     if (newCount > 0) {
@@ -416,6 +432,8 @@
       });
     } else if (isVideyCat(currentCategory)) {
       filtered = allVideos.filter(v => isVideyCat(v.category) || isVideyUrl(v.embedUrl || v.direct || ''));
+    } else if (isDoodCat(currentCategory)) {
+      filtered = allVideos.filter(v => isDoodCat(v.category) || isDoodUrl(v.embedUrl || v.direct || ''));
     } else {
       filtered = mainPool().filter(v => (v.category || '').toLowerCase() === currentCategory.toLowerCase());
     }
