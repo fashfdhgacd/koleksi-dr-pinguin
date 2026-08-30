@@ -488,7 +488,7 @@
           </div>`;
     } else {
       media = `<iframe
-            data-src="${escapeHtml(src)}" referrerpolicy="origin"
+            data-src="${escapeHtml(src)}" referrerpolicy="${(typeof isDoodUrl==='function' && isDoodUrl(src)) ? 'no-referrer' : 'origin'}"
             class="absolute inset-0 w-full h-full pointer-events-none opacity-90"
             loading="lazy"
             allowfullscreen
@@ -765,6 +765,7 @@
       if (native) { native.pause(); native.removeAttribute('src'); native.style.display = 'none'; }
       iframe.style.display = '';
       iframe.src = 'about:blank';
+      iframe.setAttribute('referrerpolicy', (typeof isDoodUrl === 'function' && isDoodUrl(embedUrl)) ? 'no-referrer' : 'origin');
       requestAnimationFrame(() => { iframe.src = embedUrl; });
     }
     const href = rawUrl || embedUrl || '#';
