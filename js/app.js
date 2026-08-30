@@ -673,16 +673,18 @@
       const copyBtn = e.target.closest('#shareCopy');
       if (copyBtn && currentShareVideo) {
         const url = videoShareUrl(currentShareVideo);
+        const title = (currentShareVideo.title || '').trim();
+        const payload = title ? (title + '\n' + url) : url;
         const done = () => {
           copyBtn.textContent = 'Link disalin';
           copyBtn.classList.add('copied');
           setTimeout(() => { copyBtn.textContent = 'Salin link'; copyBtn.classList.remove('copied'); }, 1500);
         };
         if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(url).then(done).catch(done);
+          navigator.clipboard.writeText(payload).then(done).catch(done);
         } else {
           const ta = document.createElement('textarea');
-          ta.value = url; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+          ta.value = payload; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
           done();
         }
         return;
