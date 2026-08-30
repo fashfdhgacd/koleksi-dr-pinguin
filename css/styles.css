@@ -207,3 +207,23 @@ img, video, iframe { max-width: 100%; }
 @media (min-width: 640px) {
   #videoGrid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
 }
+
+
+#videoModal { background: #000 !important; }
+#modalBackdrop { background: #000 !important; opacity: 1 !important; }
+.player-shell { background: #000 !important; }
+.player-frame {
+  background: #000 !important;
+  overflow: hidden;
+}
+.player-iframe, #modalIframe {
+  background: #000 !important;
+}
+@media (max-width: 639px) {
+  .player-frame {
+    width: 100% !important;
+    max-height: none !important;
+    height: min(72dvh, 72vh) !important;
+    aspect-ratio: auto !important;
+  }
+}
