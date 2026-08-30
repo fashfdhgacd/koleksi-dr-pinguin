@@ -459,8 +459,24 @@
     $('#videoCount').textContent = `${filtered.length} video`;
   }
 
+  function indoPool() {
+    return allVideos.filter(v => {
+      const u = ((v.embedUrl || v.direct || v.embed || '') + '').toLowerCase();
+      return (u.includes('indoav') || u.includes('userbokep')) && !isHiddenHome(v);
+    });
+  }
+
+  function pickRandom(arr, n) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a.slice(0, n);
+  }
+
   function renderTrending() {
-    const list = mainPool().slice(0, 10);
+    const list = pickRandom(indoPool(), 10);
     const el = $('#trendingGrid');
     if (!el) return;
     el.innerHTML = list.map(v => cardHTML(v)).join('');
