@@ -140,8 +140,8 @@
 
   function getHeroVideos() {
     const pool = (typeof indoPool === 'function') ? indoPool() : mainPool();
-    if (typeof pickRandom === 'function') return pickRandom(pool, HERO_COUNT);
-    return pool.slice(0, HERO_COUNT);
+    const mixed = (typeof shuffleVideos === 'function') ? shuffleVideos(pool) : pool;
+    return mixed.slice(0, HERO_COUNT);
   }
 
   function renderHero() {
@@ -478,7 +478,7 @@
   }
 
   function renderTrending() {
-    const list = pickRandom(indoPool(), 12);
+    const list = shuffleVideos(indoPool()).slice(0, 12);
     const el = $('#trendingGrid');
     if (!el) return;
     el.innerHTML = list.map(v => cardHTML(v)).join('');
