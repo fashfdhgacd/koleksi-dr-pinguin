@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const PER_PAGE = 18;
+  const PER_PAGE = 10;
   const HERO_COUNT = 6;
 
   let allVideos = [];
@@ -14,7 +14,7 @@
   let currentPage = 1;
   let currentCategory = 'All';
   let currentGenrePage = 1;
-  const GENRE_PER_PAGE = 18;
+  const GENRE_PER_PAGE = 10;
   let heroIndex = 0;
   let heroTimer = null;
   let currentHeroVideo = null;
