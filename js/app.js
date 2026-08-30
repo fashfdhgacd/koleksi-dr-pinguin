@@ -139,7 +139,9 @@
   }
 
   function getHeroVideos() {
-    return mainPool().slice(0, HERO_COUNT);
+    const pool = (typeof indoPool === 'function') ? indoPool() : mainPool();
+    if (typeof pickRandom === 'function') return pickRandom(pool, HERO_COUNT);
+    return pool.slice(0, HERO_COUNT);
   }
 
   function renderHero() {
