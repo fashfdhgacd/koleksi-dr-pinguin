@@ -257,7 +257,10 @@
       counts[c] = (counts[c] || 0) + 1;
     });
     const cats = Object.entries(counts)
-      .filter(([name]) => name !== 'Vicek' && name !== 'Vicek.id' && !String(name).toLowerCase().includes('exastream'))
+      .filter(([name]) => {
+        const n = String(name).toLowerCase();
+        return n !== 'vicek' && n !== 'vicek.id' && !n.includes('exastream') && n !== 'videy' && !n.includes('videy');
+      })
       .sort((a, b) => b[1] - a[1])
       .map(([name, count]) => ({ name, count }));
     const newCount = allVideos.filter(isNewUpload).length;
