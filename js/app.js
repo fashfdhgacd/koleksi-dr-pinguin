@@ -483,8 +483,8 @@
             preload="metadata"
             class="absolute inset-0 w-full h-full object-contain bg-black pointer-events-none"
           ></video>
-          <div class="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
-            <span class="w-12 h-12 rounded-full text-white flex items-center justify-center text-sm shadow-lg" style="background:#ff9000">▶</span>
+          <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+            <span class="w-9 h-9 rounded-full text-white flex items-center justify-center text-xs shadow" style="background:#ff9000">▶</span>
           </div>`;
     } else {
       media = `<iframe
@@ -495,9 +495,9 @@
             frameborder="0"
             allow="encrypted-media; picture-in-picture"
           ></iframe>
-          <div class="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
-            <div class="w-12 h-12 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all shadow-lg" style="background:#ff9000">
-              <i class="fas fa-play text-white text-sm ml-0.5"></i>
+          <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+            <div class="w-9 h-9 rounded-full flex items-center justify-center shadow" style="background:#ff9000">
+              <i class="fas fa-play text-white text-xs ml-0.5"></i>
             </div>
           </div>`;
     }
