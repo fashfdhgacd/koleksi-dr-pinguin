@@ -180,8 +180,10 @@
       el.classList.toggle('opacity-100', i === heroIndex);
       el.classList.toggle('opacity-0', i !== heroIndex);
       const iframe = el.querySelector('iframe');
-      if (iframe && i === heroIndex && !iframe.src) {
-        iframe.src = iframe.dataset.src || '';
+      if (iframe && iframe.dataset.src) {
+        if (i === heroIndex) {
+          if (iframe.getAttribute('src') !== iframe.dataset.src) iframe.src = iframe.dataset.src;
+        }
       }
     });
     updateHeroContent(heroes[heroIndex]);
