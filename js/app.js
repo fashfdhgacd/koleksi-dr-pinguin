@@ -470,7 +470,7 @@
           </div>`;
     } else {
       media = `<iframe
-            data-src="${escapeHtml(src)}"
+            data-src="${escapeHtml(src)}" referrerpolicy="origin"
             class="absolute inset-0 w-full h-full pointer-events-none opacity-90"
             loading="lazy"
             allowfullscreen
