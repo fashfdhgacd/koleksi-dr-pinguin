@@ -460,6 +460,10 @@
     } else {
       filtered = mainPool().filter(v => (v.category || '').toLowerCase() === currentCategory.toLowerCase());
     }
+    const maxPage = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+    if (currentPage > maxPage) currentPage = maxPage;
+    if (currentPage < 1) currentPage = 1;
+    persistView();
     renderGrid();
     renderPagination();
   }
