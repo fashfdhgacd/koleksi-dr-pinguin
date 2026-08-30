@@ -520,26 +520,16 @@
 
 
 
-  function isMoneyHost(url) {
-    const u = (url || '').toLowerCase();
-    return u.includes('indoav') || u.includes('userbokep');
-  }
-
   function lazyLoadIframes(container) {
-    const iframes = Array.from(container.querySelectorAll('iframe[data-src]'));
-    const videos = container.querySelectorAll('video[data-src]');
+    const nodes = container.querySelectorAll('iframe[data-src], video[data-src]');
     const load = (el) => {
-      if (!el || !el.dataset.src) return;
+      if (!el.dataset.src) return;
       el.src = el.dataset.src;
       el.removeAttribute('data-src');
     };
-    const money = iframes.filter(f => isMoneyHost(f.dataset.src || ''));
-    const other = iframes.filter(f => !isMoneyHost(f.dataset.src || ''));
-    money.slice(0, 8).forEach(load);
+    if (!nodes.length) return;
     if (!('IntersectionObserver' in window)) {
-      money.slice(8).forEach(load);
-      other.forEach(load);
-      videos.forEach(load);
+      nodes.forEach(load);
       return;
     }
     const obs = new IntersectionObserver((entries) => {
@@ -548,10 +538,8 @@
         load(entry.target);
         obs.unobserve(entry.target);
       });
-    }, { rootMargin: '400px' });
-    money.slice(8).forEach(f => obs.observe(f));
-    other.forEach(f => obs.observe(f));
-    videos.forEach(v => obs.observe(v));
+    }, { rootMargin: '180px' });
+    nodes.forEach(el => obs.observe(el));
   }
 
   function bindCardClicks(container) {
