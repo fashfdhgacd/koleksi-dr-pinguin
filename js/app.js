@@ -478,7 +478,7 @@
   }
 
   function renderTrending() {
-    const list = shuffleVideos(indoPool()).slice(0, 12);
+    const list = shuffleVideos(indoPool()).slice(HERO_COUNT, HERO_COUNT + 12);
     const el = $('#trendingGrid');
     if (!el) return;
     el.innerHTML = list.map(v => cardHTML(v)).join('');
