@@ -526,19 +526,19 @@
   }
 
   function lazyLoadIframes(container) {
-    const iframes = container.querySelectorAll('iframe[data-src]');
+    const iframes = Array.from(container.querySelectorAll('iframe[data-src]'));
     const videos = container.querySelectorAll('video[data-src]');
     const load = (el) => {
-      if (!el.dataset.src) return;
+      if (!el || !el.dataset.src) return;
       el.src = el.dataset.src;
       el.removeAttribute('data-src');
     };
-    iframes.forEach(f => {
-      if (isMoneyHost(f.dataset.src || '')) load(f);
-    });
-    const rest = container.querySelectorAll('iframe[data-src]');
+    const money = iframes.filter(f => isMoneyHost(f.dataset.src || ''));
+    const other = iframes.filter(f => !isMoneyHost(f.dataset.src || ''));
+    money.slice(0, 8).forEach(load);
     if (!('IntersectionObserver' in window)) {
-      rest.forEach(load);
+      money.slice(8).forEach(load);
+      other.forEach(load);
       videos.forEach(load);
       return;
     }
@@ -548,13 +548,11 @@
         load(entry.target);
         obs.unobserve(entry.target);
       });
-    }, { rootMargin: '250px' });
-    rest.forEach(f => obs.observe(f));
+    }, { rootMargin: '400px' });
+    money.slice(8).forEach(f => obs.observe(f));
+    other.forEach(f => obs.observe(f));
     videos.forEach(v => obs.observe(v));
   }
-
-
-
 
   function bindCardClicks(container) {
     container.querySelectorAll('.video-card').forEach(card => {
