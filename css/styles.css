@@ -190,7 +190,3 @@ img, video, iframe { max-width: 100%; }
 }
 
 
-.video-card { content-visibility: auto; contain-intrinsic-size: 280px; }
-@media (max-width: 639px) {
-  .video-card { contain-intrinsic-size: 220px; }
-}
