@@ -521,25 +521,40 @@
 
 
   function lazyLoadIframes(container) {
-    const iframes = container.querySelectorAll('iframe[data-src]');
+    const nodes = container.querySelectorAll('iframe[data-src], video[data-src]');
+    if (!nodes.length) return;
+    const loadOne = (el) => {
+      const src = el.dataset.src;
+      if (!src) return;
+      el.src = src;
+      el.removeAttribute('data-src');
+    };
     if (!('IntersectionObserver' in window)) {
-      iframes.forEach(f => { f.src = f.dataset.src; });
+      nodes.forEach(loadOne);
       return;
     }
+    let inflight = 0;
+    const queue = [];
+    const MAX = 4;
+    const pump = () => {
+      while (inflight < MAX && queue.length) {
+        const el = queue.shift();
+        inflight++;
+        loadOne(el);
+        setTimeout(() => { inflight = Math.max(0, inflight - 1); pump(); }, 350);
+      }
+    };
     const obs = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const f = entry.target;
-          if (f.dataset.src) {
-            f.src = f.dataset.src;
-            f.removeAttribute('data-src');
-          }
-          obs.unobserve(f);
-        }
+        if (!entry.isIntersecting) return;
+        obs.unobserve(entry.target);
+        queue.push(entry.target);
+        pump();
       });
-    }, { rootMargin: '200px' });
-    iframes.forEach(f => obs.observe(f));
+    }, { rootMargin: '80px' });
+    nodes.forEach(el => obs.observe(el));
   }
+
 
   function bindCardClicks(container) {
     container.querySelectorAll('.video-card').forEach(card => {
