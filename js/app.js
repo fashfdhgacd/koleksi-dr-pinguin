@@ -480,7 +480,6 @@
 
     el.innerHTML = pageItems.map(v => cardHTML(v)).join('');
     bindCardClicks(el);
-    lazyLoadIframes(el);
     $('#videoCount').textContent = `${filtered.length} video`;
   }
 
@@ -506,7 +505,6 @@
     if (!el) return;
     el.innerHTML = list.map(v => cardHTML(v)).join('');
     bindCardClicks(el);
-    lazyLoadIframes(el);
   }
 
   function isMobileView() {
