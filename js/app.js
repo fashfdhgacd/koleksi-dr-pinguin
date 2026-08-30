@@ -19,6 +19,22 @@
   let heroTimer = null;
   let currentHeroVideo = null;
 
+  function persistView() {
+    try {
+      sessionStorage.setItem('kdp_cat', currentCategory || 'All');
+      sessionStorage.setItem('kdp_page', String(currentPage || 1));
+    } catch (_) {}
+  }
+  function restoreView() {
+    try {
+      const c = sessionStorage.getItem('kdp_cat');
+      const p = parseInt(sessionStorage.getItem('kdp_page') || '1', 10);
+      if (c) currentCategory = c;
+      if (p > 0) currentPage = p;
+    } catch (_) {}
+  }
+  restoreView();
+
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => document.querySelectorAll(s);
 
@@ -323,6 +339,8 @@
         btn.classList.add('active');
         currentCategory = btn.dataset.cat;
         currentPage = 1;
+        persistView();
+        persistView();
         applyFilter();
       });
     });
@@ -362,6 +380,7 @@
       btn.addEventListener('click', () => {
         currentCategory = btn.dataset.cat;
         currentPage = 1;
+        persistView();
         $$('.cat-pill').forEach(b => {
           b.classList.toggle('active', b.dataset.cat === currentCategory);
         });
@@ -604,6 +623,7 @@
         const p = parseInt(btn.dataset.page, 10);
         if (p >= 1 && p <= total && p !== currentPage) {
           currentPage = p;
+          persistView();
           renderGrid();
           renderPagination();
           document.getElementById('terbaru').scrollIntoView({ behavior: 'smooth', block: 'start' });
