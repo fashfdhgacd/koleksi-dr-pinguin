@@ -227,3 +227,35 @@ img, video, iframe { max-width: 100%; }
     aspect-ratio: auto !important;
   }
 }
+
+
+@media (max-width: 639px) {
+  #videoModal { background: #000 !important; }
+  .player-shell {
+    background: #000 !important;
+    min-height: 100dvh;
+    min-height: 100vh;
+  }
+  .player-stage {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    align-items: stretch !important;
+    background: #000 !important;
+  }
+  .player-frame {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: none !important;
+    min-height: 58dvh !important;
+    aspect-ratio: auto !important;
+    background: #000 !important;
+    border-radius: 0 !important;
+  }
+  .player-iframe, #modalIframe {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: #000 !important;
+  }
+}
