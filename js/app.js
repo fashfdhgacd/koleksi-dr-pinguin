@@ -476,7 +476,7 @@
   }
 
   function renderTrending() {
-    const list = pickRandom(indoPool(), 10);
+    const list = pickRandom(indoPool(), 12);
     const el = $('#trendingGrid');
     if (!el) return;
     el.innerHTML = list.map(v => cardHTML(v)).join('');
