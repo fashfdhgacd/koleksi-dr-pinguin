@@ -521,15 +521,16 @@
 
 
   function lazyLoadIframes(container) {
-    const nodes = container.querySelectorAll('iframe[data-src], video[data-src]');
     const load = (el) => {
       if (!el.dataset.src) return;
       el.src = el.dataset.src;
       el.removeAttribute('data-src');
     };
-    if (!nodes.length) return;
+    container.querySelectorAll('iframe[data-src]').forEach(load);
+    const videos = container.querySelectorAll('video[data-src]');
+    if (!videos.length) return;
     if (!('IntersectionObserver' in window)) {
-      nodes.forEach(load);
+      videos.forEach(load);
       return;
     }
     const obs = new IntersectionObserver((entries) => {
@@ -538,9 +539,10 @@
         load(entry.target);
         obs.unobserve(entry.target);
       });
-    }, { rootMargin: '180px' });
-    nodes.forEach(el => obs.observe(el));
+    }, { rootMargin: '200px' });
+    videos.forEach(v => obs.observe(v));
   }
+
 
   function bindCardClicks(container) {
     container.querySelectorAll('.video-card').forEach(card => {
