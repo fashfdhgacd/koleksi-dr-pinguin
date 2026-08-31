@@ -64,7 +64,11 @@ async function handleUpdate(update, env) {
     await reply(env, chatId, "Env GitHub belum lengkap.\nCek Environment Variables Vercel, lalu Redeploy.");
     return;
   }
-  const items = links.map(toItem);
+  const items = parseNamedLinks(text);
+  if (!items.length) {
+    await reply(env, chatId, "Link terbaca tapi gagal diproses.");
+    return;
+  }
   const repos = [env.GH_REPO, env.GH_REPO_2].filter(Boolean);
   const results = [];
   for (const repo of repos) {
@@ -203,6 +207,60 @@ async function handleShare(env, chatId) {
   });
   const sisa = pool.length - take.length;
   await reply(env, chatId, lines.join("\n\n"));
+}
+
+
+function detectCat(title) {
+  const t = (title || "").toLowerCase();
+  const map = [
+    ["jilbab", ["jilbab","hijab","ukhti","ukhty","cadar"]],
+    ["STW", ["tante","janda","stw","ibu kost","binor"]],
+    ["ABG", ["abg","sma","mahasiswi","remaja","siswi"]],
+    ["Colmek", ["colmek","omek","dildo"]],
+    ["Viral", ["viral"]],
+    ["Live", ["live","vcs","hot51"]],
+    ["Chindo", ["chindo","amoy"]],
+    ["Doggy", ["doggy","nungging"]],
+    ["Threesome", ["threesome","bergilir","gangbang"]],
+    ["Bumil", ["bumil","hamil"]],
+    ["Outdoor", ["outdoor","hutan","kebun"]],
+    ["Tobrut", ["tobrut","toket","toge"]],
+    ["Lesbian", ["lesbian"]],
+    ["Perselingkuhan", ["selingkuh"]],
+    ["Open BO", ["open bo","michat","mechat"]],
+    ["Amatir", ["ngentot","ngewe","mesum"]]
+  ];
+  for (const [cat, keys] of map) {
+    if (keys.some((k) => t.includes(k))) return cat;
+  }
+  return "Umum";
+}
+
+function parseNamedLinks(text) {
+  const lines = String(text).split(/\r?\n/);
+  const items = [];
+  let pending = "";
+  const urlRe = /https?:\/\/[^\s<>"']+/i;
+  for (const rawLine of lines) {
+    const line = rawLine.replace(/^▶\s*/, "").trim();
+    if (!line) continue;
+    const m = line.match(urlRe);
+    if (m) {
+      let url = m[0].replace(/[).,]+$/, "");
+      if (!/videy\.co|vicek\.id|indoav\.|userbokep\./i.test(url)) continue;
+      const it = toItem(url);
+      if (pending) {
+        it.title = pending.replace(/\s*-\s*koleksidrpinguin.*/i, "").trim();
+        it.category = detectCat(it.title);
+        it.tags = [it.category.toLowerCase(), "telegram"];
+      }
+      items.push(it);
+      pending = "";
+    } else if (!line.startsWith("/")) {
+      pending = line;
+    }
+  }
+  return items;
 }
 
 function extractLinks(text) {
