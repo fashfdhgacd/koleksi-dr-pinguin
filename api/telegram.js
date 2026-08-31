@@ -73,7 +73,7 @@ async function handleUpdate(update, env) {
   const results = [];
   for (const repo of repos) {
     const r = await mergeAndPush(env, repo, items);
-    results.push(repo + ": +" + r.added + " skip " + r.skipped);
+    results.push(repo + ": +" + r.added + " update " + (r.updated || 0) + " skip " + r.skipped);
   }
   await reply(env, chatId, [
       "Selesai diproses.",
@@ -210,12 +210,13 @@ async function handleShare(env, chatId) {
 }
 
 
+
 function detectCat(title) {
   const t = (title || "").toLowerCase();
   const map = [
-    ["jilbab", ["jilbab","hijab","ukhti","ukhty","cadar"]],
-    ["STW", ["tante","janda","stw","ibu kost","binor"]],
-    ["ABG", ["abg","sma","mahasiswi","remaja","siswi"]],
+    ["Jilbab", ["jilbab","hijab","ukhti","ukhty","cadar"]],
+    ["STW", ["tante","janda","stw","ibu kost","binor","pembantu"]],
+    ["ABG", ["abg","sma","mahasiswi","remaja","siswi","adik"]],
     ["Colmek", ["colmek","omek","dildo"]],
     ["Viral", ["viral"]],
     ["Live", ["live","vcs","hot51"]],
@@ -236,23 +237,41 @@ function detectCat(title) {
   return "Umum";
 }
 
+function cleanTitle(t) {
+  return String(t || "")
+    .replace(/^▶\s*/, "")
+    .replace(/\s*-\s*koleksidrpinguin.*/i, "")
+    .replace(/\s*\(\d+\)\s*$/, "")
+    .replace(/_/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isSiteLink(u) {
+  return /koleksidrpinguin\.(com|site)/i.test(u);
+}
+
+function isVideoLink(u) {
+  return /https?:\/\//i.test(u) && /videy\.co|vicek\.id|indoav\.|userbokep\./i.test(u) && !isSiteLink(u);
+}
+
 function parseNamedLinks(text) {
   const lines = String(text).split(/\r?\n/);
   const items = [];
   let pending = "";
-  const urlRe = /https?:\/\/[^\s<>"']+/i;
   for (const rawLine of lines) {
-    const line = rawLine.replace(/^▶\s*/, "").trim();
+    const line = rawLine.trim();
     if (!line) continue;
-    const m = line.match(urlRe);
+    const m = line.match(/https?:\/\/[^\s<>"']+/i);
     if (m) {
-      let url = m[0].replace(/[).,]+$/, "");
-      if (!/videy\.co|vicek\.id|indoav\.|userbokep\./i.test(url)) continue;
+      const url = m[0].replace(/[).,]+$/, "");
+      if (isSiteLink(url)) continue;
+      if (!isVideoLink(url)) continue;
       const it = toItem(url);
       if (pending) {
-        it.title = pending.replace(/\s*-\s*koleksidrpinguin.*/i, "").trim();
+        it.title = cleanTitle(pending);
         it.category = detectCat(it.title);
-        it.tags = [it.category.toLowerCase(), "telegram"];
+        it.tags = [String(it.category).toLowerCase(), "telegram"];
       }
       items.push(it);
       pending = "";
@@ -337,15 +356,25 @@ async function mergeAndPush(env, repo, items) {
   if (!raw || !raw.trim()) throw new Error("videos.json kosong / gagal dibaca");
   const videos = JSON.parse(raw);
   const exist = new Set(videos.map(videoKey));
-  let added = 0, skipped = 0;
+  let added = 0, skipped = 0, updated = 0;
   const fresh = [];
   for (const it of items) {
     const k = videoKey(it);
-    if (exist.has(k)) { skipped += 1; continue; }
+    if (exist.has(k)) {
+      const idx = videos.findIndex((v) => videoKey(v) === k);
+      if (idx >= 0 && it.title && !/^Amatir\s*-/.test(it.title)) {
+        videos[idx].title = it.title;
+        videos[idx].category = it.category || videos[idx].category;
+        if (it.embed) videos[idx].embed = it.embed.replace("/d/", "/e/");
+        if (it.direct) videos[idx].direct = it.direct.replace("/d/", "/e/");
+        updated += 1;
+      } else skipped += 1;
+      continue;
+    }
     exist.add(k); fresh.push(it); added += 1;
   }
   for (let i = fresh.length - 1; i >= 0; i--) videos.unshift(fresh[i]);
-  if (!added) return { added: added, skipped: skipped };
+  if (!added && !updated) return { added: added, skipped: skipped, updated: updated };
   await gh(env, "/repos/" + owner + "/" + repo + "/contents/" + path, {
     method: "PUT",
     body: JSON.stringify({
