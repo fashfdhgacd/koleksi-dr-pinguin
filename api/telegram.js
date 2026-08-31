@@ -191,10 +191,9 @@ async function handleShare(env, chatId) {
   take.forEach((x) => used.add(x.key));
   st.used = Array.from(used);
   await writeShareState(env, repo, st);
-  const mid = Math.ceil(take.length / 2);
-  const lines = take.map((x, i) => {
-    const host = i < mid ? "koleksidrpinguin.com" : "koleksidrpinguin.site";
-    return x.title + "\nhttps://" + host + "/?v=" + x.key;
+  const lines = take.map((x) => {
+    const host = Math.random() < 0.5 ? "koleksidrpinguin.com" : "koleksidrpinguin.site";
+    return "▶ " + x.title + "\nhttps://" + host + "/?v=" + x.key;
   });
   const sisa = pool.length - take.length;
   await reply(env, chatId, lines.join("\n\n") + "\n\n—" + take.length + " link unik · sisa sesi " + sisa);
