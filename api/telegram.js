@@ -43,13 +43,16 @@ async function handleUpdate(update, env) {
     await reply(env, chatId, [
       "Bot upload Dr. Pinguin aktif.",
       "",
-      "Kirim link, satu atau banyak:",
-      "- videy.co  → Videy",
-      "- vicek.id  → ExaStream",
-      "- indoav / userbokep → gallery utama",
+      "Kirim link upload: videy / vicek / indoav / userbokep",
       "",
-      "Duplikat otomatis di-skip."
+      "Minta link sebar:",
+      "/sebar  atau  kasih link",
+      "25 link acak (judul + URL). Tidak dobel 24 jam."
     ].join("\n"));
+    return;
+  }
+  if (isShareCommand(text)) {
+    await handleShare(env, chatId);
     return;
   }
   const links = extractLinks(text);
@@ -75,6 +78,121 @@ async function handleUpdate(update, env) {
       "",
       "Tunggu deploy 1-2 menit, lalu hard refresh site."
     ].join("\n"));
+}
+
+
+function isShareCommand(text) {
+  const t = text.toLowerCase();
+  if (t.startsWith("/sebar") || t.startsWith("/share") || t.startsWith("/link")) return true;
+  if (/kasih\s+link|minta\s+link|nyebar|sebar\s+link|25\s+link/.test(t) && !/https?:\/\//i.test(t)) return true;
+  return false;
+}
+
+function shareKeyFromVideo(v) {
+  const u = String(v.embed || v.embedUrl || v.direct || "");
+  try {
+    const url = new URL(u);
+    const qid = url.searchParams.get("id");
+    if (qid) return qid;
+    const parts = url.pathname.split("/").filter(Boolean);
+    const last = parts[parts.length - 1] || "";
+    return last.replace(/\.(mp4|mov)$/i, "") || String(v.id || "");
+  } catch (_) {
+    return String(v.id || u.slice(-12));
+  }
+}
+
+function cleanTitle(t) {
+  return String(t || "Video")
+    .replace(/\s*-\s*koleksidrpinguin\.(com|site)\s*$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+async function readVideos(env, repo) {
+  const owner = env.GH_OWNER;
+  const path = env.GH_PATH || "data/videos.json";
+  const branch = env.GH_BRANCH || "main";
+  const meta = await gh(env, "/repos/" + owner + "/" + repo + "/contents/" + path + "?ref=" + branch);
+  let raw = "";
+  if (meta.content && meta.content.length < 500000) {
+    raw = Buffer.from(meta.content.replace(/\n/g, ""), "base64").toString("utf8");
+  } else {
+    const dl = meta.download_url;
+    const rr = await fetch(dl + (dl.includes("?") ? "&" : "?") + "t=" + Date.now(), {
+      headers: { Authorization: "token " + env.GH_TOKEN, "User-Agent": "dr-pinguin-tg-bot", Accept: "application/vnd.github.v3.raw" }
+    });
+    raw = await rr.text();
+  }
+  return JSON.parse(raw);
+}
+
+async function readShareState(env, repo) {
+  const owner = env.GH_OWNER;
+  const path = "data/share-used.json";
+  const branch = env.GH_BRANCH || "main";
+  try {
+    const meta = await gh(env, "/repos/" + owner + "/" + repo + "/contents/" + path + "?ref=" + branch);
+    let raw = Buffer.from((meta.content || "").replace(/\n/g, ""), "base64").toString("utf8");
+    const st = JSON.parse(raw || "{}");
+    st.sha = meta.sha;
+    return st;
+  } catch (_) {
+    return { resetAt: 0, used: [], sha: null };
+  }
+}
+
+async function writeShareState(env, repo, st) {
+  const owner = env.GH_OWNER;
+  const path = "data/share-used.json";
+  const branch = env.GH_BRANCH || "main";
+  const body = {
+    message: "bot: update share-used 24h",
+    content: Buffer.from(JSON.stringify({ resetAt: st.resetAt, used: st.used }, null, 2), "utf8").toString("base64"),
+    branch: branch
+  };
+  if (st.sha) body.sha = st.sha;
+  await gh(env, "/repos/" + owner + "/" + repo + "/contents/" + path, { method: "PUT", body: JSON.stringify(body) });
+}
+
+async function handleShare(env, chatId) {
+  const repo = env.GH_REPO;
+  if (!env.GH_TOKEN || !env.GH_OWNER || !repo) {
+    await reply(env, chatId, "Env GitHub belum lengkap.");
+    return;
+  }
+  const videos = await readVideos(env, repo);
+  let st = await readShareState(env, repo);
+  const now = Date.now();
+  const DAY = 24 * 60 * 60 * 1000;
+  if (!st.resetAt || now - st.resetAt >= DAY) {
+    st.resetAt = now;
+    st.used = [];
+  }
+  const used = new Set((st.used || []).map(String));
+  const pool = [];
+  for (const v of videos) {
+    const key = shareKeyFromVideo(v);
+    if (!key || used.has(key)) continue;
+    pool.push({ key: key, title: cleanTitle(v.title) });
+  }
+  if (!pool.length) {
+    const left = Math.max(0, DAY - (now - st.resetAt));
+    const jam = Math.ceil(left / 3600000);
+    await reply(env, chatId, "Stok link sesi 24 jam habis.\nReset sekitar " + jam + " jam lagi.");
+    return;
+  }
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = pool[i]; pool[i] = pool[j]; pool[j] = t;
+  }
+  const take = pool.slice(0, 25);
+  take.forEach((x) => used.add(x.key));
+  st.used = Array.from(used);
+  await writeShareState(env, repo, st);
+  const lines = take.map((x) => x.title + "\nhttps://koleksidrpinguin.com/?v=" + x.key);
+  const sisa = pool.length - take.length;
+  await reply(env, chatId, lines.join("\n\n") + "\n\n—" + take.length + " link · sisa sesi " + sisa);
 }
 
 function extractLinks(text) {
