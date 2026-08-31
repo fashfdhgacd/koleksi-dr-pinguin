@@ -85,7 +85,7 @@ function isShareCommand(text) {
   const t = text.toLowerCase();
   if (t.startsWith("/sebar") || t.startsWith("/share") || t.startsWith("/link")) return true;
   if (/https?:\/\//i.test(t)) return false;
-  if (/kasih\s+link|minta\s+link|minta\s+lagi|nyebar|sebar|25\s+link|^minta$|^lagi$|^gas$|^next$/.test(t)) return true;
+  if (/kasih\s*link|minta|nyebar|sebar|25\s*link|^lagi$|^gas$|^next$|^terus$/.test(t)) return true;
   return false;
 }
 
