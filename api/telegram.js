@@ -191,9 +191,11 @@ async function handleShare(env, chatId) {
   take.forEach((x) => used.add(x.key));
   st.used = Array.from(used);
   await writeShareState(env, repo, st);
-  const lines = take.map((x) => x.title + " — koleksidrpinguin.com\nhttps://koleksidrpinguin.com/?v=" + x.key + "\n\n" + x.title + " — koleksidrpinguin.site\nhttps://koleksidrpinguin.site/?v=" + x.key);
+  const com = take.map((x) => x.title + " — koleksidrpinguin.com\nhttps://koleksidrpinguin.com/?v=" + x.key);
+  const site = take.map((x) => x.title + " — koleksidrpinguin.site\nhttps://koleksidrpinguin.site/?v=" + x.key);
   const sisa = pool.length - take.length;
-  await reply(env, chatId, lines.join("\n\n") + "\n\n—" + take.length + " link · sisa sesi " + sisa);
+  await reply(env, chatId, com.join("\n\n") + "\n\n— .com " + take.length + " · sisa sesi " + sisa);
+  await reply(env, chatId, site.join("\n\n") + "\n\n— .site " + take.length + " · sisa sesi " + sisa);
 }
 
 function extractLinks(text) {
