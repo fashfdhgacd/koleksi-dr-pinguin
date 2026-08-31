@@ -64,6 +64,7 @@
 
   async function loadVideos(attempt = 1) {
     const urls = [
+      'https://raw.githubusercontent.com/fashfdhgacd/koleksi-dr-pinguin/main/data/videos.json?t=' + Date.now(),
       'data/videos.json?t=' + Date.now(),
       '/data/videos.json?t=' + Date.now()
     ];
