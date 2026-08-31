@@ -128,10 +128,15 @@ async function readVideos(env, repo) {
   return JSON.parse(raw);
 }
 
+async function stateRepo(env) {
+  return env.GH_STATE_REPO || "kdp-bot-state";
+}
+
 async function readShareState(env, repo) {
   const owner = env.GH_OWNER;
-  const path = "data/share-used.json";
+  const path = "share-used.json";
   const branch = env.GH_BRANCH || "main";
+  repo = await stateRepo(env);
   try {
     const meta = await gh(env, "/repos/" + owner + "/" + repo + "/contents/" + path + "?ref=" + branch);
     let raw = Buffer.from((meta.content || "").replace(/\n/g, ""), "base64").toString("utf8");
@@ -145,10 +150,11 @@ async function readShareState(env, repo) {
 
 async function writeShareState(env, repo, st) {
   const owner = env.GH_OWNER;
-  const path = "data/share-used.json";
+  const path = "share-used.json";
   const branch = env.GH_BRANCH || "main";
+  repo = await stateRepo(env);
   const body = {
-    message: "bot: update share-used 24h",
+    message: "state: share-used",
     content: Buffer.from(JSON.stringify({ resetAt: st.resetAt, used: st.used }, null, 2), "utf8").toString("base64"),
     branch: branch
   };
