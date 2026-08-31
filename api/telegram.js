@@ -196,7 +196,7 @@ async function handleShare(env, chatId) {
     return "▶ " + x.title + "\nhttps://" + host + "/?v=" + x.key;
   });
   const sisa = pool.length - take.length;
-  await reply(env, chatId, lines.join("\n\n") + "\n\n—" + take.length + " link unik · sisa sesi " + sisa);
+  await reply(env, chatId, lines.join("\n\n"));
 }
 
 function extractLinks(text) {
