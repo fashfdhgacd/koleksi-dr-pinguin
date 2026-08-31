@@ -84,7 +84,8 @@ async function handleUpdate(update, env) {
 function isShareCommand(text) {
   const t = text.toLowerCase();
   if (t.startsWith("/sebar") || t.startsWith("/share") || t.startsWith("/link")) return true;
-  if (/kasih\s+link|minta\s+link|nyebar|sebar\s+link|25\s+link/.test(t) && !/https?:\/\//i.test(t)) return true;
+  if (/https?:\/\//i.test(t)) return false;
+  if (/kasih\s+link|minta\s+link|minta\s+lagi|nyebar|sebar|25\s+link|^minta$|^lagi$|^gas$|^next$/.test(t)) return true;
   return false;
 }
 
