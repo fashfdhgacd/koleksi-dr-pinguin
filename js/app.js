@@ -871,25 +871,54 @@
 
   
   const DEFAULT_TITLE = document.title;
-  function applyVideoMeta(video) {
+    function applyVideoMeta(video) {
     try {
+      const setMeta = (sel, attr, key, val) => {
+        let el = document.querySelector(sel);
+        if (!el) {
+          el = document.createElement('meta');
+          if (attr === 'property') el.setAttribute('property', key);
+          else el.setAttribute('name', key);
+          document.head.appendChild(el);
+        }
+        el.setAttribute('content', val);
+      };
+      let ld = document.getElementById('videoJsonLd');
       if (!video) {
         document.title = DEFAULT_TITLE;
-        const md = document.querySelector('meta[name="description"]');
+        if (ld) ld.remove();
         return;
       }
-      const t = String(video.title || '').replace(/\s*-\s*koleksidrpinguin.*/i, '').trim();
+      const t = String(video.title || '').replace(/\s*-\s*koleksidrpinguin.*/i, '').replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+      const cat = String(video.category || 'Video').trim();
+      const page = location.origin + '/?v=' + encodeURIComponent((video.embedUrl || video.embed || video.direct || '').split('/').pop());
       document.title = (t || 'Video') + ' | Dr. Pinguin';
-      let md = document.querySelector('meta[name="description"]');
-      if (!md) {
-        md = document.createElement('meta');
-        md.setAttribute('name', 'description');
-        document.head.appendChild(md);
+      setMeta('meta[name="description"]', 'name', 'description', t + ' — ' + cat + ' | Koleksi Dr. Pinguin. 18+.');
+      setMeta('meta[property="og:title"]', 'property', 'og:title', t);
+      setMeta('meta[property="og:description"]', 'property', 'og:description', cat + ' — Koleksi Dr. Pinguin Bokep, M.S.B.');
+      setMeta('meta[property="og:type"]', 'property', 'og:type', 'video.other');
+      setMeta('meta[property="og:url"]', 'property', 'og:url', page);
+      setMeta('meta[name="twitter:card"]', 'name', 'twitter:card', 'summary');
+      setMeta('meta[name="twitter:title"]', 'name', 'twitter:title', t);
+      if (!ld) {
+        ld = document.createElement('script');
+        ld.type = 'application/ld+json';
+        ld.id = 'videoJsonLd';
+        document.head.appendChild(ld);
       }
-      md.setAttribute('content', t + ' — Koleksi Dr. Pinguin Bokep, M.S.B.');
+      ld.textContent = JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "VideoObject",
+        "name": t,
+        "description": t + " — Koleksi Dr. Pinguin",
+        "thumbnailUrl": "https://koleksidrpinguin.com/logo.png",
+        "uploadDate": video.date || "",
+        "isFamilyFriendly": false,
+        "genre": cat,
+        "url": page
+      });
     } catch (_) {}
   }
-
   function openModal(video) {
     const modal = $('#videoModal');
     const iframe = $('#modalIframe');
