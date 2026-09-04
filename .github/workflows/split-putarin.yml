@@ -1,0 +1,27 @@
+name: split-putarin
+on:
+  push:
+    paths:
+      - scripts/split-putarin.mjs
+      - .github/workflows/split-putarin.yml
+      - scripts/SPLIT_PUTARIN
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  split:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/split-putarin.mjs
+      - name: commit
+        run: |
+          git config user.name "dr-pinguin-bot"
+          git config user.email "readmi559@gmail.com"
+          git add data/videos.json data/putarin.json
+          if git diff --cached --quiet; then echo nochange; exit 0; fi
+          git commit -m "split: Putarin keluar dari gallery json"
+          git push

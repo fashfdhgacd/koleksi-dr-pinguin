@@ -4,14 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Putarin | Dr. Pinguin</title>
-<meta name="robots" content="index,follow">
 <style>
 *{box-sizing:border-box}body{margin:0;background:#050505;color:#eee;font-family:system-ui,sans-serif}
 a{color:#ff9000;text-decoration:none}
 header{position:sticky;top:0;background:#000;border-bottom:2px solid #ff9000;padding:10px 14px;display:flex;justify-content:space-between;align-items:center}
 .brand b{color:#ff9000}
 .wrap{max-width:900px;margin:0 auto;padding:16px 14px 40px}
-h1{font-size:20px;margin:0 0 6px}p.note{color:#888;font-size:13px;margin:0 0 16px}
+h1{font-size:20px;margin:0 0 6px}.note{color:#888;font-size:13px;margin:0 0 16px}
 .item{display:block;padding:12px 14px;margin:0 0 8px;border:1px solid #222;border-radius:10px;background:#111;color:#eee}
 .item:hover{border-color:#ff9000}
 .item small{display:block;color:#888;font-size:11px;margin-top:4px}
@@ -24,7 +23,7 @@ h1{font-size:20px;margin:0 0 6px}p.note{color:#888;font-size:13px;margin:0 0 16p
 </header>
 <div class="wrap">
   <h1>Putarin</h1>
-  <p class="note">Satu video satu halaman. Tidak di-embed di grid biar gallery tidak rusak.</p>
+  <p class="note">Daftar judul. Klik = 1 halaman 1 video. Tidak tampil di grid gallery.</p>
   <div id="list">Memuat...</div>
 </div>
 <script>
@@ -35,27 +34,24 @@ h1{font-size:20px;margin:0 0 6px}p.note{color:#888;font-size:13px;margin:0 0 16p
     return m ? m[1] : '';
   }
   function titleOf(v){
-    return String(v.title || 'Video').replace(/^\u25b6\s*/, '').replace(/_/g,' ').trim();
+    return String(v.title || 'Video').replace(/[<>]/g,'').replace(/_/g,' ').trim();
   }
-  fetch('/data/videos.json?t=' + Date.now())
-    .then(function(r){ return r.json(); })
-    .then(function(list){
-      var items = (list || []).filter(function(v){
-        var b = String((v.category||'')+' '+(v.embed||'')+' '+(v.direct||'')).toLowerCase();
-        return b.indexOf('putarin') !== -1 || b.indexOf('puterin') !== -1;
-      });
-      if (!items.length) {
-        document.getElementById('list').innerHTML = '<p>Belum ada video Putarin.</p>';
-        return;
-      }
-      document.getElementById('list').innerHTML = items.map(function(v){
-        var id = codeOf(v);
-        var href = '/v/' + encodeURIComponent(id || titleOf(v));
-        return '<a class="item" href="'+href+'"><strong>'+titleOf(v).replace(/[<>]/g,'')+'</strong><small>Buka halaman video</small></a>';
-      }).join('');
-    })
+  function draw(items){
+    if (!items.length) { document.getElementById('list').innerHTML = '<p>Belum ada video Putarin.</p>'; return; }
+    document.getElementById('list').innerHTML = items.map(function(v){
+      var id = codeOf(v);
+      return '<a class="item" href="/v/' + encodeURIComponent(id) + '"><strong>' + titleOf(v) + '</strong><small>Buka halaman video</small></a>';
+    }).join('');
+  }
+  fetch('/data/putarin.json?t=' + Date.now()).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    .then(draw)
     .catch(function(){
-      document.getElementById('list').innerHTML = '<p>Gagal memuat daftar.</p>';
+      fetch('/data/videos.json?t=' + Date.now()).then(function(r){ return r.json(); }).then(function(list){
+        draw((list||[]).filter(function(v){
+          var b = String((v.category||'')+' '+(v.embed||'')+' '+(v.direct||'')).toLowerCase();
+          return b.indexOf('putarin') !== -1 || b.indexOf('puterin') !== -1;
+        }));
+      }).catch(function(){ document.getElementById('list').innerHTML = '<p>Gagal memuat.</p>'; });
     });
 })();
 </script>
