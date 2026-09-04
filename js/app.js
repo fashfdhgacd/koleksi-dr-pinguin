@@ -472,11 +472,53 @@
     });
   }
 
+  
+  function detectFromTitle(title) {
+    const t = String(title || '').toLowerCase().replace(/_/g, ' ');
+    const map = [
+      ['Jilbab', ['jilbab','hijab','ukhti','ukhty','cadar']],
+      ['STW', ['tante','janda','stw','binor','ibu kost','pembantu']],
+      ['ABG', ['abg','sma','mahasiswi','remaja','siswi','adik tiri','adik']],
+      ['Colmek', ['colmek','omek','dildo']],
+      ['Viral', ['viral']],
+      ['Live', ['live show','live ','vcs','hot51']],
+      ['Chindo', ['chindo','amoy']],
+      ['Doggy', ['doggy','nungging']],
+      ['Threesome', ['threesome','bergilir','gangbang']],
+      ['Bumil', ['bumil','hamil']],
+      ['Outdoor', ['outdoor','hutan','kebun']],
+      ['Tobrut', ['tobrut','toket','toge']],
+      ['Lesbian', ['lesbian']],
+      ['Perselingkuhan', ['selingkuh']],
+      ['Open BO', ['open bo','michat','mechat']],
+      ['Toilet', ['toilet']],
+      ['Guru', ['guru','dosen']],
+      ['Bule', ['bule']],
+      ['Amatir', ['ngentot','ngewe','mesum']]
+    ];
+    for (const [cat, keys] of map) {
+      if (keys.some(k => t.includes(k))) return cat;
+    }
+    return '';
+  }
+
+  function isVideyLink(v) {
+    const u = ((v.embedUrl || v.direct || v.embed || '') + '').toLowerCase();
+    return u.includes('videy.co');
+  }
+
+  function matchCategory(v, name) {
+    const want = String(name || '').toLowerCase();
+    const cat = String(v.category || '').toLowerCase();
+    const det = detectFromTitle(v.title).toLowerCase();
+    return cat === want || det === want;
+  }
+
   function applyFilter() {
     if (currentCategory === 'All') {
-      filtered = newestFirst(mainPool(), 40);
+      filtered = newestFirst(indoPool(), 40);
     } else if (currentCategory.toLowerCase() === 'upload terbaru') {
-      filtered = mainPool().filter(isNewUpload).sort((a, b) => {
+      filtered = indoPool().filter(isNewUpload).sort((a, b) => {
         const da = a.date || '';
         const db = b.date || '';
         if (da !== db) return db.localeCompare(da);
@@ -493,7 +535,10 @@
     } else if (isDoodCat(currentCategory)) {
       filtered = allVideos.filter(v => isDoodCat(v.category) || isDoodUrl(v.embedUrl || v.direct || ''));
     } else {
-      filtered = mainPool().filter(v => (v.category || '').toLowerCase() === currentCategory.toLowerCase());
+      filtered = allVideos.filter(v => {
+        if (isVideyLink(v)) return false;
+        return matchCategory(v, currentCategory);
+      });
     }
     const maxPage = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
     if (currentPage > maxPage) currentPage = maxPage;
