@@ -906,17 +906,34 @@
         ld.id = 'videoJsonLd';
         document.head.appendChild(ld);
       }
-      ld.textContent = JSON.stringify({
+      const embed = video.embedUrl || video.embed || video.direct || "";
+      const host = location.hostname.includes("koleksidrpinguin.site") ? "https://koleksidrpinguin.site" : "https://koleksidrpinguin.com";
+      const pageUrl = host + "/?v=" + encodeURIComponent((embed.split("/").pop() || "").replace(/\.(mp4|mov)$/i, ""));
+      const ldObj = {
         "@context": "https://schema.org",
         "@type": "VideoObject",
-        "name": t,
-        "description": t + " — Koleksi Dr. Pinguin",
-        "thumbnailUrl": "https://koleksidrpinguin.com/logo.png",
-        "uploadDate": video.date || "",
+        "name": t || "Video",
+        "description": (t || "Video") + " — Koleksi Dr. Pinguin Bokep, M.S.B. 18+",
+        "thumbnailUrl": [host + "/logo.png"],
+        "uploadDate": (video.date && String(video.date).slice(0, 10)) || undefined,
         "isFamilyFriendly": false,
-        "genre": cat,
-        "url": page
-      });
+        "inLanguage": "id",
+        "genre": cat || "Adult",
+        "url": pageUrl,
+        "embedUrl": embed || undefined,
+        "contentUrl": embed || undefined,
+        "publisher": {
+          "@type": "Organization",
+          "name": "Dr. Pinguin Bokep, M.S.B.",
+          "logo": { "@type": "ImageObject", "url": host + "/logo.png" }
+        },
+        "potentialAction": {
+          "@type": "WatchAction",
+          "target": pageUrl
+        }
+      };
+      Object.keys(ldObj).forEach((k) => { if (ldObj[k] === undefined || ldObj[k] === "") delete ldObj[k]; });
+      ld.textContent = JSON.stringify(ldObj);
     } catch (_) {}
   }
   function openModal(video) {
