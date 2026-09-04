@@ -1,37 +1,53 @@
+function getEnv() {
+  return {
+    BOT_TOKEN: process.env.BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN,
+    GH_TOKEN: process.env.GH_TOKEN,
+    GH_OWNER: process.env.GH_OWNER,
+    GH_REPO: process.env.GH_REPO,
+    GH_REPO_2: process.env.GH_REPO_2,
+    GH_PATH: process.env.GH_PATH,
+    GH_BRANCH: process.env.GH_BRANCH,
+    GH_STATE_REPO: process.env.GH_STATE_REPO,
+    TELEGRAM_USER_ID: process.env.TELEGRAM_USER_ID || "7747474006",
+    TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET
+  };
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
+  const env = getEnv();
 
   if (req.method === "GET") {
     return res.status(200).json({
       ok: true,
       service: "telegram-webhook",
-      hasBot: Boolean(process.env.BOT_TOKEN),
-      hasGh: Boolean(process.env.GH_TOKEN),
-      hasGithubRepo: Boolean(process.env.GH_OWNER && process.env.GH_REPO),
-      owner: process.env.GH_OWNER || null,
-      repo: process.env.GH_REPO || null,
-      webhookSecretConfigured: Boolean(process.env.TELEGRAM_WEBHOOK_SECRET)
+      hasBot: Boolean(env.BOT_TOKEN),
+      hasGh: Boolean(env.GH_TOKEN),
+      hasGithubRepo: Boolean(env.GH_OWNER && env.GH_REPO),
+      owner: env.GH_OWNER || null,
+      repo: env.GH_REPO || null,
+      webhookSecretConfigured: Boolean(env.TELEGRAM_WEBHOOK_SECRET)
     });
   }
   if (req.method !== "POST") {
     res.setHeader("Allow", "GET, POST");
     return res.status(405).json({ ok: false, error: "Method not allowed" });
   }
-  if (process.env.TELEGRAM_WEBHOOK_SECRET) {
+  if (env.TELEGRAM_WEBHOOK_SECRET) {
     const received = req.headers["x-telegram-bot-api-secret-token"];
-    if (received !== process.env.TELEGRAM_WEBHOOK_SECRET) {
+    if (received !== env.TELEGRAM_WEBHOOK_SECRET) {
       console.error("[v0] Telegram webhook rejected: invalid secret token");
       return res.status(401).json({ ok: false });
     }
   }
   const update = req.body && typeof req.body === "object" ? req.body : {};
   try {
-    await handleUpdate(update, process.env);
+    await handleUpdate(update, env);
   } catch (e) {
     console.error("[v0] Telegram update failed:", e);
     const msg = update.message || update.channel_post;
-    if (msg && process.env.BOT_TOKEN) {
-      await reply(process.env, msg.chat.id, "Error: " + String(e.message || e));
+    if (msg && env.BOT_TOKEN) {
+      await reply(env, msg.chat.id, "Error: " + String(e.message || e));
     }
   }
   return res.status(200).json({ ok: true });
