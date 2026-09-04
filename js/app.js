@@ -643,14 +643,16 @@
             <span class="w-10 h-10 rounded-full flex items-center justify-center text-black font-bold" style="background:#ff9000">▶</span>
           </span>`;
     } else {
-      const shortT = String(v.title||'').replace(/\s*-\s*koleksidrpinguin.*/i,'').replace(/_/g,' ').trim();
-      media = `<div class="absolute inset-0" style="background:linear-gradient(160deg,#1a1208,#0a0a0a 45%,#2a1a0a)">
-            <div class="absolute inset-0 opacity-30" style="background-image:radial-gradient(circle at 30% 20%,#ff900055,transparent 50%)"></div>
-            <div class="absolute bottom-0 left-0 right-0 p-3 z-10">
-              <div class="text-[11px] uppercase tracking-wide text-ph mb-1">${escapeHtml(v.category||'')}</div>
-              <div class="text-sm font-semibold leading-snug line-clamp-3">${escapeHtml(shortT)}</div>
-            </div>
-            <span class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-black font-bold" style="background:#ff9000">▶</span>
+      media = `<iframe
+            src="${escapeHtml(src)}" referrerpolicy="origin"
+            class="absolute inset-0 w-full h-full pointer-events-none"
+            loading="lazy"
+            allowfullscreen
+            frameborder="0"
+            allow="encrypted-media; picture-in-picture"
+          ></iframe>
+          <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100">
+            <span class="w-9 h-9 rounded-full flex items-center justify-center text-black font-bold" style="background:#ff9000">▶</span>
           </div>`;
     }
     return `
