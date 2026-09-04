@@ -777,7 +777,7 @@
 
   function videoShareUrl(v) {
     const key = encodeURIComponent(videoShareKey(v));
-    return location.origin + location.pathname + '?v=' + key;
+    return location.origin + '/v/' + key;
   }
 
   function findVideoByShareKey(key) {
