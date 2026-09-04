@@ -440,7 +440,7 @@
 
   function applyFilter() {
     if (currentCategory === 'All') {
-      filtered = mainPool();
+      filtered = newestFirst(mainPool(), 40);
     } else if (currentCategory.toLowerCase() === 'upload terbaru') {
       filtered = mainPool().filter(isNewUpload).sort((a, b) => {
         const da = a.date || '';
@@ -482,6 +482,20 @@
     el.innerHTML = pageItems.map(v => cardHTML(v)).join('');
     bindCardClicks(el);
     $('#videoCount').textContent = `${filtered.length} video`;
+  }
+
+  
+  function newestFirst(list, n) {
+    const arr = list.slice();
+    const scored = arr.map((v, i) => ({ v, i, d: v.date || '', idx: v._idx || 0 }));
+    scored.sort((a, b) => {
+      if (a.d !== b.d) return b.d.localeCompare(a.d);
+      return (b.idx || 0) - (a.idx || 0);
+    });
+    const top = scored.slice(0, n).map(x => x.v);
+    const keys = new Set(top.map(v => (v.embedUrl || v.embed || v.direct || '') + v.title));
+    const rest = arr.filter(v => !keys.has((v.embedUrl || v.embed || v.direct || '') + v.title));
+    return top.concat(rest);
   }
 
   function indoPool() {
