@@ -627,9 +627,12 @@
       media = `<video
             src="${escapeHtml(mp4)}"
             muted
+            autoplay
+            loop
             playsinline
-            preload="metadata"
-            class="absolute inset-0 w-full h-full object-contain bg-black pointer-events-none"
+            preload="auto"
+            poster="/logo.png"
+            class="absolute inset-0 w-full h-full object-cover bg-black pointer-events-none"
           ></video>
           <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
             <span class="w-9 h-9 rounded-full text-white flex items-center justify-center text-xs shadow" style="background:#ff9000">▶</span>
