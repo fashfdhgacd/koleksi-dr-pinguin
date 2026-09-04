@@ -7,21 +7,23 @@
 <link rel="icon" type="image/png" href="/favicon.png">
 <style>
 *{box-sizing:border-box}body{margin:0;background:#050505;color:#eee;font-family:system-ui,sans-serif}
-a{color:inherit;text-decoration:none}
+a{color:#ff9000;text-decoration:none}
 header{position:sticky;top:0;z-index:20;height:48px;background:#000;border-bottom:2px solid #ff9000;display:flex;align-items:center}
-.nav{width:min(1500px,100%);margin:0 auto;padding:0 12px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.brand{font-weight:900;letter-spacing:.02em}.brand b{color:#ff9000}
+.nav{width:min(1500px,100%);margin:0 auto;padding:0 12px;display:flex;align-items:center;justify-content:space-between}
+.brand{font-weight:900}.brand b{color:#ff9000}
 .back{font-size:11px;font-weight:800;text-transform:uppercase;border:1px solid #333;color:#ddd;padding:8px 10px;border-radius:999px}
 .wrap{width:min(1500px,100%);margin:0 auto;padding:18px 12px 40px}
 h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}
 h1 span{color:#ff9000}.meta{color:#888;font-size:12px;margin:0 0 16px}
-.grid{display:grid;grid-template-columns:1fr;gap:12px}
+.grid{display:grid;grid-template-columns:1fr;gap:14px}
 @media(min-width:640px){.grid{grid-template-columns:1fr 1fr}}
 @media(min-width:1024px){.grid{grid-template-columns:1fr 1fr 1fr}}
-.card{display:block;background:#111;border:1px solid #222;border-radius:12px;overflow:hidden}
-.card:hover{border-color:#ff9000}
-.thumb{height:160px;background:#0b0b0b;display:flex;align-items:center;justify-content:center;color:#ff9000;font-size:28px}
-.info{padding:10px 12px}.info strong{display:block;font-size:14px;line-height:1.35}.info small{color:#888}
+.card{background:#111;border:1px solid #222;border-radius:12px;overflow:hidden}
+.frame{position:relative;aspect-ratio:16/9;background:#000}
+.frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
+.info{padding:10px 12px}.info strong{display:block;color:#eee;font-size:14px;line-height:1.35;margin-bottom:6px}
+.info .row{display:flex;gap:8px}.btn{flex:1;text-align:center;font-size:11px;font-weight:800;text-transform:uppercase;border:1px solid #333;border-radius:8px;padding:8px 6px;color:#ddd}
+.btn.primary{background:#ff9000;color:#000;border-color:#ff9000}
 </style>
 </head>
 <body>
@@ -46,14 +48,21 @@ h1 span{color:#ff9000}.meta{color:#888;font-size:12px;margin:0 0 16px}
   function titleOf(v){
     return String(v.title || 'Video').replace(/[<>]/g,'').replace(/_/g,' ').trim();
   }
+  function embedOf(v){
+    var e = String(v.embed || v.direct || '');
+    if (/\/v\//.test(e)) e = e.replace('/v/', '/e/');
+    return e;
+  }
   fetch('/data/putarin.json?t=' + Date.now())
     .then(function(r){ if(!r.ok) throw 0; return r.json(); })
     .then(function(items){
       items = items || [];
-      document.getElementById('count').textContent = items.length + ' video · klik kartu = 1 halaman 1 video';
-      document.getElementById('grid').innerHTML = items.map(function(v){
+      document.getElementById('count').textContent = items.length + ' video';
+      document.getElementById('grid').innerHTML = items.map(function(v, i){
         var id = codeOf(v);
-        return '<a class="card" href="/v/' + encodeURIComponent(id) + '"><div class="thumb">▶</div><div class="info"><strong>' + titleOf(v) + '</strong><small>Buka halaman video</small></div></a>';
+        var src = embedOf(v);
+        var lazy = i < 6 ? '' : ' loading="lazy"';
+        return '<article class="card"><div class="frame"><iframe src="'+src+'"'+lazy+' allow="autoplay;fullscreen;encrypted-media" allowfullscreen referrerpolicy="origin"></iframe></div><div class="info"><strong>'+titleOf(v)+'</strong><div class="row"><a class="btn primary" href="/v/'+encodeURIComponent(id)+'">Halaman video</a><a class="btn" href="'+src+'" target="_blank" rel="noopener">Sumber</a></div></div></article>';
       }).join('') || '<p>Belum ada video.</p>';
     })
     .catch(function(){
