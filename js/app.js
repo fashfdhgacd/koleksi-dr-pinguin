@@ -635,23 +635,16 @@
           <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
             <span class="w-9 h-9 rounded-full text-white flex items-center justify-center text-xs shadow" style="background:#ff9000">▶</span>
           </div>`;
-    } else if (v.thumb) {
-      media = `<img src="${escapeHtml(v.thumb)}" alt="" class="absolute inset-0 w-full h-full object-cover bg-black" loading="lazy">
-          <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20"></div>
-          <span class="absolute bottom-2 left-2 right-10 z-10 text-xs font-semibold line-clamp-2">${escapeHtml((v.title||'').replace(/\s*-\s*koleksidrpinguin.*/i,''))}</span>
-          <span class="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <span class="w-10 h-10 rounded-full flex items-center justify-center text-black font-bold" style="background:#ff9000">▶</span>
-          </span>`;
     } else {
       media = `<iframe
             src="${escapeHtml(src)}" referrerpolicy="origin"
             class="absolute inset-0 w-full h-full pointer-events-none"
             loading="lazy"
+            allow="encrypted-media; picture-in-picture"
             allowfullscreen
             frameborder="0"
-            allow="encrypted-media; picture-in-picture"
           ></iframe>
-          <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100">
+          <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
             <span class="w-9 h-9 rounded-full flex items-center justify-center text-black font-bold" style="background:#ff9000">▶</span>
           </div>`;
     }
