@@ -203,7 +203,7 @@ async function handleShare(env, chatId) {
   await writeShareState(env, repo, st);
   const lines = take.map((x) => {
     const host = "koleksidrpinguin.com";
-    return "▶ " + x.title + "\nhttps://" + host + "/?v=" + x.key;
+    return "▶ " + x.title + "\nhttps://" + host + "/v/" + x.key;
   });
   const sisa = pool.length - take.length;
   await reply(env, chatId, lines.join("\n\n"));
