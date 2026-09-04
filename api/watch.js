@@ -6,7 +6,7 @@ module.exports = async function handler(req, res) {
       return res.end();
     }
 
-    const BLOCK = /\b(abg|sma|smk|smp|siswi|siswa|adik|adek|sekolah|pelajar|bocil|underage)\b/i;
+    const BLOCK = /\b(underage|bocil)\b/i;
     const repo = process.env.GH_REPO || "koleksi-dr-pinguin";
     const owner = process.env.GH_OWNER || "fashfdhgacd";
     const raw = "https://raw.githubusercontent.com/" + owner + "/" + repo + "/main/data/videos.json";
@@ -40,7 +40,7 @@ module.exports = async function handler(req, res) {
 
     const titleRaw = String(video.title || "Video");
     const catRaw = String(video.category || "");
-    if (BLOCK.test(titleRaw + " " + catRaw) || catRaw.toLowerCase() === "abg") {
+    if (BLOCK.test(titleRaw + " " + catRaw) ) {
       res.status(404).setHeader("Content-Type", "text/html; charset=utf-8");
       res.setHeader("X-Robots-Tag", "noindex");
       return res.end("<!doctype html><html lang=id><head><meta charset=utf-8><meta name=robots content=noindex><title>Tidak tersedia</title></head><body style='background:#0d0d0d;color:#eee;font-family:sans-serif;padding:24px'><a href='/' style='color:#ff9000'>← Gallery</a><p>Konten tidak tersedia.</p></body></html>");
