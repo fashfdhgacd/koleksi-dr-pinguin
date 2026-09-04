@@ -91,8 +91,8 @@ footer{margin-top:22px;padding-top:14px;border-top:1px solid #1c1c1c;color:#666;
 <body>
 <header>
   <div class="nav">
-    <a class="brand" href="/"><img src="/logo.png" alt=""><span>DR.<b>PINGUIN</b></span></a>
-    <a class="back" href="/">Gallery</a>
+    <a class="brand js-home" href="/"> <img src="/logo.png" alt=""><span>DR.<b>PINGUIN</b></span></a>
+    <a class="back js-home" href="/">Gallery</a>
   </div>
 </header>
 <div class="wrap">
@@ -101,7 +101,7 @@ footer{margin-top:22px;padding-top:14px;border-top:1px solid #1c1c1c;color:#666;
     <h1>${esc(title)}</h1>
     <p class="meta">${esc(cat)} · 18+</p>
     <div class="actions">
-      <a class="btn primary" href="/">Kembali</a>
+      <a class="btn primary js-home" id="backBtn" href="/">Kembali</a>
       <button class="btn" id="nativeShare" type="button">Bagikan</button>
       <button class="btn" id="copy" type="button">Salin link</button>
       <a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=${txt}">WhatsApp</a>
@@ -123,6 +123,19 @@ footer{margin-top:22px;padding-top:14px;border-top:1px solid #1c1c1c;color:#666;
   var title=${JSON.stringify(title)};
   var page=${JSON.stringify(page)};
   var payload=title+"\\n"+page;
+  function goHome(e){
+    if(e) e.preventDefault();
+    try {
+      if (document.referrer && document.referrer.indexOf(location.host) !== -1 && window.history.length > 1) {
+        window.history.back();
+        return;
+      }
+    } catch (err) {}
+    location.href = '/';
+  }
+  document.querySelectorAll('.js-home').forEach(function(el){
+    el.addEventListener('click', goHome);
+  });
   var copy=document.getElementById('copy');
   var share=document.getElementById('nativeShare');
   if(copy){
