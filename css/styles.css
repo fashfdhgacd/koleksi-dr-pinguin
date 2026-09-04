@@ -8,8 +8,10 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 .hero-fallback { z-index:0; }
 .hero-slide > .bg-gradient-to-t { z-index:2; }
 .card-poster { z-index:1; transition: transform .35s ease; }
-.video-card:hover .card-poster { transform:scale(1.04); }
-.card-fallback { display:grid; place-items:center; background:radial-gradient(circle at 50% 35%, #27203e, #08090d 70%); color:var(--ph); }
+.card-video { z-index:2; transition: opacity .25s ease, transform .35s ease; }
+.video-card:not(.has-preview) .card-video { opacity:0; }
+.video-card:hover .card-poster, .video-card:hover .card-video { transform:scale(1.04); }
+.card-fallback { z-index:0; display:grid; place-items:center; background:radial-gradient(circle at 50% 35%, #27203e, #08090d 70%); color:var(--ph); }
 .card-fallback span { width:48px; height:48px; font-size:14px; }
 .video-card:hover .border { border-color:var(--ph); }
 @media (max-width: 639px) { .video-card h3 { font-size:13px; } }

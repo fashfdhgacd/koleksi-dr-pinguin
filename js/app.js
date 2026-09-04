@@ -33,6 +33,19 @@
       if (p > 0) currentPage = p;
     } catch (_) {}
   }
+
+  function thumbnailFromUrl(url) {
+    if (!url) return '';
+    try {
+      const u = new URL(url);
+      const match = u.pathname.match(/\/([A-Za-z0-9_-]+)\.(?:mp4|mov)$/i);
+      if (u.hostname.includes('videy.co') && match) {
+        return `https://cdn.videy.co/${match[1]}.jpg`;
+      }
+    } catch (_) {}
+    return '';
+  }
+
   restoreView();
 
   const $ = (s) => document.querySelector(s);
@@ -90,7 +103,7 @@
       allVideos = allVideos.map((v, i) => ({
         id: v.id || i + 1,
         title: v.title || 'Untitled',
-        thumbnail: v.thumbnail || '',
+        thumbnail: v.thumbnail || thumbnailFromUrl(v.direct || v.embed || v.embedUrl || ''),
         embedUrl: (v.direct || v.embed || v.embedUrl || '').trim(),
         category: v.category || 'Umum',
         date: v.date || '',
@@ -626,7 +639,8 @@
     const src = v.embedUrl || '';
     const mp4 = (typeof toVideyMp4 === 'function') ? (toVideyMp4(src) || toVideyMp4(v.direct || '')) : '';
     const poster = v.thumbnail ? `<img src="${escapeHtml(v.thumbnail)}" alt="Thumbnail ${escapeHtml(v.title)}" loading="lazy" class="card-poster absolute inset-0 w-full h-full object-cover" onerror="this.style.display='none'">` : '';
-    const media = mp4 ? `<video src="${escapeHtml(mp4)}" muted playsinline preload="metadata" class="absolute inset-0 w-full h-full object-cover pointer-events-none"></video>` : `${poster}<div class="card-fallback absolute inset-0"><span>DP</span></div>`;
+    const fallback = `<div class="card-fallback absolute inset-0"><span>DP</span></div>`;
+    const media = mp4 ? `${fallback}${poster}<video src="${escapeHtml(mp4)}" muted autoplay loop playsinline preload="auto" poster="${escapeHtml(v.thumbnail)}" class="card-video absolute inset-0 w-full h-full object-cover pointer-events-none" onloadeddata="this.closest('.video-card').classList.add('has-preview')"></video>` : `${poster}${fallback}`;
     return `
       <article class="video-card group cursor-pointer" data-id="${v.id}">
         <div class="relative aspect-video rounded overflow-hidden bg-black border border-neutral-800 transition-colors">
