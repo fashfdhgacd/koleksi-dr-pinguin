@@ -58,7 +58,14 @@ h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}h
     return m ? m[1] : '';
   }
   function titleOf(v){ return String(v.title || 'Video').replace(/[<>]/g,'').replace(/_/g,' ').trim(); }
-  function embedOf(v){ return String(v.embed || v.direct || '').replace('/v/', '/e/'); }
+  function embedOf(v){
+    var id = codeOf(v);
+    return id ? ('https://puterin.biz/e/' + id) : String(v.embed || v.direct || '').replace('/v/', '/e/');
+  }
+  function watchOf(v){
+    var id = codeOf(v);
+    return id ? ('https://puterin.biz/v/' + id) : String(v.direct || v.embed || '');
+  }
   function pageNow(){ var n = parseInt((location.hash.match(/p(\d+)/)||[])[1] || '1', 10); return n > 0 ? n : 1; }
   function catNow(){
     var m = location.hash.match(/c=([^&]+)/);
@@ -97,8 +104,8 @@ h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}h
       btn.onclick = function(){ setHash(btn.getAttribute('data-cat'), 1); };
     });
     document.getElementById('grid').innerHTML = slice.map(function(v){
-      var id = codeOf(v); var src = embedOf(v);
-      return '<article class="card"><div class="frame"><iframe src="'+src+'" allow="autoplay;fullscreen;encrypted-media" allowfullscreen referrerpolicy="origin"></iframe></div><div class="info"><strong>'+titleOf(v)+'</strong><div class="row"><a class="btn primary" href="/v/'+encodeURIComponent(id)+'">Halaman video</a><a class="btn" href="'+src+'" target="_blank" rel="noopener">Sumber</a></div></div></article>';
+      var id = codeOf(v);
+      return '<article class="card"><div class="frame"><iframe src="'+embedOf(v)+'" allow="autoplay;fullscreen;encrypted-media" allowfullscreen referrerpolicy="origin"></iframe></div><div class="info"><strong>'+titleOf(v)+'</strong><div class="row"><a class="btn primary" href="/v/'+encodeURIComponent(id)+'">Halaman video</a><a class="btn" href="'+watchOf(v)+'" target="_blank" rel="noopener">Sumber</a></div></div></article>';
     }).join('') || '<p>Kosong di kategori ini.</p>';
     var html = '';
     if (p > 1) html += '<a href="#c='+encodeURIComponent(cat)+'&p'+(p-1)+'">Prev</a>';
