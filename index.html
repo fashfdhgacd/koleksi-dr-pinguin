@@ -33,8 +33,12 @@
       }}}
     }
   </script>
-  <!-- Vercel Analytics -->
+  <!-- Vercel Web Analytics - @vercel/analytics -->
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
   <script defer src="/_vercel/insights/script.js"></script>
+  <script defer src="/js/init-analytics.js"></script>
   <!-- Umami -->
   <script defer src="https://cloud.umami.is/script.js" data-website-id="f4bdb4aa-574f-41ef-a168-ba17b4c2d0cb"></script>
 </head>
