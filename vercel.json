@@ -25,6 +25,8 @@
     }
   ],
   "rewrites": [
+    { "source": "/putarin", "destination": "/putarin.html" },
+    { "source": "/putarin/", "destination": "/putarin.html" },
     { "source": "/v/:id", "destination": "/api/watch?id=:id" },
     { "source": "/v/:id/", "destination": "/api/watch?id=:id" },
     { "source": "/sitemap-v.xml", "destination": "/api/sitemap-v" }
