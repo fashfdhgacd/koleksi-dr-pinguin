@@ -32,7 +32,7 @@ function pageHtml(opts) {
   const t = encodeURIComponent(title);
   const u = encodeURIComponent(page);
   const txt = encodeURIComponent(title + "\n" + page);
-  return `<!DOCTYPE html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>${esc(title)} | Dr. Pinguin</title><style>*{box-sizing:border-box}html,body{margin:0;background:#050505;color:#eee;font-family:system-ui,sans-serif;overflow-x:hidden}a{color:#ff9000;text-decoration:none}header{position:sticky;top:0;background:#000;border-bottom:2px solid #ff9000} .nav{display:flex;justify-content:space-between;align-items:center;padding:10px 14px}.brand b{color:#ff9000}.player{position:relative;width:100%;aspect-ratio:16/9;background:#111}.player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.body{padding:14px}h1{font-size:18px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.btn{display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:10px;font-size:12px;font-weight:800;border:1px solid #2a2a2a;background:#161616;color:#eee}.btn.primary{background:#ff9000;color:#000;border-color:#ff9000}</style></head><body><header><div class="nav"><a class="brand" href="/">DR.<b>PINGUIN</b></a><a href="${back}">Kembali</a></div></header><div class="player"><iframe src="${esc(embed)}" allow="autoplay;fullscreen;encrypted-media" allowfullscreen referrerpolicy="origin"></iframe></div><div class="body"><h1>${esc(title)}</h1><p>${esc(cat)} · 18+</p><div class="actions"><a class="btn primary" href="${back}">Kembali</a><a class="btn" href="${esc(sourceWatch)}" target="_blank" rel="noopener">Sumber</a><a class="btn" href="https://wa.me/?text=${txt}" target="_blank" rel="noopener">WhatsApp</a><a class="btn" href="https://t.me/share/url?url=${u}&text=${t}" target="_blank" rel="noopener">Telegram</a></div></div></body></html>`;
+  return `<!DOCTYPE html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>${esc(title)} | Dr. Pinguin</title><style>*{box-sizing:border-box}html,body{margin:0;background:#050505;color:#eee;font-family:system-ui,sans-serif;overflow-x:hidden}a,button{color:#ff9000;text-decoration:none;font:inherit}header{position:sticky;top:0;background:#000;border-bottom:2px solid #ff9000} .nav{display:flex;justify-content:space-between;align-items:center;padding:10px 14px}.brand b{color:#ff9000}.player{position:relative;width:100%;aspect-ratio:16/9;background:#111}.player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.body{padding:14px 14px calc(20px + env(safe-area-inset-bottom))}h1{font-size:18px;margin:0 0 8px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.btn{display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:10px;font-size:12px;font-weight:800;border:1px solid #2a2a2a;background:#161616;color:#eee;cursor:pointer}.btn.primary{background:#ff9000;color:#000;border-color:#ff9000}</style></head><body><header><div class="nav"><a class="brand" href="/">DR.<b>PINGUIN</b></a><a href="${back}">Kembali</a></div></header><div class="player"><iframe src="${esc(embed)}" allow="autoplay;fullscreen;encrypted-media" allowfullscreen referrerpolicy="origin"></iframe></div><div class="body"><h1>${esc(title)}</h1><p>${esc(cat)} · 18+</p><div class="actions"><a class="btn primary" href="${back}">Kembali</a><a class="btn" href="${esc(sourceWatch)}" target="_blank" rel="noopener">Sumber</a><a class="btn" href="https://wa.me/?text=${txt}" target="_blank" rel="noopener">WhatsApp</a><a class="btn" href="https://t.me/share/url?url=${u}&text=${t}" target="_blank" rel="noopener">Telegram</a><a class="btn" href="https://twitter.com/intent/tweet?text=${t}&url=${u}" target="_blank" rel="noopener">X</a><a class="btn" href="https://www.threads.net/intent/post?text=${txt}" target="_blank" rel="noopener">Threads</a><a class="btn" href="https://www.facebook.com/sharer/sharer.php?u=${u}" target="_blank" rel="noopener">Facebook</a><a class="btn" href="https://www.reddit.com/submit?url=${u}&title=${t}" target="_blank" rel="noopener">Reddit</a><a class="btn" href="https://social-plugins.line.me/lineit/share?url=${u}" target="_blank" rel="noopener">LINE</a><a class="btn" href="mailto:?subject=${t}&body=${txt}">Email</a><button class="btn" type="button" id="btnCopy">Salin link</button><button class="btn" type="button" id="btnNative">Bagikan</button></div></div><script>var PAGE=${JSON.stringify(page)};var TITLE=${JSON.stringify(title)};var btnCopy=document.getElementById('btnCopy');if(btnCopy)btnCopy.onclick=function(){navigator.clipboard.writeText(PAGE).then(function(){btnCopy.textContent='Tersalin';setTimeout(function(){btnCopy.textContent='Salin link';},1500);});};var btnN=document.getElementById('btnNative');if(btnN)btnN.onclick=function(){if(navigator.share){navigator.share({title:TITLE,url:PAGE,text:TITLE}).catch(function(){});}else{navigator.clipboard.writeText(PAGE);btnN.textContent='Link disalin';}};</script></body></html>`;
 }
 module.exports = async function handler(req, res) {
   try {
@@ -55,16 +55,15 @@ module.exports = async function handler(req, res) {
     const page = origin + "/v/" + encodeURIComponent(id);
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     if (!video) {
-      const html = pageHtml({
+      res.statusCode = 200;
+      return res.end(pageHtml({
         title: id,
         cat: "Putarin",
         embed: "https://puterin.biz/e/" + id,
         sourceWatch: "https://puterin.biz/v/" + id,
         back: "/putarin",
         page: page
-      });
-      res.statusCode = 200;
-      return res.end(html);
+      }));
     }
     const title = String(video.title || "Video").replace(/\s*-\s*koleksidrpinguin.*/i, "").replace(/_/g, " ").trim() || "Video";
     const raw = String(video.embed || video.direct || video.embedUrl || "");
@@ -76,16 +75,15 @@ module.exports = async function handler(req, res) {
       embed = "https://puterin.biz/e/" + code;
       sourceWatch = "https://puterin.biz/v/" + code;
     }
-    const html = pageHtml({
+    res.statusCode = 200;
+    return res.end(pageHtml({
       title: title,
       cat: String(video.folder || video.category || (put ? "Putarin" : "Video")),
       embed: embed,
       sourceWatch: sourceWatch,
       back: put ? "/putarin" : "/",
       page: page
-    });
-    res.statusCode = 200;
-    return res.end(html);
+    }));
   } catch (e) {
     res.statusCode = 500;
     res.setHeader("Content-Type", "text/html; charset=utf-8");
