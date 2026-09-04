@@ -971,7 +971,17 @@
     document.querySelectorAll('a[href="#genre"]').forEach(a => {
       a.addEventListener('click', (e) => { e.preventDefault(); showKategoriView(); });
     });
-    document.querySelectorAll('a[href="#terbaru"], a[href="#home"]').forEach(a => {
+    document.querySelectorAll('a[href="#home"]').forEach(a => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        currentCategory = 'All';
+        currentPage = 1;
+        if (typeof persistView === 'function') persistView();
+        if (typeof applyFilter === 'function') applyFilter();
+        showGalleryView('#terbaru');
+      });
+    });
+    document.querySelectorAll('a[href="#terbaru"]').forEach(a => {
       a.addEventListener('click', (e) => {
         e.preventDefault();
         currentCategory = 'Upload Terbaru';
@@ -1032,7 +1042,17 @@
     document.querySelectorAll('a[href="#genre"]').forEach(a => {
       a.addEventListener('click', (e) => { e.preventDefault(); showKategoriView(); });
     });
-    document.querySelectorAll('a[href="#terbaru"], a[href="#home"]').forEach(a => {
+    document.querySelectorAll('a[href="#home"]').forEach(a => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        currentCategory = 'All';
+        currentPage = 1;
+        if (typeof persistView === 'function') persistView();
+        if (typeof applyFilter === 'function') applyFilter();
+        showGalleryView('#terbaru');
+      });
+    });
+    document.querySelectorAll('a[href="#terbaru"]').forEach(a => {
       a.addEventListener('click', (e) => {
         e.preventDefault();
         currentCategory = 'Upload Terbaru';
