@@ -241,10 +241,8 @@
     const cat = (v.category || '').toLowerCase();
     const url = (v.embedUrl || v.direct || v.embed || '').toLowerCase();
     return cat === 'vicek' || cat === 'vicek.id' || cat.includes('exastream')
-      || cat === 'videy' || cat.includes('videy')
       || cat.includes('doodstream') || cat.includes('ai bokep')
       || url.includes('vicek.id') || url.includes('exastream')
-      || url.includes('videy.co') || url.includes('cdn.videy.co')
       || url.includes('playmogo.com') || url.includes('doodstream') || url.includes('dood.watch');
   }
 
@@ -637,10 +635,12 @@
 
   function cardHTML(v) {
     const src = v.embedUrl || '';
-    const mp4 = (typeof toVideyMp4 === 'function') ? (toVideyMp4(src) || toVideyMp4(v.direct || '')) : '';
-    const poster = v.thumbnail ? `<img src="${escapeHtml(v.thumbnail)}" alt="Thumbnail ${escapeHtml(v.title)}" loading="lazy" class="card-poster absolute inset-0 w-full h-full object-cover" onerror="this.style.display='none'">` : '';
-    const fallback = `<div class="card-fallback absolute inset-0"><span>DP</span></div>`;
-    const media = mp4 ? `${fallback}${poster}<video src="${escapeHtml(mp4)}" muted autoplay loop playsinline preload="auto" poster="${escapeHtml(v.thumbnail)}" class="card-video absolute inset-0 w-full h-full object-cover pointer-events-none" onloadeddata="this.closest('.video-card').classList.add('has-preview')"></video>` : `${poster}${fallback}`;
+  const directUrl = (v.direct || '').trim();
+  const mp4 = /\.(mp4|mov)(\?|$)/i.test(directUrl) ? directUrl : ((typeof toVideyMp4 === 'function') ? (toVideyMp4(src) || toVideyMp4(directUrl)) : '');
+  const poster = v.thumbnail ? `<img src="${escapeHtml(v.thumbnail)}" alt="Thumbnail ${escapeHtml(v.title)}" loading="lazy" class="card-poster absolute inset-0 w-full h-full object-cover" onerror="this.style.display='none'">` : '';
+  const fallback = `<div class="card-fallback absolute inset-0"><span>DP</span></div>`;
+  const previewFrame = src ? `<iframe src="${escapeHtml(src)}" title="Preview ${escapeHtml(v.title)}" loading="lazy" allow="autoplay; fullscreen" class="card-iframe absolute inset-0 w-full h-full border-0" onload="this.closest('.video-card').classList.add('has-preview')"></iframe>` : '';
+  const media = mp4 ? `${fallback}${poster}<video src="${escapeHtml(mp4)}" muted autoplay loop playsinline preload="metadata" poster="${escapeHtml(v.thumbnail)}" class="card-video absolute inset-0 w-full h-full object-cover pointer-events-none" onloadeddata="this.closest('.video-card').classList.add('has-preview')" onerror="this.remove(); this.closest('.video-card').classList.remove('has-preview')"></video>` : `${fallback}${poster}${previewFrame}`;
     return `
       <article class="video-card group cursor-pointer" data-id="${v.id}">
         <div class="relative aspect-video rounded overflow-hidden bg-black border border-neutral-800 transition-colors">
