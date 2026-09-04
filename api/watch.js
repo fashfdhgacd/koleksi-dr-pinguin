@@ -101,9 +101,9 @@ footer{margin-top:22px;padding-top:14px;border-top:1px solid #1c1c1c;color:#666;
     <h1>${esc(title)}</h1>
     <p class="meta">${esc(cat)} · 18+</p>
     <div class="actions">
-      <button class="btn primary" id="nativeShare" type="button">Bagikan</button>
+      <a class="btn primary" href="/">Kembali</a>
+      <button class="btn" id="nativeShare" type="button">Bagikan</button>
       <button class="btn" id="copy" type="button">Salin link</button>
-      <a class="btn" href="/">Kembali</a>
       <a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=${txt}">WhatsApp</a>
       <a class="btn" target="_blank" rel="noopener" href="https://t.me/share/url?url=${u}&text=${t}">Telegram</a>
       <a class="btn" target="_blank" rel="noopener" href="https://twitter.com/intent/tweet?text=${t}&url=${u}">X</a>
