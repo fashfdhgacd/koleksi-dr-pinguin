@@ -83,7 +83,7 @@
       }
       if (!data) throw lastErr || new Error('fetch failed');
 
-      allVideos = Array.isArray(data) ? data : [];
+      allVideos = (Array.isArray(data) ? data : []).filter(v => !isBlockedItem(v));
       allVideos = allVideos.map((v, i) => ({
         id: v.id || i + 1,
         title: v.title || 'Untitled',
@@ -292,7 +292,7 @@
     const cats = Object.entries(counts)
       .filter(([name]) => {
         const n = String(name).toLowerCase();
-        return n !== 'vicek' && n !== 'vicek.id' && !n.includes('exastream') && n !== 'videy' && !n.includes('videy') && !n.includes('doodstream') && n !== 'ai bokep' && !n.includes('ai bokep');
+        return n !== 'abg' && n !== 'vicek' && n !== 'vicek.id' && !n.includes('exastream') && n !== 'videy' && !n.includes('videy') && !n.includes('doodstream') && n !== 'ai bokep' && !n.includes('ai bokep');
       })
       .sort((a, b) => b[1] - a[1])
       .map(([name, count]) => ({ name, count }));
@@ -478,7 +478,7 @@
     const map = [
       ['Jilbab', ['jilbab','hijab','ukhti','ukhty','cadar']],
       ['STW', ['tante','janda','stw','binor','ibu kost','pembantu']],
-      ['ABG', ['abg','sma','mahasiswi','remaja','siswi','adik tiri','adik']],
+      ['Umum', ['mahasiswi','remaja']],
       ['Colmek', ['colmek','omek','dildo']],
       ['Viral', ['viral']],
       ['Live', ['live show','live ','vcs','hot51']],
@@ -584,6 +584,12 @@
     return top.concat(rest);
   }
 
+  
+  function isBlockedItem(v) {
+    const t = ((v && (v.title || '')) + ' ' + ((v && v.category) || '')).toLowerCase();
+    return /\b(abg|sma|smk|smp|siswi|siswa|adik|adek|sekolah|pelajar|bocil|underage)\b/.test(t) || String((v && v.category) || '').toLowerCase() === 'abg';
+  }
+
   function indoPool() {
     return allVideos.filter(v => {
       const u = ((v.embedUrl || v.direct || v.embed || '') + '').toLowerCase();
@@ -629,17 +635,8 @@
             <span class="w-9 h-9 rounded-full text-white flex items-center justify-center text-xs shadow" style="background:#ff9000">▶</span>
           </div>`;
     } else {
-      media = `<iframe
-            src="${escapeHtml(src)}" referrerpolicy="${(typeof isDoodUrl==='function' && isDoodUrl(src)) ? 'no-referrer' : 'origin'}"
-            class="absolute inset-0 w-full h-full pointer-events-none opacity-90"
-            allowfullscreen
-            frameborder="0"
-            allow="encrypted-media; picture-in-picture"
-          ></iframe>
-          <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-            <div class="w-9 h-9 rounded-full flex items-center justify-center shadow" style="background:#ff9000">
-              <i class="fas fa-play text-white text-xs ml-0.5"></i>
-            </div>
+      media = `<div class="absolute inset-0 bg-neutral-950 flex items-center justify-center">
+            <span class="w-12 h-12 rounded-full flex items-center justify-center text-black text-lg font-bold" style="background:#ff9000">▶</span>
           </div>`;
     }
     return `
