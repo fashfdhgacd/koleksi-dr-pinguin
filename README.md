@@ -1,30 +1,27 @@
 # Koleksi Dr. Pinguin Bokep, M.S.B.
 
-Modern static video gallery with admin panel + GitHub auto-save.
+Gallery static + admin + API share (`/v/:id`) untuk domain **https://koleksidrpinguin.site**
 
-## Structure
+Repo: https://github.com/fashfdhgacd/koleksi-dr-pinguin.git
 
-```
-koleksi-dr-pinguin/
-├── index.html          # Gallery utama
-├── admin.html          # Admin panel (password protected)
-├── css/styles.css
-├── js/app.js           # Gallery logic
-├── js/admin.js         # Admin + GitHub push
-├── data/videos.json    # Semua data video
-├── logo.png
-├── vercel.json
-└── README.md
-```
+## Deploy ke Vercel (akun baru)
+
+1. Import project dari GitHub repo ini.
+2. Framework Preset: **Other**
+3. Build Command: kosong
+4. Output Directory: `.`
+5. Root Directory: `.`
+6. Deploy.
+7. **Wajib:** Settings → Deployment Protection → matikan **Vercel Authentication** untuk Production **dan** Preview.
+   Kalau ini nyala, URL `*.vercel.app` cuma login wall (itu yang bikin preview terlihat rusak).
+8. Settings → Domains → add `koleksidrpinguin.site` + `www.koleksidrpinguin.site`.
+9. Promote deployment ke **Production** (bukan cuma Preview).
+
+Production domain publik = `koleksidrpinguin.site`.
+Preview `*-ysdira106-*.vercel.app` akan tetap login-walled kalau Protection belum dimatikan.
 
 ## Admin
 
 1. Buka `/admin.html`
 2. Password: `Koleksi Dr. Pinguin Bokep, M.S.B`
-3. Tab **Export / Import** → isi GitHub Token → **Simpan ke GitHub**
-
-## Deploy
-
-Import repo di Vercel → Framework: Other → Output: `.` → Deploy.
-
-Matikan **Deployment Protection / Vercel Authentication** di Settings agar URL publik bisa diakses tanpa login.
+3. Tab Export / Import → GitHub Token → Simpan ke GitHub
