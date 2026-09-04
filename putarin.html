@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Putarin | Dr. Pinguin</title>
+<meta name="robots" content="index,follow">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#050505;color:#eee;font-family:system-ui,sans-serif}
+a{color:#ff9000;text-decoration:none}
+header{position:sticky;top:0;background:#000;border-bottom:2px solid #ff9000;padding:10px 14px;display:flex;justify-content:space-between;align-items:center}
+.brand b{color:#ff9000}
+.wrap{max-width:900px;margin:0 auto;padding:16px 14px 40px}
+h1{font-size:20px;margin:0 0 6px}p.note{color:#888;font-size:13px;margin:0 0 16px}
+.item{display:block;padding:12px 14px;margin:0 0 8px;border:1px solid #222;border-radius:10px;background:#111;color:#eee}
+.item:hover{border-color:#ff9000}
+.item small{display:block;color:#888;font-size:11px;margin-top:4px}
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="/">DR.<b>PINGUIN</b></a>
+  <a href="/">Gallery</a>
+</header>
+<div class="wrap">
+  <h1>Putarin</h1>
+  <p class="note">Satu video satu halaman. Tidak di-embed di grid biar gallery tidak rusak.</p>
+  <div id="list">Memuat...</div>
+</div>
+<script>
+(function(){
+  function codeOf(v){
+    var u = String(v.embed || v.direct || '');
+    var m = u.match(/\/(?:e|v)\/([A-Za-z0-9_-]+)/);
+    return m ? m[1] : '';
+  }
+  function titleOf(v){
+    return String(v.title || 'Video').replace(/^\u25b6\s*/, '').replace(/_/g,' ').trim();
+  }
+  fetch('/data/videos.json?t=' + Date.now())
+    .then(function(r){ return r.json(); })
+    .then(function(list){
+      var items = (list || []).filter(function(v){
+        var b = String((v.category||'')+' '+(v.embed||'')+' '+(v.direct||'')).toLowerCase();
+        return b.indexOf('putarin') !== -1 || b.indexOf('puterin') !== -1;
+      });
+      if (!items.length) {
+        document.getElementById('list').innerHTML = '<p>Belum ada video Putarin.</p>';
+        return;
+      }
+      document.getElementById('list').innerHTML = items.map(function(v){
+        var id = codeOf(v);
+        var href = '/v/' + encodeURIComponent(id || titleOf(v));
+        return '<a class="item" href="'+href+'"><strong>'+titleOf(v).replace(/[<>]/g,'')+'</strong><small>Buka halaman video</small></a>';
+      }).join('');
+    })
+    .catch(function(){
+      document.getElementById('list').innerHTML = '<p>Gagal memuat daftar.</p>';
+    });
+})();
+</script>
+</body>
+</html>
