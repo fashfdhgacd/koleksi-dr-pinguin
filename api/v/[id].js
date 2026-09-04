@@ -77,6 +77,13 @@ module.exports = async function handler(req, res) {
       .replace(/</g, "&lt;")
       .replace(/"/g, "&quot;");
 
+    const ua = String(req.headers["user-agent"] || "").toLowerCase();
+    const isBot = /bot|crawl|spider|slurp|telegram|whatsapp|facebookexternalhit|facebot|twitterbot|linkedinbot|preview|embed|google|bing|yandex|baidu|duckduck/.test(ua);
+    if (!isBot) {
+      res.writeHead(302, { Location: "/?v=" + encodeURIComponent(id), "Cache-Control": "no-store" });
+      return res.end();
+    }
+
     const html = `<!DOCTYPE html>
 <html lang="id">
 <head>
