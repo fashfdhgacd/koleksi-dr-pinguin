@@ -99,7 +99,10 @@
       const qv = new URLSearchParams(location.search).get('v');
       if (qv) {
         const hit = findVideoByShareKey(qv);
-        if (hit) setTimeout(() => openModal(hit), 250);
+        if (hit) setTimeout(() => {
+          openModal(hit);
+          clearShareQuery();
+        }, 250);
       }
     } catch (e) {
       console.error('Load videos error:', e);
@@ -837,7 +840,19 @@
     document.body.style.touchAction = 'none';
   }
 
+  
+  function clearShareQuery() {
+    try {
+      if (!location.search.includes('v=')) return;
+      const u = new URL(location.href);
+      u.searchParams.delete('v');
+      const qs = u.searchParams.toString();
+      history.replaceState({}, '', u.pathname + (qs ? '?' + qs : '') + u.hash);
+    } catch (_) {}
+  }
+
   function closeModal() {
+    clearShareQuery();
     const modal = $('#videoModal');
     const iframe = $('#modalIframe');
     if (iframe) { iframe.src = 'about:blank'; iframe.style.display = ''; }
