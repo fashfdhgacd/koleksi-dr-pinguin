@@ -292,7 +292,7 @@
     const cats = Object.entries(counts)
       .filter(([name]) => {
         const n = String(name).toLowerCase();
-        return n !== 'abg' && n !== 'vicek' && n !== 'vicek.id' && !n.includes('exastream') && n !== 'videy' && !n.includes('videy') && !n.includes('doodstream') && n !== 'ai bokep' && !n.includes('ai bokep');
+        return n !== 'vicek' && n !== 'vicek.id' && !n.includes('exastream') && n !== 'videy' && !n.includes('videy') && !n.includes('doodstream') && n !== 'ai bokep' && !n.includes('ai bokep');
       })
       .sort((a, b) => b[1] - a[1])
       .map(([name, count]) => ({ name, count }));
@@ -478,7 +478,7 @@
     const map = [
       ['Jilbab', ['jilbab','hijab','ukhti','ukhty','cadar']],
       ['STW', ['tante','janda','stw','binor','ibu kost','pembantu']],
-      ['Umum', ['mahasiswi','remaja']],
+      ['ABG', ['abg','mahasiswi','remaja']],
       ['Colmek', ['colmek','omek','dildo']],
       ['Viral', ['viral']],
       ['Live', ['live show','live ','vcs','hot51']],
@@ -587,7 +587,7 @@
   
   function isBlockedItem(v) {
     const t = ((v && (v.title || '')) + ' ' + ((v && v.category) || '')).toLowerCase();
-    return /\b(abg|sma|smk|smp|siswi|siswa|adik|adek|sekolah|pelajar|bocil|underage)\b/.test(t) || String((v && v.category) || '').toLowerCase() === 'abg';
+    return /\b(underage|bocil)\b/.test(t);
   }
 
   function indoPool() {
