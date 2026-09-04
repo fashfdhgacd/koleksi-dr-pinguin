@@ -48,6 +48,9 @@ function isBlockedHost(u) { return /vicek\.id|exastream/i.test(String(u || ""));
 function isAllowedHost(u) {
   return /videy\.co|indoav\.|userbokep\.com|putarin\.(com|biz|xyz)|puterin\.(com|biz|xyz)/i.test(String(u || ""));
 }
+function isPutarinItem(it) {
+  return /putarin|puterin/i.test(String((it && it.category) || "") + String((it && it.embed) || "") + String((it && it.direct) || ""));
+}
 function putarinHost(url) {
   try { return new URL(url).origin; } catch (_) { return "https://puterin.biz"; }
 }
@@ -93,8 +96,18 @@ async function handleUpdate(update, env) {
     return { processed: true, command: "parse_fail" };
   }
   try {
-    const r = await mergeAndPush(env, env.GH_REPO, items);
-    await reply(env, chatId, "Selesai diproses.\nLink diterima: " + items.length + "\n" + env.GH_REPO + ": +" + r.added + " update " + (r.updated || 0) + " skip " + r.skipped);
+    const putItems = items.filter(isPutarinItem);
+    const other = items.filter(function (it) { return !isPutarinItem(it); });
+    let added = 0, skipped = 0, updated = 0;
+    if (putItems.length) {
+      const r = await mergeAndPush(env, env.GH_REPO, putItems, "data/putarin.json");
+      added += r.added; skipped += r.skipped; updated += r.updated || 0;
+    }
+    if (other.length) {
+      const r = await mergeAndPush(env, env.GH_REPO, other, "data/videos.json");
+      added += r.added; skipped += r.skipped; updated += r.updated || 0;
+    }
+    await reply(env, chatId, "Selesai diproses.\nLink diterima: " + items.length + "\nPutarin: " + putItems.length + " (ke /putarin)\n+" + added + " skip " + skipped);
   } catch (e) {
     await reply(env, chatId, "Gagal simpan: " + String(e.message || e));
   }
@@ -129,8 +142,8 @@ function shareKeyFromVideo(v) {
 function cleanTitle(t) {
   return String(t || "Video").replace(/^\u25b6\s*/, "").replace(/\s*-\s*koleksidrpinguin.*/i, "").replace(/_/g, " ").replace(/\s+/g, " ").trim();
 }
-async function readVideos(env, repo) {
-  const owner = env.GH_OWNER; const path = env.GH_PATH || "data/videos.json"; const branch = env.GH_BRANCH || "main";
+async function readJsonPath(env, repo, path) {
+  const owner = env.GH_OWNER; const branch = env.GH_BRANCH || "main";
   const meta = await gh(env, "/repos/" + owner + "/" + repo + "/contents/" + path + "?ref=" + branch);
   let raw = "";
   if (meta.content && meta.content.length < 500000) raw = Buffer.from(meta.content.replace(/\n/g, ""), "base64").toString("utf8");
@@ -139,7 +152,11 @@ async function readVideos(env, repo) {
     const rr = await fetch(dl + (dl.includes("?") ? "&" : "?") + "t=" + Date.now(), { headers: { Authorization: "token " + env.GH_TOKEN, "User-Agent": "dr-pinguin-tg-bot", Accept: "application/vnd.github.v3.raw" } });
     raw = await rr.text();
   }
-  return JSON.parse(raw);
+  return { data: raw && raw.trim() ? JSON.parse(raw) : [], sha: meta.sha };
+}
+async function readVideos(env, repo) {
+  const r = await readJsonPath(env, repo, env.GH_PATH || "data/videos.json");
+  return r.data;
 }
 async function stateRepo(env) { return env.GH_STATE_REPO || "kdp-bot-state"; }
 async function readShareState(env) {
@@ -165,7 +182,7 @@ async function handleShare(env, chatId) {
   const pool = [];
   for (const v of videos) {
     const blob = String(v.embed || v.direct || v.category || "");
-    if (/vicek|exastream/i.test(blob)) continue;
+    if (/vicek|exastream|puterin|putarin/i.test(blob)) continue;
     const key = shareKeyFromVideo(v);
     if (!key || used.has(key)) continue;
     pool.push({ key: key, title: cleanTitle(v.title) });
@@ -231,19 +248,28 @@ function videoKey(v) {
   if (u.includes("id=")) return u.split("id=")[1].split("&")[0];
   return u.split("/").pop().replace(/\.(mp4|mov)$/, "");
 }
-async function mergeAndPush(env, repo, items) {
-  items = items.filter(function (it) { return !isBlockedHost(it.embed) && !isBlockedHost(it.direct) && !/exastream|vicek/i.test(String(it.category || "")); });
-  const owner = env.GH_OWNER; const path = env.GH_PATH || "data/videos.json"; const branch = env.GH_BRANCH || "main";
-  const meta = await gh(env, "/repos/" + owner + "/" + repo + "/contents/" + path + "?ref=" + branch);
-  let raw = "";
-  if (meta.content) raw = Buffer.from(meta.content.replace(/\n/g, ""), "base64").toString("utf8");
-  else {
-    const dl = meta.download_url || ("https://raw.githubusercontent.com/" + owner + "/" + repo + "/" + branch + "/" + path);
-    const rr = await fetch(dl + (dl.includes("?") ? "&" : "?") + "t=" + Date.now(), { headers: { Authorization: "token " + env.GH_TOKEN, "User-Agent": "dr-pinguin-tg-bot", Accept: "application/vnd.github.v3.raw" } });
-    raw = await rr.text();
+async function mergeAndPush(env, repo, items, path) {
+  path = path || env.GH_PATH || "data/videos.json";
+  const owner = env.GH_OWNER; const branch = env.GH_BRANCH || "main";
+  let meta, raw = "[]", sha = null;
+  try {
+    meta = await gh(env, "/repos/" + owner + "/" + repo + "/contents/" + path + "?ref=" + branch);
+    sha = meta.sha;
+    if (meta.content) raw = Buffer.from(meta.content.replace(/\n/g, ""), "base64").toString("utf8");
+    else {
+      const dl = meta.download_url || ("https://raw.githubusercontent.com/" + owner + "/" + repo + "/" + branch + "/" + path);
+      const rr = await fetch(dl + (dl.includes("?") ? "&" : "?") + "t=" + Date.now(), { headers: { Authorization: "token " + env.GH_TOKEN, "User-Agent": "dr-pinguin-tg-bot", Accept: "application/vnd.github.v3.raw" } });
+      raw = await rr.text();
+    }
+  } catch (e) {
+    raw = "[]";
   }
-  if (!raw || !raw.trim()) throw new Error("videos.json kosong / gagal dibaca");
-  const videos = JSON.parse(raw).filter(function (v) { return !/vicek|exastream/i.test(String(v.embed || "") + String(v.direct || "") + String(v.category || "")); });
+  if (!raw || !raw.trim()) raw = "[]";
+  let videos = JSON.parse(raw);
+  if (!Array.isArray(videos)) videos = [];
+  if (path.indexOf("videos.json") >= 0) {
+    videos = videos.filter(function (v) { return !/vicek|exastream|puterin|putarin/i.test(String(v.embed || "") + String(v.direct || "") + String(v.category || "")); });
+  }
   const exist = new Set(videos.map(videoKey));
   let added = 0, skipped = 0, updated = 0; const fresh = [];
   for (const it of items) {
@@ -252,8 +278,10 @@ async function mergeAndPush(env, repo, items) {
     exist.add(k); fresh.push(it); added += 1;
   }
   for (let i = fresh.length - 1; i >= 0; i--) videos.unshift(fresh[i]);
-  if (!added && !updated) return { added: added, skipped: skipped, updated: updated };
-  await gh(env, "/repos/" + owner + "/" + repo + "/contents/" + path, { method: "PUT", body: JSON.stringify({ message: "bot: add " + added + " videos from Telegram", content: Buffer.from(JSON.stringify(videos, null, 2), "utf8").toString("base64"), sha: meta.sha, branch: branch }) });
+  if (!added && !updated && path.indexOf("videos.json") < 0) return { added: added, skipped: skipped, updated: updated };
+  const body = { message: "bot: add " + added + " to " + path, content: Buffer.from(JSON.stringify(videos, null, 2), "utf8").toString("base64"), branch: branch };
+  if (sha) body.sha = sha;
+  await gh(env, "/repos/" + owner + "/" + repo + "/contents/" + path, { method: "PUT", body: JSON.stringify(body) });
   return { added: added, skipped: skipped, updated: updated };
 }
 async function gh(env, path, opt) {
