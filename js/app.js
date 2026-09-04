@@ -4,6 +4,10 @@
     .then(function (r) { return r.text(); })
     .then(function (code) {
       code = code.replace(
+        "function isHiddenHome(v) {\n    const cat = (v.category || '').toLowerCase();",
+        "function isHiddenHome(v) {\n    const _put = String((v.category || '') + ' ' + (v.embed || v.embedUrl || v.direct || '')).toLowerCase();\n    if (_put.includes('putarin') || _put.includes('puterin')) return true;\n    const cat = (v.category || '').toLowerCase();"
+      );
+      code = code.replace(
         "function isVideyCat(name) {",
         "function isPutarinItem(v) {\n    const blob = String((v.category || '') + ' ' + (v.embed || v.embedUrl || v.direct || '')).toLowerCase();\n    return blob.includes('putarin') || blob.includes('puterin');\n  }\n  function isJavItem(v) {\n    const blob = String((v.category || '') + ' ' + (v.title || '') + ' ' + (Array.isArray(v.tags) ? v.tags.join(' ') : '')).toLowerCase();\n    return /\\bjav\\b|jepang|japan|tokyo[- ]?hot|caribbean|1pondo|heyzo|s-cute|prestige/.test(blob);\n  }\n  function isVideyCat(name) {"
       );
@@ -14,10 +18,6 @@
       code = code.replace(
         "    } else if (isVideyCat(currentCategory)) {",
         "    } else if (String(currentCategory).toLowerCase() === 'putarin') {\n      filtered = allVideos.filter(isPutarinItem);\n    } else if (String(currentCategory).toLowerCase() === 'jav') {\n      filtered = allVideos.filter(isJavItem);\n    } else if (isVideyCat(currentCategory)) {"
-      );
-      code = code.replace(
-        "function isHiddenHome(v) {",
-        "function isHiddenHome(v) {\n    const _put = String((v.category || '') + ' ' + (v.embed || v.embedUrl || v.direct || '')).toLowerCase();\n    if (_put.includes('putarin') || _put.includes('puterin')) return true;\n    if (false) {"
       );
       code = code.replace(
         "'Upload Terbaru': 'fa-clock', ExaStream: 'fa-play-circle', Videy: 'fa-video',",
