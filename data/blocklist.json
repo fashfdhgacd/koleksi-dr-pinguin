@@ -1,0 +1,17 @@
+{
+  "reject": [
+    "abg",
+    "sma",
+    "smk",
+    "smp",
+    "siswi",
+    "siswa",
+    "adik",
+    "adek",
+    "sekolah",
+    "pelajar",
+    "bocil",
+    "underage"
+  ],
+  "note": "Reject upload and hide from UI. Do not use as categories."
+}
