@@ -57,7 +57,12 @@
     {
       "source": "/v/:id/",
       "destination": "/api/watch?id=:id"
+    },
+    {
+      "source": "/sitemap-v.xml",
+      "destination": "/api/sitemap-v"
     }
   ],
-  "redirects": []
+  "redirects": [],
+  "ignoreCommand": "if git diff --name-only HEAD^ HEAD 2>/dev/null | grep -qvE \"^(data/|.*videos\\\\.json$|.*blocklist)\"; then exit 1; else exit 0; fi"
 }
