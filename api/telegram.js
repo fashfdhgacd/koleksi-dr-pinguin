@@ -64,7 +64,15 @@ async function handleUpdate(update, env) {
     await reply(env, chatId, "Env GitHub belum lengkap.\nCek Environment Variables Vercel, lalu Redeploy.");
     return;
   }
-  const items = parseNamedLinks(text);
+  const items = parseNamedLinks(text).filter((it) => {
+    if (isBlockedTitle(it.title) || isBlockedTitle(it.category)) return false;
+    return true;
+  });
+  const blockedN = parseNamedLinks(text).length - items.length;
+  if (blockedN > 0 && !items.length) {
+    await reply(env, chatId, "Ditolak: judul mengandung kata yang tidak diizinkan.");
+    return;
+  }
   if (!items.length) {
     await reply(env, chatId, "Link terbaca tapi gagal diproses.");
     return;
@@ -211,12 +219,17 @@ async function handleShare(env, chatId) {
 
 
 
+
+function isBlockedTitle(s) {
+  return /\b(abg|sma|smk|smp|siswi|siswa|adik|adek|sekolah|pelajar|bocil|underage)\b/i.test(String(s || ""));
+}
+
 function detectCat(title) {
   const t = (title || "").toLowerCase();
   const map = [
     ["Jilbab", ["jilbab","hijab","ukhti","ukhty","cadar"]],
     ["STW", ["tante","janda","stw","ibu kost","binor","pembantu"]],
-    ["ABG", ["abg","sma","mahasiswi","remaja","siswi","adik"]],
+    ["Umum", ["mahasiswi","remaja"]],
     ["Colmek", ["colmek","omek","dildo"]],
     ["Viral", ["viral"]],
     ["Live", ["live","vcs","hot51"]],
