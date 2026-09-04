@@ -43,7 +43,11 @@
   "rewrites": [
     {
       "source": "/v/:id",
-      "destination": "/api/v/:id"
+      "destination": "/api/watch?id=:id"
+    },
+    {
+      "source": "/v/:id/",
+      "destination": "/api/watch?id=:id"
     }
   ]
 }
