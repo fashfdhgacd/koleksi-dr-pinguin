@@ -1,21 +1,34 @@
 module.exports = async function handler(req, res) {
+  res.setHeader("Cache-Control", "no-store");
+
   if (req.method === "GET") {
     return res.status(200).json({
       ok: true,
+      service: "telegram-webhook",
       hasBot: Boolean(process.env.BOT_TOKEN),
       hasGh: Boolean(process.env.GH_TOKEN),
+      hasGithubRepo: Boolean(process.env.GH_OWNER && process.env.GH_REPO),
       owner: process.env.GH_OWNER || null,
-      repo: process.env.GH_REPO || null
+      repo: process.env.GH_REPO || null,
+      webhookSecretConfigured: Boolean(process.env.TELEGRAM_WEBHOOK_SECRET)
     });
   }
   if (req.method !== "POST") {
-    return res.status(405).json({ ok: false });
+    res.setHeader("Allow", "GET, POST");
+    return res.status(405).json({ ok: false, error: "Method not allowed" });
   }
-  const update = req.body || {};
+  if (process.env.TELEGRAM_WEBHOOK_SECRET) {
+    const received = req.headers["x-telegram-bot-api-secret-token"];
+    if (received !== process.env.TELEGRAM_WEBHOOK_SECRET) {
+      console.error("[v0] Telegram webhook rejected: invalid secret token");
+      return res.status(401).json({ ok: false });
+    }
+  }
+  const update = req.body && typeof req.body === "object" ? req.body : {};
   try {
     await handleUpdate(update, process.env);
   } catch (e) {
-    console.error(e);
+    console.error("[v0] Telegram update failed:", e);
     const msg = update.message || update.channel_post;
     if (msg && process.env.BOT_TOKEN) {
       await reply(process.env, msg.chat.id, "Error: " + String(e.message || e));
