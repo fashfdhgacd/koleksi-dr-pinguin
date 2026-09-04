@@ -39,7 +39,19 @@ h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}h
 (function(){
   var PER = 6;
   var CATS = ['AI','Film','Series','Anime','Musik','Gaming','Edukasi','JAV','Lainnya'];
-  function folderOf(v){ return String(v.folder || 'Lainnya'); }
+  function classify(title){
+    var t = String(title||'').toLowerCase();
+    if (/ai\s*-?\s*koleksidrpinguin|koleksidrpinguin\.com|^ai-|ai-/.test(t)) return 'AI';
+    if (/\bjav\b|jepang|japan|tokyo[- ]?hot|caribbean|1pondo|heyzo|start-\d|meyd-|ssis-|ipx-|fc2/.test(t)) return 'JAV';
+    if (/anime|doraemon|gintama|naruto|one piece/.test(t)) return 'Anime';
+    if (/\b(season|episode|series)\b/.test(t)) return 'Series';
+    if (/musik|music|\bmv\b|concert|lagu/.test(t)) return 'Musik';
+    if (/gaming|gameplay|\bgame\b/.test(t)) return 'Gaming';
+    if (/edukasi|tutorial|belajar/.test(t)) return 'Edukasi';
+    if (/\(20\d\d\)|film|movie/.test(t)) return 'Film';
+    return 'Lainnya';
+  }
+  function folderOf(v){ return String(v.folder || classify(v.title)); }
   function codeOf(v){
     var u = String(v.embed || v.direct || '');
     var m = u.match(/\/(?:e|v)\/([A-Za-z0-9_-]+)/);
