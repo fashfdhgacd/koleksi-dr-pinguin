@@ -627,19 +627,30 @@
       media = `<video
             src="${escapeHtml(mp4)}"
             muted
-            autoplay
-            loop
+            muted
             playsinline
-            preload="auto"
-            poster="/logo.png"
+            preload="metadata"
             class="absolute inset-0 w-full h-full object-cover bg-black pointer-events-none"
           ></video>
           <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
             <span class="w-9 h-9 rounded-full text-white flex items-center justify-center text-xs shadow" style="background:#ff9000">▶</span>
           </div>`;
+    } else if (v.thumb) {
+      media = `<img src="${escapeHtml(v.thumb)}" alt="" class="absolute inset-0 w-full h-full object-cover bg-black" loading="lazy">
+          <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20"></div>
+          <span class="absolute bottom-2 left-2 right-10 z-10 text-xs font-semibold line-clamp-2">${escapeHtml((v.title||'').replace(/\s*-\s*koleksidrpinguin.*/i,''))}</span>
+          <span class="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <span class="w-10 h-10 rounded-full flex items-center justify-center text-black font-bold" style="background:#ff9000">▶</span>
+          </span>`;
     } else {
-      media = `<div class="absolute inset-0 bg-neutral-950 flex items-center justify-center">
-            <span class="w-12 h-12 rounded-full flex items-center justify-center text-black text-lg font-bold" style="background:#ff9000">▶</span>
+      const shortT = String(v.title||'').replace(/\s*-\s*koleksidrpinguin.*/i,'').replace(/_/g,' ').trim();
+      media = `<div class="absolute inset-0" style="background:linear-gradient(160deg,#1a1208,#0a0a0a 45%,#2a1a0a)">
+            <div class="absolute inset-0 opacity-30" style="background-image:radial-gradient(circle at 30% 20%,#ff900055,transparent 50%)"></div>
+            <div class="absolute bottom-0 left-0 right-0 p-3 z-10">
+              <div class="text-[11px] uppercase tracking-wide text-ph mb-1">${escapeHtml(v.category||'')}</div>
+              <div class="text-sm font-semibold leading-snug line-clamp-3">${escapeHtml(shortT)}</div>
+            </div>
+            <span class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-black font-bold" style="background:#ff9000">▶</span>
           </div>`;
     }
     return `
