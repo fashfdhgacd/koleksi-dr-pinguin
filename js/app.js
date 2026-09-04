@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const PER_PAGE = 40;
+  const PER_PAGE = 42;
   const HERO_COUNT = 6;
 
   let allVideos = [];
