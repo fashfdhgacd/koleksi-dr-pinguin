@@ -1,16 +1,50 @@
+function pickEnv(keys) {
+  for (const key of keys) {
+    const val = process.env[key];
+    if (val && String(val).trim()) return String(val).trim();
+  }
+  return "";
+}
+
 function getEnv() {
   return {
-    BOT_TOKEN: process.env.BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN,
-    GH_TOKEN: process.env.GH_TOKEN,
-    GH_OWNER: process.env.GH_OWNER,
-    GH_REPO: process.env.GH_REPO,
-    GH_REPO_2: process.env.GH_REPO_2,
-    GH_PATH: process.env.GH_PATH,
-    GH_BRANCH: process.env.GH_BRANCH,
-    GH_STATE_REPO: process.env.GH_STATE_REPO,
-    TELEGRAM_USER_ID: process.env.TELEGRAM_USER_ID || "7747474006",
-    TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET
+    BOT_TOKEN: pickEnv(["BOT_TOKEN", "TELEGRAM_BOT_TOKEN"]),
+    GH_TOKEN: pickEnv(["GH_TOKEN", "GITHUB_TOKEN"]),
+    GH_OWNER: pickEnv(["GH_OWNER", "GITHUB_OWNER"]),
+    GH_REPO: pickEnv(["GH_REPO", "GITHUB_REPO"]),
+    GH_REPO_2: pickEnv(["GH_REPO_2", "GITHUB_REPO_2"]),
+    GH_PATH: pickEnv(["GH_PATH"]) || "data/videos.json",
+    GH_BRANCH: pickEnv(["GH_BRANCH"]) || "main",
+    GH_STATE_REPO: pickEnv(["GH_STATE_REPO"]),
+    TELEGRAM_USER_ID: pickEnv(["TELEGRAM_USER_ID", "TELEGRAM_ADMIN_ID"]) || "7747474006",
+    TELEGRAM_WEBHOOK_SECRET: pickEnv(["TELEGRAM_WEBHOOK_SECRET"])
   };
+}
+
+function envStatus(env) {
+  return {
+    ok: true,
+    service: "telegram-webhook",
+    ready: Boolean(env.BOT_TOKEN && env.GH_TOKEN && env.GH_OWNER && env.GH_REPO),
+    hasBot: Boolean(env.BOT_TOKEN),
+    hasGh: Boolean(env.GH_TOKEN),
+    hasGithubRepo: Boolean(env.GH_OWNER && env.GH_REPO),
+    owner: env.GH_OWNER || null,
+    repo: env.GH_REPO || null,
+    webhookSecretConfigured: Boolean(env.TELEGRAM_WEBHOOK_SECRET)
+  };
+}
+
+function parseBody(req) {
+  const raw = req.body;
+  if (!raw) return {};
+  if (typeof raw === "string") {
+    try { return JSON.parse(raw); } catch (e) {
+      console.error("[tg] body JSON parse fail:", e.message);
+      return {};
+    }
+  }
+  return raw;
 }
 
 module.exports = async function handler(req, res) {
@@ -18,16 +52,7 @@ module.exports = async function handler(req, res) {
   const env = getEnv();
 
   if (req.method === "GET") {
-    return res.status(200).json({
-      ok: true,
-      service: "telegram-webhook",
-      hasBot: Boolean(env.BOT_TOKEN),
-      hasGh: Boolean(env.GH_TOKEN),
-      hasGithubRepo: Boolean(env.GH_OWNER && env.GH_REPO),
-      owner: env.GH_OWNER || null,
-      repo: env.GH_REPO || null,
-      webhookSecretConfigured: Boolean(env.TELEGRAM_WEBHOOK_SECRET)
-    });
+    return res.status(200).json(envStatus(env));
   }
   if (req.method !== "POST") {
     res.setHeader("Allow", "GET, POST");
@@ -36,76 +61,112 @@ module.exports = async function handler(req, res) {
   if (env.TELEGRAM_WEBHOOK_SECRET) {
     const received = req.headers["x-telegram-bot-api-secret-token"];
     if (received !== env.TELEGRAM_WEBHOOK_SECRET) {
-      console.error("[v0] Telegram webhook rejected: invalid secret token");
-      return res.status(401).json({ ok: false });
+      console.error("[tg] webhook rejected: invalid secret token");
+      return res.status(401).json({ ok: false, error: "unauthorized" });
     }
   }
-  const update = req.body && typeof req.body === "object" ? req.body : {};
+
+  const update = parseBody(req);
+  const status = envStatus(env);
   try {
-    await handleUpdate(update, env);
+    const result = await handleUpdate(update, env);
+    return res.status(200).json({ ok: true, ...status, processed: Boolean(result && result.processed), command: (result && result.command) || null });
   } catch (e) {
-    console.error("[v0] Telegram update failed:", e);
+    console.error("[tg] update failed:", e);
     const msg = update.message || update.channel_post;
     if (msg && env.BOT_TOKEN) {
-      await reply(env, msg.chat.id, "Error: " + String(e.message || e));
+      try {
+        await reply(env, msg.chat.id, "Error bot: " + String(e.message || e));
+      } catch (re) {
+        console.error("[tg] reply after error failed:", re);
+      }
     }
+    return res.status(200).json({ ok: true, ...status, processed: false, error: String(e.message || e) });
   }
-  return res.status(200).json({ ok: true });
 };
+
+function envHint(env) {
+  const miss = [];
+  if (!env.BOT_TOKEN) miss.push("BOT_TOKEN atau TELEGRAM_BOT_TOKEN");
+  if (!env.GH_TOKEN) miss.push("GH_TOKEN atau GITHUB_TOKEN");
+  if (!env.GH_OWNER) miss.push("GH_OWNER atau GITHUB_OWNER");
+  if (!env.GH_REPO) miss.push("GH_REPO atau GITHUB_REPO");
+  return [
+    "Env Vercel belum lengkap. Bot tidak bisa jalan penuh.",
+    "Isi di project koleksi-dr-pinguin (Production):",
+    miss.map((x) => "- " + x).join("\n"),
+    "Lalu Redeploy sekali. Jangan kirim token ke chat."
+  ].join("\n");
+}
 
 async function handleUpdate(update, env) {
   const msg = update.message || update.channel_post;
-  if (!msg || !msg.text) return;
+  if (!msg || !msg.text) {
+    console.log("[tg] ignore update tanpa text");
+    return { processed: false, command: "empty" };
+  }
   const text = String(msg.text).trim();
   const chatId = msg.chat.id;
+  const cmd = classifyCommand(text);
+  console.log("[tg] inbound", { chatId, from: msg.from && msg.from.id, cmd, preview: text.slice(0, 80) });
+
   if (!env.BOT_TOKEN) {
-    console.error("BOT_TOKEN missing");
-    return;
+    console.error("[tg] BOT_TOKEN/TELEGRAM_BOT_TOKEN missing — tidak bisa sendMessage");
+    return { processed: false, command: cmd || "no_token" };
   }
+
   const allowed = String(env.TELEGRAM_USER_ID || "7747474006").trim();
   const fromId = String((msg.from && msg.from.id) || "");
   if (allowed && fromId && fromId !== allowed && String(chatId) !== allowed) {
     await reply(env, chatId, "Akses ditolak.\nBot ini hanya untuk admin.");
-    return;
+    return { processed: true, command: "denied" };
   }
-  if (text.startsWith("/start") || text.startsWith("/help")) {
+
+  if (cmd === "help") {
     await reply(env, chatId, [
-      "Bot upload Dr. Pinguin aktif.",
+      env.BOT_TOKEN && env.GH_TOKEN && env.GH_OWNER && env.GH_REPO
+        ? "Bot upload Dr. Pinguin siap terima perintah."
+        : "Bot bisa membalas, tapi env GitHub belum lengkap.",
       "",
-      "Kirim link upload: videy / vicek / indoav / userbokep",
+      "Perintah:",
+      "minta / /minta / sebar / /sebar",
+      "Kirim link: videy / vicek / indoav / userbokep",
       "",
-      "Minta link sebar:",
-      "/sebar  atau  kasih link",
-      "25 link acak (judul + URL). Tidak dobel 24 jam."
-    ].join("\n"));
-    return;
+      env.GH_TOKEN && env.GH_OWNER && env.GH_REPO ? "" : envHint(env)
+    ].filter(Boolean).join("\n"));
+    return { processed: true, command: "help" };
   }
-  if (isShareCommand(text)) {
+
+  if (cmd === "share") {
+    if (!env.GH_TOKEN || !env.GH_OWNER || !env.GH_REPO) {
+      await reply(env, chatId, envHint(env));
+      return { processed: true, command: "share_env_missing" };
+    }
     await handleShare(env, chatId);
-    return;
+    return { processed: true, command: "share" };
   }
+
   const links = extractLinks(text);
   if (!links.length) {
-    await reply(env, chatId, "Tidak ada link yang dikenali.\nPakai videy.co, vicek.id, indoav.app, atau userbokep.com.");
-    return;
+    await reply(env, chatId, "Tidak ada link yang dikenali.\nPakai videy.co, vicek.id, indoav.app, atau userbokep.com.\nAtau ketik: minta");
+    return { processed: true, command: "no_links" };
   }
   if (!env.GH_TOKEN || !env.GH_OWNER || !env.GH_REPO) {
-    await reply(env, chatId, "Env GitHub belum lengkap.\nCek Environment Variables Vercel, lalu Redeploy.");
-    return;
+    await reply(env, chatId, envHint(env));
+    return { processed: true, command: "upload_env_missing" };
   }
-  const items = parseNamedLinks(text).filter((it) => {
-    if (isBlockedTitle(it.title) || isBlockedTitle(it.category)) return false;
-    return true;
-  });
-  const blockedN = parseNamedLinks(text).length - items.length;
-  if (blockedN > 0 && !items.length) {
+
+  const parsed = parseNamedLinks(text);
+  const items = parsed.filter((it) => !isBlockedTitle(it.title) && !isBlockedTitle(it.category));
+  if (parsed.length && !items.length) {
     await reply(env, chatId, "Ditolak: judul mengandung kata yang tidak diizinkan.");
-    return;
+    return { processed: true, command: "blocked" };
   }
   if (!items.length) {
     await reply(env, chatId, "Link terbaca tapi gagal diproses.");
-    return;
+    return { processed: true, command: "parse_fail" };
   }
+
   const repos = [env.GH_REPO, env.GH_REPO_2].filter(Boolean);
   const results = [];
   for (const repo of repos) {
@@ -113,20 +174,28 @@ async function handleUpdate(update, env) {
     results.push(repo + ": +" + r.added + " update " + (r.updated || 0) + " skip " + r.skipped);
   }
   await reply(env, chatId, [
-      "Selesai diproses.",
-      "Link diterima: " + items.length,
-      results.join("\n"),
-      "",
-      "Tunggu deploy 1-2 menit, lalu hard refresh site."
-    ].join("\n"));
+    "Selesai diproses.",
+    "Link diterima: " + items.length,
+    results.join("\n"),
+    "",
+    "Data sudah di GitHub. Hard refresh site."
+  ].join("\n"));
+  return { processed: true, command: "upload" };
 }
 
+function classifyCommand(text) {
+  const t = String(text || "").trim().toLowerCase();
+  if (!t) return "";
+  if (t.startsWith("/start") || t.startsWith("/help")) return "help";
+  if (isShareCommand(t)) return "share";
+  return "other";
+}
 
 function isShareCommand(text) {
-  const t = text.toLowerCase();
-  if (t.startsWith("/sebar") || t.startsWith("/share") || t.startsWith("/link")) return true;
-  if (/https?:\/\//i.test(t)) return false;
-  if (/kasih\s*link|minta|nyebar|sebar|25\s*link|^lagi$|^gas$|^next$|^terus$/.test(t)) return true;
+  const t = String(text || "").trim().toLowerCase();
+  if (/https?:\/\//i.test(t) && !/^\s*\/?(minta|sebar)\b/.test(t)) return false;
+  if (/^\/?(sebar|share|link|minta)(@\w+)?(\s|$)/.test(t)) return true;
+  if (/kasih\s*link|nyebar|25\s*link|^lagi$|^gas$|^next$|^terus$/.test(t)) return true;
   return false;
 }
 
@@ -146,7 +215,10 @@ function shareKeyFromVideo(v) {
 
 function cleanTitle(t) {
   return String(t || "Video")
-    .replace(/\s*-\s*koleksidrpinguin\.(com|site)\s*$/i, "")
+    .replace(/^▶\s*/, "")
+    .replace(/\s*-\s*koleksidrpinguin.*/i, "")
+    .replace(/\s*\(\d+\)\s*$/, "")
+    .replace(/_/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -180,11 +252,12 @@ async function readShareState(env, repo) {
   repo = await stateRepo(env);
   try {
     const meta = await gh(env, "/repos/" + owner + "/" + repo + "/contents/" + path + "?ref=" + branch);
-    let raw = Buffer.from((meta.content || "").replace(/\n/g, ""), "base64").toString("utf8");
+    const raw = Buffer.from((meta.content || "").replace(/\n/g, ""), "base64").toString("utf8");
     const st = JSON.parse(raw || "{}");
     st.sha = meta.sha;
     return st;
-  } catch (_) {
+  } catch (e) {
+    console.error("[tg] readShareState:", e.message || e);
     return { resetAt: 0, used: [], sha: null };
   }
 }
@@ -205,10 +278,6 @@ async function writeShareState(env, repo, st) {
 
 async function handleShare(env, chatId) {
   const repo = env.GH_REPO;
-  if (!env.GH_TOKEN || !env.GH_OWNER || !repo) {
-    await reply(env, chatId, "Env GitHub belum lengkap.");
-    return;
-  }
   const videos = await readVideos(env, repo);
   let st = await readShareState(env, repo);
   const now = Date.now();
@@ -232,22 +301,19 @@ async function handleShare(env, chatId) {
   }
   for (let i = pool.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    const t = pool[i]; pool[i] = pool[j]; pool[j] = t;
+    const tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
   }
   const take = pool.slice(0, 25);
   take.forEach((x) => used.add(x.key));
   st.used = Array.from(used);
-  await writeShareState(env, repo, st);
-  const lines = take.map((x) => {
-    const host = "koleksidrpinguin.com";
-    return "▶ " + x.title + "\nhttps://" + host + "/v/" + x.key;
-  });
-  const sisa = pool.length - take.length;
+  try {
+    await writeShareState(env, repo, st);
+  } catch (e) {
+    console.error("[tg] writeShareState fail, tetap kirim link:", e.message || e);
+  }
+  const lines = take.map((x) => "▶ " + x.title + "\nhttps://koleksidrpinguin.com/v/" + x.key);
   await reply(env, chatId, lines.join("\n\n"));
 }
-
-
-
 
 function isBlockedTitle(s) {
   return /\b(underage|bocil)\b/i.test(String(s || ""));
@@ -256,37 +322,27 @@ function isBlockedTitle(s) {
 function detectCat(title) {
   const t = (title || "").toLowerCase();
   const map = [
-    ["Jilbab", ["jilbab","hijab","ukhti","ukhty","cadar"]],
-    ["STW", ["tante","janda","stw","ibu kost","binor","pembantu"]],
-    ["ABG", ["abg","mahasiswi","remaja"]],
-    ["Colmek", ["colmek","omek","dildo"]],
+    ["Jilbab", ["jilbab", "hijab", "ukhti", "ukhty", "cadar"]],
+    ["STW", ["tante", "janda", "stw", "ibu kost", "binor", "pembantu"]],
+    ["ABG", ["abg", "mahasiswi", "remaja"]],
+    ["Colmek", ["colmek", "omek", "dildo"]],
     ["Viral", ["viral"]],
-    ["Live", ["live","vcs","hot51"]],
-    ["Chindo", ["chindo","amoy"]],
-    ["Doggy", ["doggy","nungging"]],
-    ["Threesome", ["threesome","bergilir","gangbang"]],
-    ["Bumil", ["bumil","hamil"]],
-    ["Outdoor", ["outdoor","hutan","kebun"]],
-    ["Tobrut", ["tobrut","toket","toge"]],
+    ["Live", ["live", "vcs", "hot51"]],
+    ["Chindo", ["chindo", "amoy"]],
+    ["Doggy", ["doggy", "nungging"]],
+    ["Threesome", ["threesome", "bergilir", "gangbang"]],
+    ["Bumil", ["bumil", "hamil"]],
+    ["Outdoor", ["outdoor", "hutan", "kebun"]],
+    ["Tobrut", ["tobrut", "toket", "toge"]],
     ["Lesbian", ["lesbian"]],
     ["Perselingkuhan", ["selingkuh"]],
-    ["Open BO", ["open bo","michat","mechat"]],
-    ["Amatir", ["ngentot","ngewe","mesum"]]
+    ["Open BO", ["open bo", "michat", "mechat"]],
+    ["Amatir", ["ngentot", "ngewe", "mesum"]]
   ];
   for (const [cat, keys] of map) {
     if (keys.some((k) => t.includes(k))) return cat;
   }
   return "Umum";
-}
-
-function cleanTitle(t) {
-  return String(t || "")
-    .replace(/^▶\s*/, "")
-    .replace(/\s*-\s*koleksidrpinguin.*/i, "")
-    .replace(/\s*\(\d+\)\s*$/, "")
-    .replace(/_/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
 }
 
 function isSiteLink(u) {
@@ -367,8 +423,11 @@ function toItem(url) {
     direct = embed;
   }
   return {
-    title: id ? (category + " " + id + " - koleksidrpinguin.com") : (category + " - koleksidrpinguin.com"),
-    direct: direct, embed: embed, source: source, category: category,
+    title: id ? (category + " " + id) : category,
+    direct: direct,
+    embed: embed,
+    source: source,
+    category: category,
     tags: [category.toLowerCase(), "telegram"],
     date: new Date().toISOString().slice(0, 10)
   };
@@ -413,7 +472,9 @@ async function mergeAndPush(env, repo, items) {
       } else skipped += 1;
       continue;
     }
-    exist.add(k); fresh.push(it); added += 1;
+    exist.add(k);
+    fresh.push(it);
+    added += 1;
   }
   for (let i = fresh.length - 1; i >= 0; i--) videos.unshift(fresh[i]);
   if (!added && !updated) return { added: added, skipped: skipped, updated: updated };
@@ -426,7 +487,7 @@ async function mergeAndPush(env, repo, items) {
       branch: branch
     })
   });
-  return { added: added, skipped: skipped };
+  return { added: added, skipped: skipped, updated: updated };
 }
 
 async function gh(env, path, opt) {
@@ -442,16 +503,30 @@ async function gh(env, path, opt) {
     body: opt.body
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || String(res.status));
+  if (!res.ok) {
+    console.error("[tg] github", res.status, data.message || data);
+    throw new Error(data.message || String(res.status));
+  }
   return data;
 }
 
 async function reply(env, chatId, text) {
+  if (!env.BOT_TOKEN) {
+    console.error("[tg] reply skipped: no bot token");
+    return;
+  }
   const res = await fetch("https://api.telegram.org/bot" + env.BOT_TOKEN + "/sendMessage", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ chat_id: chatId, text: text })
   });
   const data = await res.json();
-  if (!data.ok) console.error("tg reply fail", data);
+  if (!data.ok) console.error("[tg] sendMessage fail", data);
 }
+
+module.exports.getEnv = getEnv;
+module.exports.envStatus = envStatus;
+module.exports.isShareCommand = isShareCommand;
+module.exports.classifyCommand = classifyCommand;
+module.exports.parseNamedLinks = parseNamedLinks;
+module.exports.extractLinks = extractLinks;
