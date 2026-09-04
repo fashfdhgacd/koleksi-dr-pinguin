@@ -9,10 +9,23 @@ module.exports = async function handler(req, res) {
     const BLOCK = /\b(underage|bocil)\b/i;
     const repo = process.env.GH_REPO || "koleksi-dr-pinguin";
     const owner = process.env.GH_OWNER || "fashfdhgacd";
-    const raw = "https://raw.githubusercontent.com/" + owner + "/" + repo + "/main/data/videos.json";
-    const rr = await fetch(raw + "?t=" + Date.now());
-    if (!rr.ok) throw new Error("json " + rr.status);
-    const list = await rr.json();
+    const raws = [
+      "https://raw.githubusercontent.com/" + owner + "/" + repo + "/main/data/videos.json",
+      "https://raw.githubusercontent.com/" + owner + "/" + repo + "/main/videos.json"
+    ];
+    let list = null;
+    let lastErr = null;
+    for (const raw of raws) {
+      try {
+        const rr = await fetch(raw + "?t=" + Date.now());
+        if (!rr.ok) throw new Error("json " + rr.status);
+        list = await rr.json();
+        break;
+      } catch (e) {
+        lastErr = e;
+      }
+    }
+    if (!list) throw lastErr || new Error("videos.json unreadable");
 
     const needle = id.toLowerCase();
     const video = (Array.isArray(list) ? list : []).find((v) => {
@@ -28,7 +41,7 @@ module.exports = async function handler(req, res) {
       return key.toLowerCase() === needle || String(v.id || "").toLowerCase() === needle;
     });
 
-    const host = String(req.headers["x-forwarded-host"] || req.headers.host || "koleksidrpinguin.com").split(",")[0];
+    const host = String(req.headers["x-forwarded-host"] || req.headers.host || "koleksidrpinguin.site").split(",")[0];
     const proto = String(req.headers["x-forwarded-proto"] || "https").split(",")[0];
     const origin = proto + "://" + host;
     const page = origin + "/v/" + encodeURIComponent(id);
@@ -49,8 +62,8 @@ module.exports = async function handler(req, res) {
     const title = titleRaw.replace(/\s*-\s*koleksidrpinguin.*/i, "").replace(/_/g, " ").replace(/\s+/g, " ").trim() || "Video";
     const cat = catRaw || "Video";
     const embed = String(video.embed || video.direct || video.embedUrl || "").replace("/d/", "/e/");
-    const desc = title + " — " + cat + " | koleksidrpinguin.com 18+.";
-    const card = origin + "/og-card.svg";
+    const desc = title + " — " + cat + " | koleksidrpinguin.site 18+.";
+    const card = origin + "/logo.png";
     const date = String(video.date || "").slice(0, 10);
 
     const ld = {
@@ -73,7 +86,7 @@ module.exports = async function handler(req, res) {
     };
     if (date) ld.uploadDate = date;
 
-    const safe = (s) => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+    const safe = (s) => String(s).replace(/&/g,"&").replace(/</g,"<").replace(/"/g,""");
 
     const html = `<!DOCTYPE html>
 <html lang="id">
@@ -87,7 +100,7 @@ module.exports = async function handler(req, res) {
 <meta name="rating" content="adult">
 <link rel="canonical" href="${safe(page)}">
 <meta property="og:type" content="video.other">
-<meta property="og:site_name" content="koleksidrpinguin.com">
+<meta property="og:site_name" content="koleksidrpinguin.site">
 <meta property="og:title" content="${safe(title)}">
 <meta property="og:description" content="${safe(desc)}">
 <meta property="og:url" content="${safe(page)}">
@@ -109,7 +122,7 @@ a{color:#ff9000}
 </head>
 <body>
 <div class="wrap">
-<p><a href="/">← koleksidrpinguin.com</a></p>
+<p><a href="/">← koleksidrpinguin.site</a></p>
 <div class="player" id="box">
   <div class="poster" id="poster" role="button">▶</div>
 </div>
@@ -118,7 +131,7 @@ a{color:#ff9000}
 </div>
 <script>
 (function(){
-  var embed = ${json.dumps(embed)};
+  var embed = ${JSON.stringify(embed)};
   var poster = document.getElementById("poster");
   if (!poster || !embed) return;
   poster.addEventListener("click", function(){
