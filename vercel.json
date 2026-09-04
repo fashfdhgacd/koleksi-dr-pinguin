@@ -58,5 +58,6 @@
       "source": "/v/:id/",
       "destination": "/api/watch?id=:id"
     }
-  ]
+  ],
+  "redirects": []
 }
