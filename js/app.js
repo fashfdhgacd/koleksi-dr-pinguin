@@ -350,6 +350,35 @@
     });
   }
 
+  
+  function showKategoriView() {
+    const g = document.getElementById('genre');
+    const home = document.getElementById('home');
+    const ter = document.getElementById('terbaru');
+    const tr = document.getElementById('trending');
+    if (g) g.classList.remove('hidden');
+    if (home) home.classList.add('hidden');
+    if (ter) ter.classList.add('hidden');
+    if (tr) tr.classList.add('hidden');
+    try { history.replaceState({}, '', '#genre'); } catch(_){}
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function showGalleryView(hash) {
+    const g = document.getElementById('genre');
+    const home = document.getElementById('home');
+    const ter = document.getElementById('terbaru');
+    const tr = document.getElementById('trending');
+    if (g) g.classList.add('hidden');
+    if (home) home.classList.remove('hidden');
+    if (ter) ter.classList.remove('hidden');
+    if (tr) tr.classList.remove('hidden');
+    if (hash) {
+      const el = document.getElementById(hash.replace('#',''));
+      if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    }
+  }
+
   function renderGenreGrid() {
     const cats = getCategories();
     const el = $('#genreGrid');
@@ -389,7 +418,9 @@
           b.classList.toggle('active', b.dataset.cat === currentCategory);
         });
         applyFilter();
-        document.getElementById('terbaru').scrollIntoView({ behavior: 'smooth' });
+        showGalleryView('#terbaru');
+        const _ter = document.getElementById('terbaru');
+        if (_ter) _ter.scrollIntoView({ behavior: 'smooth' });
       });
     });
 
@@ -936,6 +967,19 @@
     renderTrending();
   }
 
+  function initNavViews() {
+    document.querySelectorAll('a[href="#genre"]').forEach(a => {
+      a.addEventListener('click', (e) => { e.preventDefault(); showKategoriView(); });
+    });
+    document.querySelectorAll('a[href="#terbaru"], a[href="#home"]').forEach(a => {
+      a.addEventListener('click', (e) => { e.preventDefault(); showGalleryView('#terbaru'); });
+    });
+    document.querySelectorAll('a[href="#trending"]').forEach(a => {
+      a.addEventListener('click', (e) => { e.preventDefault(); showGalleryView('#trending'); });
+    });
+    if (location.hash === '#genre') showKategoriView();
+    else showGalleryView();
+  }
   function init() {
     try {
       initAgeGate();
@@ -972,8 +1016,21 @@
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', function(){ initNavViews(); init(); });
   } else {
+
+    document.querySelectorAll('a[href="#genre"]').forEach(a => {
+      a.addEventListener('click', (e) => { e.preventDefault(); showKategoriView(); });
+    });
+    document.querySelectorAll('a[href="#terbaru"], a[href="#home"]').forEach(a => {
+      a.addEventListener('click', (e) => { e.preventDefault(); showGalleryView('#terbaru'); });
+    });
+    document.querySelectorAll('a[href="#trending"]').forEach(a => {
+      a.addEventListener('click', (e) => { e.preventDefault(); showGalleryView('#trending'); });
+    });
+    if (location.hash === '#genre') showKategoriView();
+    else showGalleryView();
+    initNavViews();
     init();
   }
 })();
