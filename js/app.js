@@ -498,6 +498,13 @@
     const maxPage = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
     if (currentPage > maxPage) currentPage = maxPage;
     if (currentPage < 1) currentPage = 1;
+    
+    const gt = document.getElementById('galleryTitle');
+    if (gt) {
+      if (currentCategory === 'All') gt.innerHTML = 'Video <span class="text-ph">Terbaru</span>';
+      else if (String(currentCategory).toLowerCase() === 'upload terbaru') gt.innerHTML = 'Upload <span class="text-ph">Terbaru</span>';
+      else gt.innerHTML = escapeHtml(currentCategory) + ' <span class="text-ph">Video</span>';
+    }
     persistView();
     renderGrid();
     renderPagination();
@@ -1001,6 +1008,34 @@
     else showGalleryView();
   }
   function init() {
+
+    if (!window.__kdpNavBound) {
+      window.__kdpNavBound = true;
+      document.addEventListener('click', function(e) {
+        const a = e.target.closest('a[href="#terbaru"], a[href="#genre"], a[href="#trending"], a[href="#home"]');
+        if (!a) return;
+        e.preventDefault();
+        const href = a.getAttribute('href');
+        const menu = document.getElementById('mobileMenu');
+        if (menu) menu.classList.add('hidden');
+        if (href === '#genre') {
+          showKategoriView();
+          return;
+        }
+        if (href === '#home') {
+          currentCategory = 'All';
+          currentPage = 1;
+        } else if (href === '#terbaru') {
+          currentCategory = 'Upload Terbaru';
+          currentPage = 1;
+        }
+        persistView();
+        applyFilter();
+        showGalleryView(href === '#trending' ? '#trending' : '#terbaru');
+      });
+    }
+
+
     try {
       initAgeGate();
     } catch (e) { console.error(e); }
