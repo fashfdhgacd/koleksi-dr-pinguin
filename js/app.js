@@ -869,6 +869,27 @@
   }
 
 
+  
+  const DEFAULT_TITLE = document.title;
+  function applyVideoMeta(video) {
+    try {
+      if (!video) {
+        document.title = DEFAULT_TITLE;
+        const md = document.querySelector('meta[name="description"]');
+        return;
+      }
+      const t = String(video.title || '').replace(/\s*-\s*koleksidrpinguin.*/i, '').trim();
+      document.title = (t || 'Video') + ' | Dr. Pinguin';
+      let md = document.querySelector('meta[name="description"]');
+      if (!md) {
+        md = document.createElement('meta');
+        md.setAttribute('name', 'description');
+        document.head.appendChild(md);
+      }
+      md.setAttribute('content', t + ' — Koleksi Dr. Pinguin Bokep, M.S.B.');
+    } catch (_) {}
+  }
+
   function openModal(video) {
     const modal = $('#videoModal');
     const iframe = $('#modalIframe');
@@ -936,6 +957,7 @@
 
   function closeModal() {
     clearShareQuery();
+    applyVideoMeta(null);
     const modal = $('#videoModal');
     const iframe = $('#modalIframe');
     if (iframe) { iframe.src = 'about:blank'; iframe.style.display = ''; }
