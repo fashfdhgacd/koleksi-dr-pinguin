@@ -11,7 +11,10 @@ header{position:sticky;top:0;z-index:20;height:48px;background:#000;border-botto
 .brand{font-weight:900}.brand b{color:#ff9000}
 .back{font-size:11px;font-weight:800;text-transform:uppercase;border:1px solid #333;color:#ddd;padding:8px 10px;border-radius:999px}
 .wrap{width:min(1100px,100%);margin:0 auto;padding:18px 12px 40px}
-h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}h1 span{color:#ff9000}.meta{color:#888;font-size:12px;margin:0 0 16px}
+h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}h1 span{color:#ff9000}.meta{color:#888;font-size:12px;margin:0 0 12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 16px}
+.chip{border:1px solid #333;background:#161616;color:#ddd;border-radius:999px;padding:7px 10px;font-size:11px;font-weight:800;cursor:pointer}
+.chip.on{background:#ff9000;color:#000;border-color:#ff9000}
 .grid{display:grid;grid-template-columns:1fr;gap:14px}@media(min-width:720px){.grid{grid-template-columns:1fr 1fr}}
 .card{background:#111;border:1px solid #222;border-radius:12px;overflow:hidden}
 .frame{position:relative;aspect-ratio:16/9;background:#000}.frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
@@ -28,16 +31,15 @@ h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}h
 <div class="wrap">
   <h1>Putarin <span>Video</span></h1>
   <p class="meta" id="count">Memuat...</p>
+  <div class="chips" id="chips"></div>
   <div class="grid" id="grid"></div>
   <div class="pager" id="pager"></div>
 </div>
 <script>
 (function(){
   var PER = 6;
-  function isPut(v){
-    var b = String((v.category||'')+' '+(v.embed||'')+' '+(v.direct||'')).toLowerCase();
-    return b.indexOf('putarin') !== -1 || b.indexOf('puterin') !== -1;
-  }
+  var CATS = ['Semua','Film','Series','Anime','Musik','Gaming','Edukasi','JAV','Lainnya'];
+  function folderOf(v){ return String(v.folder || v.category || 'Lainnya'); }
   function codeOf(v){
     var u = String(v.embed || v.direct || '');
     var m = u.match(/\/(?:e|v)\/([A-Za-z0-9_-]+)/);
@@ -45,31 +47,40 @@ h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}h
   }
   function titleOf(v){ return String(v.title || 'Video').replace(/[<>]/g,'').replace(/_/g,' ').trim(); }
   function embedOf(v){ return String(v.embed || v.direct || '').replace('/v/', '/e/'); }
-  function keyOf(v){ return (embedOf(v)+'|'+codeOf(v)).toLowerCase(); }
-  function pageNow(){ var n = parseInt((location.hash.replace('#p','') || '1'), 10); return n > 0 ? n : 1; }
-  function load(path){ return fetch(path + '?t=' + Date.now()).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; }); }
-  Promise.all([load('/data/putarin.json'), load('/data/videos.json')]).then(function(arr){
-    var seen = {}; var items = [];
-    [].concat(arr[0]||[], arr[1]||[]).forEach(function(v){
-      if (!isPut(v)) return;
-      var k = keyOf(v); if (seen[k]) return; seen[k] = 1; items.push(v);
-    });
-    window._put = items; draw();
+  function pageNow(){ var n = parseInt((location.hash.match(/p(\d+)/)||[])[1] || '1', 10); return n > 0 ? n : 1; }
+  function catNow(){ var m = location.hash.match(/c=([^&]+)/); return m ? decodeURIComponent(m[1]) : 'Semua'; }
+  function setHash(cat, page){ location.hash = 'c=' + encodeURIComponent(cat) + '&p' + page; }
+  fetch('/data/putarin.json?t=' + Date.now()).then(function(r){ return r.json(); }).then(function(items){
+    window._put = items || []; draw();
   });
-  function draw(){
+  function filtered(){
+    var cat = catNow();
     var items = window._put || [];
+    if (cat && cat !== 'Semua') items = items.filter(function(v){ return folderOf(v) === cat; });
+    return items;
+  }
+  function draw(){
+    var cat = catNow();
+    var items = filtered();
     var pages = Math.max(1, Math.ceil(items.length / PER));
     var p = Math.min(pageNow(), pages);
     var slice = items.slice((p-1)*PER, p*PER);
-    document.getElementById('count').textContent = items.length + ' video · halaman ' + p + ' / ' + pages;
+    document.getElementById('count').textContent = items.length + ' video · ' + cat + ' · halaman ' + p + ' / ' + pages;
+    document.getElementById('chips').innerHTML = CATS.map(function(c){
+      var n = c==='Semua' ? (window._put||[]).length : (window._put||[]).filter(function(v){ return folderOf(v)===c; }).length;
+      return '<button class="chip'+(c===cat?' on':'')+'" data-cat="'+c+'">'+c+' '+n+'</button>';
+    }).join('');
+    document.querySelectorAll('.chip').forEach(function(btn){
+      btn.onclick = function(){ setHash(btn.getAttribute('data-cat'), 1); };
+    });
     document.getElementById('grid').innerHTML = slice.map(function(v){
       var id = codeOf(v); var src = embedOf(v);
       return '<article class="card"><div class="frame"><iframe src="'+src+'" allow="autoplay;fullscreen;encrypted-media" allowfullscreen referrerpolicy="origin"></iframe></div><div class="info"><strong>'+titleOf(v)+'</strong><div class="row"><a class="btn primary" href="/v/'+encodeURIComponent(id)+'">Halaman video</a><a class="btn" href="'+src+'" target="_blank" rel="noopener">Sumber</a></div></div></article>';
-    }).join('');
+    }).join('') || '<p>Kosong di kategori ini.</p>';
     var html = '';
-    if (p > 1) html += '<a href="#p'+(p-1)+'">Prev</a>';
-    for (var i=1;i<=pages;i++) html += i===p ? '<span class="on">'+i+'</span>' : '<a href="#p'+i+'">'+i+'</a>';
-    if (p < pages) html += '<a href="#p'+(p+1)+'">Next</a>';
+    if (p > 1) html += '<a href="#c='+encodeURIComponent(cat)+'&p'+(p-1)+'">Prev</a>';
+    for (var i=1;i<=pages;i++) html += i===p ? '<span class="on">'+i+'</span>' : '<a href="#c='+encodeURIComponent(cat)+'&p'+i+'">'+i+'</a>';
+    if (p < pages) html += '<a href="#c='+encodeURIComponent(cat)+'&p'+(p+1)+'">Next</a>';
     document.getElementById('pager').innerHTML = html;
     window.scrollTo(0,0);
   }
