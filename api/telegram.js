@@ -202,7 +202,7 @@ async function handleShare(env, chatId) {
   st.used = Array.from(used);
   await writeShareState(env, repo, st);
   const lines = take.map((x) => {
-    const host = Math.random() < 0.5 ? "koleksidrpinguin.com" : "koleksidrpinguin.site";
+    const host = "koleksidrpinguin.com";
     return "▶ " + x.title + "\nhttps://" + host + "/?v=" + x.key;
   });
   const sisa = pool.length - take.length;
