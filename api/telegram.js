@@ -221,7 +221,7 @@ async function handleShare(env, chatId) {
 
 
 function isBlockedTitle(s) {
-  return /\b(abg|sma|smk|smp|siswi|siswa|adik|adek|sekolah|pelajar|bocil|underage)\b/i.test(String(s || ""));
+  return /\b(underage|bocil)\b/i.test(String(s || ""));
 }
 
 function detectCat(title) {
@@ -229,7 +229,7 @@ function detectCat(title) {
   const map = [
     ["Jilbab", ["jilbab","hijab","ukhti","ukhty","cadar"]],
     ["STW", ["tante","janda","stw","ibu kost","binor","pembantu"]],
-    ["Umum", ["mahasiswi","remaja"]],
+    ["ABG", ["abg","mahasiswi","remaja"]],
     ["Colmek", ["colmek","omek","dildo"]],
     ["Viral", ["viral"]],
     ["Live", ["live","vcs","hot51"]],
