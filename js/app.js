@@ -40,6 +40,9 @@
 
   function initAgeGate() {
     const gate = $('#ageGate');
+    const confirm = $('#ageConfirm');
+    const enter = $('#btnEnter');
+    if (confirm && enter) confirm.addEventListener('change', () => { enter.disabled = !confirm.checked; });
     const entered = sessionStorage.getItem('age_ok') === '1';
     if (entered) {
       gate.classList.add('hidden');
@@ -170,8 +173,10 @@
 
     const slidesEl = $('#heroSlides');
     slidesEl.innerHTML = heroes.map((v, i) => {
+      const poster = v.thumbnail ? `<img src="${escapeHtml(v.thumbnail)}" alt="" class="hero-poster absolute inset-0 w-full h-full object-cover" onerror="this.style.display='none'">` : '';
       return `<div class="hero-slide absolute inset-0 transition-opacity duration-700 ${i === 0 ? 'opacity-100' : 'opacity-0'}" data-idx="${i}">
-        <iframe src="${i === 0 ? escapeHtml(v.embedUrl) : ''}" data-src="${escapeHtml(v.embedUrl)}" class="w-full h-full pointer-events-none" frameborder="0" allowfullscreen></iframe>
+        ${poster}<div class="hero-fallback absolute inset-0"><span class="hero-mark">DP</span><span class="hero-fallback-label">Preview siap diputar</span></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
       </div>`;
     }).join('');
 
@@ -343,7 +348,6 @@
         btn.classList.add('active');
         currentCategory = btn.dataset.cat;
         currentPage = 1;
-        persistView();
         persistView();
         applyFilter();
       });
@@ -621,24 +625,8 @@
   function cardHTML(v) {
     const src = v.embedUrl || '';
     const mp4 = (typeof toVideyMp4 === 'function') ? (toVideyMp4(src) || toVideyMp4(v.direct || '')) : '';
-    let media;
-    if (mp4) {
-      // Videy: tampilkan frame video asli (preload metadata), tanpa autoplay
-      media = `<video
-            src="${escapeHtml(mp4)}"
-            muted
-            playsinline
-            preload="metadata"
-            class="absolute inset-0 w-full h-full object-contain bg-black pointer-events-none"
-          ></video>
-          <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-            <span class="w-9 h-9 rounded-full text-white flex items-center justify-center text-xs shadow" style="background:#ff9000">▶</span>
-          </div>`;
-    } else {
-      media = `<div class="absolute inset-0 bg-neutral-950 flex items-center justify-center">
-            <span class="w-12 h-12 rounded-full flex items-center justify-center text-black text-lg font-bold" style="background:#ff9000">▶</span>
-          </div>`;
-    }
+    const poster = v.thumbnail ? `<img src="${escapeHtml(v.thumbnail)}" alt="Thumbnail ${escapeHtml(v.title)}" loading="lazy" class="card-poster absolute inset-0 w-full h-full object-cover" onerror="this.style.display='none'">` : '';
+    const media = mp4 ? `<video src="${escapeHtml(mp4)}" muted playsinline preload="metadata" class="absolute inset-0 w-full h-full object-cover pointer-events-none"></video>` : `${poster}<div class="card-fallback absolute inset-0"><span>DP</span></div>`;
     return `
       <article class="video-card group cursor-pointer" data-id="${v.id}">
         <div class="relative aspect-video rounded overflow-hidden bg-black border border-neutral-800 transition-colors">

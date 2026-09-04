@@ -1,4 +1,19 @@
-:root { --ph:#ff9000; --ph-soft:#ffb340; }
+:root { --ph:#ff9000; --ph-soft:#ffb340; --surface:#0d0d0d; --surface-2:#161616; --line:#292929; --muted:#9a9a9a; }
+button, a, input { outline-offset: 3px; }
+button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid var(--ph); }
+.hero-fallback { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; background:radial-gradient(circle at 50% 35%, #282044 0%, #090812 58%, #050505 100%); color:var(--ph); }
+.hero-mark, .card-fallback span { display:grid; place-items:center; width:64px; height:64px; border:1px solid rgba(255,144,0,.55); border-radius:16px; font-size:20px; font-weight:900; letter-spacing:.08em; }
+.hero-fallback-label { color:#d2d2d2; font-size:11px; text-transform:uppercase; letter-spacing:.16em; }
+.hero-poster { z-index:1; }
+.hero-fallback { z-index:0; }
+.hero-slide > .bg-gradient-to-t { z-index:2; }
+.card-poster { z-index:1; transition: transform .35s ease; }
+.video-card:hover .card-poster { transform:scale(1.04); }
+.card-fallback { display:grid; place-items:center; background:radial-gradient(circle at 50% 35%, #27203e, #08090d 70%); color:var(--ph); }
+.card-fallback span { width:48px; height:48px; font-size:14px; }
+.video-card:hover .border { border-color:var(--ph); }
+@media (max-width: 639px) { .video-card h3 { font-size:13px; } }
+
 body { background:#050505; font-family:"Segoe UI",system-ui,sans-serif; }
 #navbar { height:48px !important; background:#000 !important; border-bottom:2px solid var(--ph) !important; backdrop-filter:none !important; }
 #btnEnter, #heroPlay { background:var(--ph) !important; color:#000 !important; border-radius:4px !important; font-weight:900 !important; box-shadow:none !important; }

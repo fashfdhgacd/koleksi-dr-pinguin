@@ -44,8 +44,9 @@
     <div class="w-full max-w-sm text-center border border-ink-700 bg-ink-900 p-6 rounded">
       <img src="/logo.png" decoding="async" fetchpriority="high" alt="" class="w-14 h-14 mx-auto rounded mb-3 object-cover">
       <h1 class="text-2xl font-black tracking-tight mb-1"><span class="text-white">DR.</span><span class="text-ph">PINGUIN</span></h1>
-      <p class="text-neutral-400 text-sm mb-5">Konten 18+. Lanjut hanya jika kamu dewasa.</p>
-      <button id="btnEnter" class="w-full py-3 bg-ph hover:bg-ph-soft text-black font-black uppercase text-sm tracking-wider rounded">Masuk</button>
+      <p class="text-neutral-400 text-sm mb-4">Konten dewasa 18+. Lanjut hanya jika kamu sudah cukup umur dan berada di wilayah yang mengizinkan akses ini.</p>
+      <label class="flex items-start gap-2 text-left text-xs text-neutral-400 mb-4"><input id="ageConfirm" type="checkbox" class="mt-0.5 accent-ph"> <span>Saya menyatakan berusia 18 tahun atau lebih dan memahami peringatan konten.</span></label>
+      <button id="btnEnter" disabled class="w-full py-3 bg-ph hover:bg-ph-soft text-black font-black uppercase text-sm tracking-wider rounded disabled:opacity-40 disabled:cursor-not-allowed">Masuk</button>
       <button id="btnLeave" class="w-full mt-2 py-3 border border-neutral-700 text-neutral-400 font-semibold uppercase text-xs rounded hover:border-neutral-500">Keluar</button>
     </div>
   </div>
