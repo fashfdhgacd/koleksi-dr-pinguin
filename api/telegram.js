@@ -44,9 +44,8 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true, ...status, processed: false, error: String(e.message || e) });
   }
 };
-function isBlockedHost(u) {
-  return /vicek\.id|exastream/i.test(String(u || ""));
-}
+function isBlockedHost(u) { return /vicek\.id|exastream/i.test(String(u || "")); }
+function isAllowedHost(u) { return /videy\.co|indoav\.|userbokep\.com|putarin\.com/i.test(String(u || "")); }
 async function handleUpdate(update, env) {
   const msg = update.message || update.channel_post;
   if (!msg || !msg.text) return { processed: false, command: "empty" };
@@ -61,21 +60,18 @@ async function handleUpdate(update, env) {
     return { processed: true, command: "denied" };
   }
   if (cmd === "help") {
-    await reply(env, chatId, "Bot siap.\nKetik: minta\nKirim link: videy / indoav / userbokep\nVicek/ExaStream ditolak.");
+    await reply(env, chatId, "Bot siap.\nKetik: minta\nKirim link: videy / indoav / userbokep / putarin\nVicek/ExaStream ditolak.");
     return { processed: true, command: "help" };
   }
-  if (cmd === "share") {
-    await handleShare(env, chatId);
-    return { processed: true, command: "share" };
-  }
+  if (cmd === "share") { await handleShare(env, chatId); return { processed: true, command: "share" }; }
   const rawLinks = (text.match(/https?:\/\/[^\s<>"']+/gi) || []).map(function (u) { return u.replace(/[).,]+$/, ""); });
-  if (rawLinks.some(isBlockedHost) && !rawLinks.some(function (u) { return /videy\.co|indoav\.|userbokep\.com/i.test(u); })) {
+  if (rawLinks.some(isBlockedHost) && !rawLinks.some(isAllowedHost)) {
     await reply(env, chatId, "Vicek/ExaStream sudah dihapus. Tidak diterima.");
     return { processed: true, command: "blocked_exa" };
   }
   const links = extractLinks(text);
   if (!links.length) {
-    await reply(env, chatId, "Tidak ada link yang dikenali.\nPakai videy.co, indoav.app, atau userbokep.com.\nAtau ketik: minta");
+    await reply(env, chatId, "Tidak ada link yang dikenali.\nPakai videy.co, indoav.app, userbokep.com, atau panel.putarin.com\nAtau ketik: minta");
     return { processed: true, command: "no_links" };
   }
   const items = parseNamedLinks(text).filter(function (it) {
@@ -124,9 +120,7 @@ function cleanTitle(t) {
   return String(t || "Video").replace(/^\u25b6\s*/, "").replace(/\s*-\s*koleksidrpinguin.*/i, "").replace(/_/g, " ").replace(/\s+/g, " ").trim();
 }
 async function readVideos(env, repo) {
-  const owner = env.GH_OWNER;
-  const path = env.GH_PATH || "data/videos.json";
-  const branch = env.GH_BRANCH || "main";
+  const owner = env.GH_OWNER; const path = env.GH_PATH || "data/videos.json"; const branch = env.GH_BRANCH || "main";
   const meta = await gh(env, "/repos/" + owner + "/" + repo + "/contents/" + path + "?ref=" + branch);
   let raw = "";
   if (meta.content && meta.content.length < 500000) raw = Buffer.from(meta.content.replace(/\n/g, ""), "base64").toString("utf8");
@@ -184,7 +178,7 @@ function parseNamedLinks(text) {
       const url = m[0].replace(/[).,]+$/, "");
       if (/koleksidrpinguin\.(com|site)/i.test(url)) continue;
       if (isBlockedHost(url)) continue;
-      if (!/videy\.co|indoav\.|userbokep\./i.test(url)) continue;
+      if (!isAllowedHost(url)) continue;
       const it = toItem(url); if (pending) it.title = cleanTitle(pending); items.push(it); pending = "";
     } else if (!line.startsWith("/")) pending = line;
   }
@@ -195,7 +189,7 @@ function extractLinks(text) {
   for (let u of raw) {
     u = u.replace(/[).,]+$/, "");
     if (isBlockedHost(u)) continue;
-    if (!/videy\.co|indoav\.app|userbokep\.com/i.test(u)) continue;
+    if (!isAllowedHost(u)) continue;
     if (seen.has(u)) continue; seen.add(u); out.push(u);
   }
   return out;
@@ -210,6 +204,12 @@ function toItem(url) {
     const ext = (id.length === 9 && id.endsWith("2")) ? ".mov" : ".mp4";
     direct = (/\.mp4|\.mov/i.test(url) && /cdn/i.test(url)) ? url : (id ? ("https://cdn.videy.co/" + id + ext) : url);
     embed = id ? ("https://videy.co/v/?id=" + id) : url;
+  } else if (low.includes("putarin.com")) {
+    category = "Putarin"; source = "Putarin";
+    const code = (url.match(/putarin\.com\/(?:e|v)\/([A-Za-z0-9_-]+)/i) || [])[1] || url.split("/").filter(Boolean).pop();
+    id = code;
+    embed = "https://panel.putarin.com/e/" + code;
+    direct = "https://panel.putarin.com/v/" + code;
   } else {
     source = low.includes("userbokep") ? "Userbokep" : "IndoAV";
     embed = url.replace(/\/d\//, "/e/"); direct = embed;
