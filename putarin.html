@@ -38,8 +38,8 @@ h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}h
 <script>
 (function(){
   var PER = 6;
-  var CATS = ['Semua','Film','Series','Anime','Musik','Gaming','Edukasi','JAV','Lainnya'];
-  function folderOf(v){ return String(v.folder || v.category || 'Lainnya'); }
+  var CATS = ['AI','Film','Series','Anime','Musik','Gaming','Edukasi','JAV','Lainnya'];
+  function folderOf(v){ return String(v.folder || 'Lainnya'); }
   function codeOf(v){
     var u = String(v.embed || v.direct || '');
     var m = u.match(/\/(?:e|v)\/([A-Za-z0-9_-]+)/);
@@ -48,16 +48,26 @@ h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}h
   function titleOf(v){ return String(v.title || 'Video').replace(/[<>]/g,'').replace(/_/g,' ').trim(); }
   function embedOf(v){ return String(v.embed || v.direct || '').replace('/v/', '/e/'); }
   function pageNow(){ var n = parseInt((location.hash.match(/p(\d+)/)||[])[1] || '1', 10); return n > 0 ? n : 1; }
-  function catNow(){ var m = location.hash.match(/c=([^&]+)/); return m ? decodeURIComponent(m[1]) : 'Semua'; }
+  function catNow(){
+    var m = location.hash.match(/c=([^&]+)/);
+    if (m) return decodeURIComponent(m[1]);
+    return 'AI';
+  }
   function setHash(cat, page){ location.hash = 'c=' + encodeURIComponent(cat) + '&p' + page; }
   fetch('/data/putarin.json?t=' + Date.now()).then(function(r){ return r.json(); }).then(function(items){
-    window._put = items || []; draw();
+    window._put = items || [];
+    var cat = catNow();
+    var n = (window._put||[]).filter(function(v){ return folderOf(v)===cat; }).length;
+    if (!n) {
+      for (var i=0;i<CATS.length;i++) {
+        if ((window._put||[]).some(function(v){ return folderOf(v)===CATS[i]; })) { setHash(CATS[i], 1); return; }
+      }
+    }
+    draw();
   });
   function filtered(){
     var cat = catNow();
-    var items = window._put || [];
-    if (cat && cat !== 'Semua') items = items.filter(function(v){ return folderOf(v) === cat; });
-    return items;
+    return (window._put || []).filter(function(v){ return folderOf(v) === cat; });
   }
   function draw(){
     var cat = catNow();
@@ -65,9 +75,10 @@ h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}h
     var pages = Math.max(1, Math.ceil(items.length / PER));
     var p = Math.min(pageNow(), pages);
     var slice = items.slice((p-1)*PER, p*PER);
-    document.getElementById('count').textContent = items.length + ' video · ' + cat + ' · halaman ' + p + ' / ' + pages;
+    document.getElementById('count').textContent = cat + ' · ' + items.length + ' video · halaman ' + p + ' / ' + pages;
     document.getElementById('chips').innerHTML = CATS.map(function(c){
-      var n = c==='Semua' ? (window._put||[]).length : (window._put||[]).filter(function(v){ return folderOf(v)===c; }).length;
+      var n = (window._put||[]).filter(function(v){ return folderOf(v)===c; }).length;
+      if (!n && c !== cat) return '';
       return '<button class="chip'+(c===cat?' on':'')+'" data-cat="'+c+'">'+c+' '+n+'</button>';
     }).join('');
     document.querySelectorAll('.chip').forEach(function(btn){
