@@ -5,9 +5,6 @@
     var n = document.createElement('script');
     n.src = '/js/putarin-nav.js?t=' + Date.now();
     document.body.appendChild(n);
-    var w = document.createElement('script');
-    w.src = '/js/open-watch.js?t=' + Date.now();
-    document.body.appendChild(w);
   };
   document.head.appendChild(s);
 })();
