@@ -5,6 +5,9 @@
     var n = document.createElement('script');
     n.src = '/js/putarin-nav.js?t=' + Date.now();
     document.body.appendChild(n);
+    var m = document.createElement('script');
+    m.src = '/js/modal-share.js?t=' + Date.now();
+    document.body.appendChild(m);
   };
   document.head.appendChild(s);
 })();
