@@ -14,8 +14,10 @@ header{position:sticky;top:0;z-index:20;height:48px;background:#000;border-botto
 h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}h1 span{color:#ff9000}.meta{color:#888;font-size:12px;margin:0 0 16px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(min-width:900px){.grid{grid-template-columns:1fr 1fr 1fr}}
 .card{background:#111;border:1px solid #222;border-radius:12px;overflow:hidden;display:block;color:inherit}
-.thumb{position:relative;aspect-ratio:16/9;background:#161616;display:flex;align-items:center;justify-content:center}
-.play{width:44px;height:44px;border-radius:999px;background:#ff9000;color:#000;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900}
+.thumb{position:relative;aspect-ratio:16/9;background:#161616;overflow:hidden}
+.thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.play span{width:44px;height:44px;border-radius:999px;background:rgba(255,144,0,.92);color:#000;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900}
 .info{padding:10px 12px}.info strong{display:block;font-size:13px;line-height:1.35}
 .info span{display:block;margin-top:4px;color:#888;font-size:11px}
 .pager{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:20px}
@@ -40,6 +42,11 @@ h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}h
     return m ? m[1] : '';
   }
   function titleOf(v){ return String(v.title || 'Video').replace(/[<>]/g,'').replace(/_/g,' ').trim(); }
+  function thumbOf(v){
+    if (v.thumb || v.thumbnail) return v.thumb || v.thumbnail;
+    var id = codeOf(v);
+    return id ? ('https://m-cdn.video/hls/' + id + '/thumbnail.jpg') : '';
+  }
   function pageNow(){ var n = parseInt((location.hash.match(/p(\d+)/)||[])[1] || '1', 10); return n > 0 ? n : 1; }
   fetch('/data/mumu.json?t=' + Date.now()).then(function(r){ return r.json(); }).then(function(items){
     window._mumu = items || [];
@@ -53,7 +60,8 @@ h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}h
     document.getElementById('count').textContent = items.length + ' video \u00b7 halaman ' + p + ' / ' + pages;
     document.getElementById('grid').innerHTML = slice.map(function(v){
       var id = codeOf(v);
-      return '<a class="card" href="/v/'+encodeURIComponent(id)+'"><div class="thumb"><div class="play">\u25b6</div></div><div class="info"><strong>'+titleOf(v)+'</strong><span>Buka halaman nonton</span></div></a>';
+      var th = thumbOf(v);
+      return '<a class="card" href="/v/'+encodeURIComponent(id)+'"><div class="thumb">'+(th?'<img src="'+th+'" alt="" loading="lazy">':'')+'<div class="play"><span>\u25b6</span></div></div><div class="info"><strong>'+titleOf(v)+'</strong><span>Buka halaman nonton</span></div></a>';
     }).join('') || '<p>Belum ada video.</p>';
     var html = '';
     if (p > 1) html += '<a href="#p'+(p-1)+'">Prev</a>';
