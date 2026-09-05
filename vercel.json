@@ -24,6 +24,20 @@
       "headers": [{ "key": "Referrer-Policy", "value": "origin" }]
     }
   ],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "koleksidrpinguin.site" }],
+      "destination": "https://koleksidrpinguin.com/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "koleksidrpinguin.site" }],
+      "destination": "https://koleksidrpinguin.com/",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     { "source": "/putarin", "destination": "/putarin.html" },
     { "source": "/putarin/", "destination": "/putarin.html" },
