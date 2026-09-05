@@ -6,12 +6,12 @@
     css.id = 'modalShareCss';
     css.textContent = [
       '@media(max-width:899px){',
-      '#videoModal .player-stage{flex:0 0 auto!important;padding:0!important;}',
+      '#videoModal .player-stage{flex:0 0 auto!important;padding:0 0 8px!important;}',
       '#videoModal .player-frame{aspect-ratio:16/9;width:100%;}',
       '#modalShareMobile,#modalOpenExternalMobile{display:none!important;}',
-      '#modalShareMobile.parent, #videoModal .sm\\:hidden.shrink-0{display:none!important;}',
+      '#videoModal .sm\\:hidden.shrink-0{display:none!important;}',
       '#modalShare{display:none!important;}',
-      '#modalShareBar{display:flex!important;}',
+      '#modalShareBar{display:flex!important;margin-top:4px;padding:14px 12px 20px!important;border-top:1px solid #2a2a2a;background:#050505;}',
       '}',
       '@media(min-width:900px){',
       '#modalShareBar{display:none!important;}',
@@ -56,7 +56,7 @@
     if (!bar) {
       bar = document.createElement('div');
       bar.id = 'modalShareBar';
-      bar.style.cssText = 'flex-shrink:0;padding:10px 12px 16px;display:flex;flex-wrap:wrap;gap:6px;background:#050505';
+      bar.style.cssText = 'flex-shrink:0;padding:14px 12px 20px;display:flex;flex-wrap:wrap;gap:8px;background:#050505;border-top:1px solid #2a2a2a;margin-top:8px';
       shell.appendChild(bar);
     }
     var x = info();
