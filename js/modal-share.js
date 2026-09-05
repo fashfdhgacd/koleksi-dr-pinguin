@@ -6,29 +6,21 @@
   if (!document.getElementById('modalShareCss')) {
     var css = document.createElement('style');
     css.id = 'modalShareCss';
-    css.textContent = [
-      '@media(max-width:899px){',
-      '#videoModal .player-stage{flex:0 0 auto!important;padding:0 0 8px!important;}',
-      '#videoModal .player-frame{aspect-ratio:16/9;width:100%;}',
-      '#modalShareMobile,#modalOpenExternalMobile{display:none!important;}',
-      '#videoModal .sm\\:hidden.shrink-0{display:none!important;}',
-      '#modalShare{display:none!important;}',
-      '#modalShareBar{display:flex!important;margin-top:4px;padding:14px 12px 12px!important;border-top:1px solid #2a2a2a;background:#050505;}',
-      '}',
-      '@media(min-width:900px){',
-      '#modalShareBar{display:none!important;}',
-      '}',
-      '#modalNextCard{display:none;padding:10px 12px 16px;border-top:1px solid #2a2a2a;background:#050505;flex-shrink:0;}',
-      '@media(min-width:600px) and (max-width:1100px){',
-      '#modalNextCard{display:block!important;}',
-      '#modalShareBar{display:flex!important;}',
-      '}'
-    ].join('');
+    css.textContent = '@media(max-width:899px){#videoModal .player-stage{flex:0 0 auto!important;padding:0 0 8px!important}#videoModal .player-frame{aspect-ratio:16/9;width:100%}#modalShareMobile,#modalOpenExternalMobile{display:none!important}#modalShare{display:none!important}#modalShareBar{display:flex!important;padding:14px 12px 12px!important;border-top:1px solid #2a2a2a;background:#050505}}@media(min-width:900px){#modalShareBar{display:none!important}}#modalNextCard{display:none;padding:10px 12px 16px;border-top:1px solid #2a2a2a;background:#050505;flex-shrink:0}@media(min-width:600px) and (max-width:1100px){#modalNextCard{display:block!important}#modalShareBar{display:flex!important}}';
     document.head.appendChild(css);
   }
   function isTab() {
     var w = window.innerWidth;
     return w >= 600 && w <= 1100;
+  }
+  function cleanTitle(s) {
+    return String(s || 'Video')
+      .replace(/\s*-\s*koleksidrpinguin[^.\s]*/ig, '')
+      .replace(/\s*-\s*koleksidrpinguin\.com/ig, '')
+      .replace(/koleksidrpinguin\.com/ig, '')
+      .replace(/[<>]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
   function keyFromEmbed(u) {
     if (!u || u === 'about:blank') return '';
@@ -42,11 +34,23 @@
       return '';
     }
   }
+  function toVideyMp4(url) {
+    if (!url) return '';
+    try {
+      var u = new URL(url, location.origin);
+      if (u.hostname.indexOf('cdn.videy.co') !== -1 && /\.(mp4|mov)($|\?)/i.test(u.pathname)) return url;
+      if (u.hostname.indexOf('videy.co') !== -1) {
+        var id = u.searchParams.get('id');
+        if (id) return 'https://cdn.videy.co/' + id + ((id.length === 9 && id[8] === '2') ? '.mov' : '.mp4');
+      }
+    } catch (e) {}
+    return '';
+  }
   function norm(s) {
-    return String(s || '').replace(/\(koleksi[^)]*\)/ig, '').replace(/-\s*koleksidrpinguin.*/i, '').replace(/\s+/g, ' ').trim().toLowerCase();
+    return cleanTitle(s).toLowerCase();
   }
   function info() {
-    var title = ((document.getElementById('modalTitle') || {}).textContent || '').trim();
+    var title = cleanTitle(((document.getElementById('modalTitle') || {}).textContent || '').trim());
     var iframe = document.getElementById('modalIframe');
     var native = document.getElementById('modalNativeVideo');
     var src = (iframe && iframe.getAttribute('src')) || (native && native.currentSrc) || (native && native.src) || '';
@@ -54,20 +58,21 @@
     var page = location.origin + '/v/' + encodeURIComponent(key || title || '');
     return { title: title, page: page, src: src };
   }
-  function nextVideo() {
-    var title = ((document.getElementById('modalTitle') || {}).textContent || '').trim();
+  function nextVideos() {
+    var title = cleanTitle(((document.getElementById('modalTitle') || {}).textContent || '').trim());
     var cat = ((document.getElementById('modalMeta') || {}).textContent || '').trim().toLowerCase();
     var same = list.filter(function (v) {
       return String(v.category || '').toLowerCase() === cat && norm(v.title) !== norm(title);
     });
-    if (!same.length) {
-      same = list.filter(function (v) { return norm(v.title) !== norm(title); });
-    }
-    return same[0] || null;
+    if (!same.length) same = list.filter(function (v) { return norm(v.title) !== norm(title); });
+    return same.slice(0, 3);
   }
-  function thumbOf(v) {
-    if (!v) return '';
-    return v.thumb || v.thumbnail || v.poster || '';
+  function previewHtml(v) {
+    var th = v.thumb || v.thumbnail || v.poster || '';
+    var mp4 = toVideyMp4(v.direct || v.embed || '');
+    if (th) return '<img src="' + th + '" alt="" style="width:100%;height:100%;object-fit:cover">';
+    if (mp4) return '<video src="' + mp4 + '" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover"></video>';
+    return '';
   }
   function chip(label, href) {
     return '<a href="' + href + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;height:30px;padding:0 10px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid #2a2a2a;background:#161616;color:#ddd;text-decoration:none">' + label + '</a>';
@@ -81,10 +86,16 @@
     var titleEl = document.getElementById('modalTitle');
     var metaEl = document.getElementById('modalMeta');
     var iframe = document.getElementById('modalIframe');
-    if (titleEl) titleEl.textContent = v.title || '';
+    if (titleEl) titleEl.textContent = cleanTitle(v.title || '');
     if (metaEl) metaEl.textContent = v.category || '';
     if (iframe) iframe.src = v.embed || v.direct || '';
     setTimeout(draw, 80);
+  }
+  function rowHtml(v, idx) {
+    return '<button type="button" class="modalNextBtn" data-idx="' + idx + '" style="display:flex;width:100%;gap:12px;align-items:center;padding:0;margin-bottom:8px;border:1px solid #222;border-radius:12px;overflow:hidden;background:#111;color:#eee;text-align:left">' +
+      '<div style="position:relative;width:168px;min-width:168px;height:94px;background:#1a1a1a;flex-shrink:0">' + previewHtml(v) +
+      '<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><span style="width:34px;height:34px;border-radius:999px;background:#ff9000;color:#000;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px">▶</span></span></div>' +
+      '<div style="padding:8px 12px 8px 0;font-size:14px;font-weight:700;line-height:1.35">' + cleanTitle(v.title) + '</div></button>';
   }
   function drawNext(shell) {
     var box = document.getElementById('modalNextCard');
@@ -97,21 +108,19 @@
       box.innerHTML = '';
       return;
     }
-    var nxt = nextVideo();
-    if (!nxt) {
+    var items = nextVideos();
+    if (!items.length) {
       box.innerHTML = '';
       return;
     }
-    var th = thumbOf(nxt);
-    var title = String(nxt.title || 'Video').replace(/[<>]/g, '');
     box.innerHTML = '<div style="font-size:10px;letter-spacing:.14em;font-weight:800;color:#888;margin-bottom:8px">BERIKUTNYA</div>' +
-      '<button type="button" id="modalNextBtn" style="display:flex;width:100%;gap:12px;align-items:center;padding:0;border:1px solid #222;border-radius:12px;overflow:hidden;background:#111;color:#eee;text-align:left">' +
-      '<div style="position:relative;width:168px;min-width:168px;height:94px;background:#1a1a1a;flex-shrink:0">' +
-      (th ? '<img src="' + th + '" alt="" style="width:100%;height:100%;object-fit:cover">' : '') +
-      '<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><span style="width:34px;height:34px;border-radius:999px;background:#ff9000;color:#000;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px">▶</span></span></div>' +
-      '<div style="padding:8px 12px 8px 0;font-size:14px;font-weight:700;line-height:1.35;max-height:94px;overflow:hidden">' + title + '</div></button>';
-    var btn = document.getElementById('modalNextBtn');
-    if (btn) btn.onclick = function () { playVideo(nxt); };
+      items.map(rowHtml).join('');
+    box.querySelectorAll('.modalNextBtn').forEach(function (btn) {
+      btn.onclick = function () {
+        var v = items[parseInt(btn.getAttribute('data-idx'), 10)];
+        playVideo(v);
+      };
+    });
   }
   function draw() {
     var modal = document.getElementById('videoModal');
