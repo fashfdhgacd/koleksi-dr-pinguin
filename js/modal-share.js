@@ -18,7 +18,7 @@
       '@media(min-width:900px){',
       '#modalShareBar{display:none!important;}',
       '}',
-      '#modalNextCard{display:none;padding:12px;border-top:1px solid #2a2a2a;background:#050505;}',
+      '#modalNextCard{display:none;padding:10px 12px 16px;border-top:1px solid #2a2a2a;background:#050505;flex-shrink:0;}',
       '@media(min-width:600px) and (max-width:1100px){',
       '#modalNextCard{display:block!important;}',
       '#modalShareBar{display:flex!important;}',
@@ -67,10 +67,7 @@
   }
   function thumbOf(v) {
     if (!v) return '';
-    if (v.thumb || v.thumbnail) return v.thumb || v.thumbnail;
-    var id = keyFromEmbed(v.embed || v.direct || '');
-    if (/videy/i.test(String(v.embed || v.source || '')) && id) return 'https://cdn.videy.co/' + id + '.jpg';
-    return '';
+    return v.thumb || v.thumbnail || v.poster || '';
   }
   function chip(label, href) {
     return '<a href="' + href + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;height:30px;padding:0 10px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid #2a2a2a;background:#161616;color:#ddd;text-decoration:none">' + label + '</a>';
@@ -106,12 +103,13 @@
       return;
     }
     var th = thumbOf(nxt);
-    box.innerHTML = '<div style="font-size:11px;letter-spacing:.12em;font-weight:800;color:#888;margin-bottom:8px">BERIKUTNYA</div>' +
-      '<button type="button" id="modalNextBtn" style="display:block;width:100%;padding:0;border:1px solid #222;border-radius:12px;overflow:hidden;background:#111;color:#eee;text-align:left">' +
-      '<div style="position:relative;aspect-ratio:16/9;background:#161616">' +
-      (th ? '<img src="' + th + '" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">' : '') +
-      '<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><span style="width:44px;height:44px;border-radius:999px;background:#ff9000;color:#000;display:flex;align-items:center;justify-content:center;font-weight:900">▶</span></span></div>' +
-      '<div style="padding:10px 12px;font-size:14px;font-weight:700;line-height:1.35">' + String(nxt.title || '').replace(/[<>]/g, '') + '</div></button>';
+    var title = String(nxt.title || 'Video').replace(/[<>]/g, '');
+    box.innerHTML = '<div style="font-size:10px;letter-spacing:.14em;font-weight:800;color:#888;margin-bottom:8px">BERIKUTNYA</div>' +
+      '<button type="button" id="modalNextBtn" style="display:flex;width:100%;gap:12px;align-items:center;padding:0;border:1px solid #222;border-radius:12px;overflow:hidden;background:#111;color:#eee;text-align:left">' +
+      '<div style="position:relative;width:168px;min-width:168px;height:94px;background:#1a1a1a;flex-shrink:0">' +
+      (th ? '<img src="' + th + '" alt="" style="width:100%;height:100%;object-fit:cover">' : '') +
+      '<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><span style="width:34px;height:34px;border-radius:999px;background:#ff9000;color:#000;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px">▶</span></span></div>' +
+      '<div style="padding:8px 12px 8px 0;font-size:14px;font-weight:700;line-height:1.35;max-height:94px;overflow:hidden">' + title + '</div></button>';
     var btn = document.getElementById('modalNextBtn');
     if (btn) btn.onclick = function () { playVideo(nxt); };
   }
