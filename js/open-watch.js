@@ -1,8 +1,17 @@
 (function () {
   if (window.__openWatchHooked) return;
   window.__openWatchHooked = true;
+  try {
+    if (/[?&]v=/.test(location.search)) {
+      history.replaceState(null, '', location.pathname + location.hash);
+    }
+  } catch (e) {}
   var list = [];
-  fetch('/data/videos.json?t=' + Date.now()).then(function (r) { return r.json(); }).then(function (d) { list = d || []; }).catch(function () {});
+  var pendingTitle = '';
+  fetch('/data/videos.json?t=' + Date.now()).then(function (r) { return r.json(); }).then(function (d) {
+    list = d || [];
+    if (pendingTitle) goFromTitle(pendingTitle);
+  }).catch(function () {});
   function keyFromEmbed(u) {
     if (!u) return '';
     try {
@@ -39,34 +48,36 @@
     location.href = '/v/' + encodeURIComponent(key);
     return true;
   }
+  function goFromTitle(title) {
+    var hit = findByTitle(title);
+    var key = hit ? keyOf(hit) : '';
+    if (key) return go(key);
+    return false;
+  }
+  function closeModalQuiet() {
+    var modal = document.getElementById('videoModal');
+    var iframe = document.getElementById('modalIframe');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.style.display = 'none';
+    }
+    if (iframe) iframe.src = 'about:blank';
+  }
+  closeModalQuiet();
+  setTimeout(closeModalQuiet, 300);
   document.addEventListener('click', function (e) {
     if (e.target.closest('.card-share')) return;
     var card = e.target.closest('.video-card');
     if (!card) return;
     var titleEl = card.querySelector('h3');
-    var hit = findByTitle(titleEl ? titleEl.textContent : '');
-    var key = hit ? keyOf(hit) : '';
-    if (!key) return;
-    e.preventDefault();
-    e.stopPropagation();
-    go(key);
-  }, true);
-  function hookModal() {
-    var modal = document.getElementById('videoModal');
-    var iframe = document.getElementById('modalIframe');
-    if (!modal || !iframe || modal.__openWatchObs) return;
-    modal.__openWatchObs = true;
-    function check() {
-      if (modal.classList.contains('hidden')) return;
-      modal.style.display = 'none';
-      var src = iframe.getAttribute('src') || iframe.src || '';
-      var key = keyFromEmbed(src);
-      if (key) go(key);
+    var title = titleEl ? titleEl.textContent : '';
+    if (list.length) {
+      if (goFromTitle(title)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    } else {
+      pendingTitle = title;
     }
-    new MutationObserver(check).observe(modal, { attributes: true, attributeFilter: ['class'] });
-    new MutationObserver(check).observe(iframe, { attributes: true, attributeFilter: ['src'] });
-  }
-  hookModal();
-  setTimeout(hookModal, 400);
-  setTimeout(hookModal, 1500);
+  }, true);
 })();
