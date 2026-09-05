@@ -1,6 +1,8 @@
 (function () {
   if (window.__modalShare) return;
   window.__modalShare = true;
+  var list = [];
+  fetch('/data/videos.json?t=' + Date.now()).then(function (r) { return r.json(); }).then(function (d) { list = d || []; }).catch(function () {});
   if (!document.getElementById('modalShareCss')) {
     var css = document.createElement('style');
     css.id = 'modalShareCss';
@@ -11,13 +13,22 @@
       '#modalShareMobile,#modalOpenExternalMobile{display:none!important;}',
       '#videoModal .sm\\:hidden.shrink-0{display:none!important;}',
       '#modalShare{display:none!important;}',
-      '#modalShareBar{display:flex!important;margin-top:4px;padding:14px 12px 20px!important;border-top:1px solid #2a2a2a;background:#050505;}',
+      '#modalShareBar{display:flex!important;margin-top:4px;padding:14px 12px 12px!important;border-top:1px solid #2a2a2a;background:#050505;}',
       '}',
       '@media(min-width:900px){',
       '#modalShareBar{display:none!important;}',
+      '}',
+      '#modalNextCard{display:none;padding:12px;border-top:1px solid #2a2a2a;background:#050505;}',
+      '@media(min-width:600px) and (max-width:1100px){',
+      '#modalNextCard{display:block!important;}',
+      '#modalShareBar{display:flex!important;}',
       '}'
     ].join('');
     document.head.appendChild(css);
+  }
+  function isTab() {
+    var w = window.innerWidth;
+    return w >= 600 && w <= 1100;
   }
   function keyFromEmbed(u) {
     if (!u || u === 'about:blank') return '';
@@ -31,6 +42,9 @@
       return '';
     }
   }
+  function norm(s) {
+    return String(s || '').replace(/\(koleksi[^)]*\)/ig, '').replace(/-\s*koleksidrpinguin.*/i, '').replace(/\s+/g, ' ').trim().toLowerCase();
+  }
   function info() {
     var title = ((document.getElementById('modalTitle') || {}).textContent || '').trim();
     var iframe = document.getElementById('modalIframe');
@@ -38,7 +52,25 @@
     var src = (iframe && iframe.getAttribute('src')) || (native && native.currentSrc) || (native && native.src) || '';
     var key = keyFromEmbed(src);
     var page = location.origin + '/v/' + encodeURIComponent(key || title || '');
-    return { title: title, page: page };
+    return { title: title, page: page, src: src };
+  }
+  function nextVideo() {
+    var title = ((document.getElementById('modalTitle') || {}).textContent || '').trim();
+    var cat = ((document.getElementById('modalMeta') || {}).textContent || '').trim().toLowerCase();
+    var same = list.filter(function (v) {
+      return String(v.category || '').toLowerCase() === cat && norm(v.title) !== norm(title);
+    });
+    if (!same.length) {
+      same = list.filter(function (v) { return norm(v.title) !== norm(title); });
+    }
+    return same[0] || null;
+  }
+  function thumbOf(v) {
+    if (!v) return '';
+    if (v.thumb || v.thumbnail) return v.thumb || v.thumbnail;
+    var id = keyFromEmbed(v.embed || v.direct || '');
+    if (/videy/i.test(String(v.embed || v.source || '')) && id) return 'https://cdn.videy.co/' + id + '.jpg';
+    return '';
   }
   function chip(label, href) {
     return '<a href="' + href + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;height:30px;padding:0 10px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid #2a2a2a;background:#161616;color:#ddd;text-decoration:none">' + label + '</a>';
@@ -46,6 +78,42 @@
   function hideOldMobileShare() {
     var a = document.getElementById('modalShareMobile');
     if (a && a.parentElement) a.parentElement.style.display = 'none';
+  }
+  function playVideo(v) {
+    if (!v) return;
+    var titleEl = document.getElementById('modalTitle');
+    var metaEl = document.getElementById('modalMeta');
+    var iframe = document.getElementById('modalIframe');
+    if (titleEl) titleEl.textContent = v.title || '';
+    if (metaEl) metaEl.textContent = v.category || '';
+    if (iframe) iframe.src = v.embed || v.direct || '';
+    setTimeout(draw, 80);
+  }
+  function drawNext(shell) {
+    var box = document.getElementById('modalNextCard');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'modalNextCard';
+      shell.appendChild(box);
+    }
+    if (!isTab()) {
+      box.innerHTML = '';
+      return;
+    }
+    var nxt = nextVideo();
+    if (!nxt) {
+      box.innerHTML = '';
+      return;
+    }
+    var th = thumbOf(nxt);
+    box.innerHTML = '<div style="font-size:11px;letter-spacing:.12em;font-weight:800;color:#888;margin-bottom:8px">BERIKUTNYA</div>' +
+      '<button type="button" id="modalNextBtn" style="display:block;width:100%;padding:0;border:1px solid #222;border-radius:12px;overflow:hidden;background:#111;color:#eee;text-align:left">' +
+      '<div style="position:relative;aspect-ratio:16/9;background:#161616">' +
+      (th ? '<img src="' + th + '" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">' : '') +
+      '<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><span style="width:44px;height:44px;border-radius:999px;background:#ff9000;color:#000;display:flex;align-items:center;justify-content:center;font-weight:900">▶</span></span></div>' +
+      '<div style="padding:10px 12px;font-size:14px;font-weight:700;line-height:1.35">' + String(nxt.title || '').replace(/[<>]/g, '') + '</div></button>';
+    var btn = document.getElementById('modalNextBtn');
+    if (btn) btn.onclick = function () { playVideo(nxt); };
   }
   function draw() {
     var modal = document.getElementById('videoModal');
@@ -56,7 +124,7 @@
     if (!bar) {
       bar = document.createElement('div');
       bar.id = 'modalShareBar';
-      bar.style.cssText = 'flex-shrink:0;padding:14px 12px 20px;display:flex;flex-wrap:wrap;gap:8px;background:#050505;border-top:1px solid #2a2a2a;margin-top:8px';
+      bar.style.cssText = 'flex-shrink:0;padding:14px 12px 12px;display:flex;flex-wrap:wrap;gap:8px;background:#050505;border-top:1px solid #2a2a2a;margin-top:8px';
       shell.appendChild(bar);
     }
     var x = info();
@@ -81,6 +149,7 @@
       if (navigator.share) navigator.share({ title: x.title, url: x.page, text: x.title }).catch(function () {});
       else navigator.clipboard.writeText(x.page);
     };
+    drawNext(shell);
   }
   function hook() {
     var modal = document.getElementById('videoModal');
