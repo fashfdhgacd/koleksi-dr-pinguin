@@ -4,7 +4,7 @@
     a.href = '/putarin';
     a.setAttribute('data-putarin-nav', '1');
     a.className = 'cat-pill';
-    a.textContent = 'PUTARIN';
+    a.textContent = 'JAV 18+';
     a.style.textDecoration = 'none';
     return a;
   }
@@ -14,7 +14,7 @@
     a.setAttribute('data-putarin-nav', '1');
     a.className = 'genre-card group';
     a.style.textDecoration = 'none';
-    a.innerHTML = '<div class="w-10 h-10 rounded bg-[#ff9000]/15 text-[#ff9000] flex items-center justify-center mb-3"><i class="fas fa-play text-sm"></i></div><div class="font-semibold text-sm truncate">Putarin</div><div class="text-xs text-neutral-500 mt-0.5">Halaman sendiri</div>';
+    a.innerHTML = '<div class="w-10 h-10 rounded bg-[#ff9000]/15 text-[#ff9000] flex items-center justify-center mb-3"><i class="fas fa-film text-sm"></i></div><div class="font-semibold text-sm truncate">JAV 18+</div><div class="text-xs text-neutral-500 mt-0.5">Halaman sendiri</div>';
     return a;
   }
   function inject() {
