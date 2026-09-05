@@ -193,7 +193,10 @@ async function handleShare(env, chatId) {
   take.forEach(function (x) { used.add(x.key); });
   st.used = Array.from(used);
   try { await writeShareState(env, st); } catch (_) {}
-  const lines = take.map(function (x) { return "\u25b6 " + x.title + "\nhttps://koleksidrpinguin.site/v/" + x.key; });
+  const lines = take.map(function (x, i) {
+    const host = (i % 2 === 0) ? "https://koleksidrpinguin.com" : "https://koleksidrpinguin.site";
+    return "\u25b6 " + x.title + "\n" + host + "/v/" + x.key;
+  });
   await reply(env, chatId, lines.join("\n\n"));
 }
 function parseNamedLinks(text) {
