@@ -12,17 +12,19 @@ header{position:sticky;top:0;z-index:20;height:48px;background:#000;border-botto
 .back{font-size:11px;font-weight:800;text-transform:uppercase;border:1px solid #333;color:#ddd;padding:8px 10px;border-radius:999px}
 .wrap{width:min(1100px,100%);margin:0 auto;padding:18px 12px 40px}
 h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}h1 span{color:#ff9000}.meta{color:#888;font-size:12px;margin:0 0 16px}
-.grid{display:grid;grid-template-columns:1fr;gap:14px}@media(min-width:720px){.grid{grid-template-columns:1fr 1fr}}
-.card{background:#111;border:1px solid #222;border-radius:12px;overflow:hidden}
-.frame{position:relative;aspect-ratio:16/9;background:#000}.frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
-.info{padding:10px 12px}.info strong{display:block;color:#eee;font-size:14px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(min-width:900px){.grid{grid-template-columns:1fr 1fr 1fr}}
+.card{background:#111;border:1px solid #222;border-radius:12px;overflow:hidden;display:block;color:inherit}
+.thumb{position:relative;aspect-ratio:16/9;background:#161616;display:flex;align-items:center;justify-content:center}
+.play{width:44px;height:44px;border-radius:999px;background:#ff9000;color:#000;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900}
+.info{padding:10px 12px}.info strong{display:block;font-size:13px;line-height:1.35}
+.info span{display:block;margin-top:4px;color:#888;font-size:11px}
 .pager{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:20px}
 .pager a,.pager span{min-width:40px;height:40px;display:flex;align-items:center;justify-content:center;border:1px solid #333;border-radius:8px;color:#ddd;font-weight:800;font-size:13px}
 .pager .on{background:#ff9000;color:#000;border-color:#ff9000}
 </style>
 </head>
 <body>
-<header><div class="nav"><a class="brand" href="/">DR.<b>PINGUIN</b></a><a class="back" href="/">Kembali ke halaman utama</a></div></header>
+<header><div class="nav"><a class="brand" href="/">DR.<b>PINGUIN</b></a><a class="back" href="/">Kembali</a></div></header>
 <div class="wrap">
   <h1>Video <span>AI China</span></h1>
   <p class="meta" id="count">Memuat...</p>
@@ -31,17 +33,13 @@ h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}h
 </div>
 <script>
 (function(){
-  var PER = 6;
+  var PER = 12;
   function codeOf(v){
     var u = String(v.embed || v.direct || '');
     var m = u.match(/\/(?:e|v)\/([A-Za-z0-9_-]+)/);
     return m ? m[1] : '';
   }
   function titleOf(v){ return String(v.title || 'Video').replace(/[<>]/g,'').replace(/_/g,' ').trim(); }
-  function embedOf(v){
-    var id = codeOf(v);
-    return id ? ('https://mumu.watch/e/' + id) : String(v.embed || v.direct || '');
-  }
   function pageNow(){ var n = parseInt((location.hash.match(/p(\d+)/)||[])[1] || '1', 10); return n > 0 ? n : 1; }
   fetch('/data/mumu.json?t=' + Date.now()).then(function(r){ return r.json(); }).then(function(items){
     window._mumu = items || [];
@@ -52,9 +50,10 @@ h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}h
     var pages = Math.max(1, Math.ceil(items.length / PER));
     var p = Math.min(pageNow(), pages);
     var slice = items.slice((p-1)*PER, p*PER);
-    document.getElementById('count').textContent = items.length + ' video · halaman ' + p + ' / ' + pages;
+    document.getElementById('count').textContent = items.length + ' video \u00b7 halaman ' + p + ' / ' + pages;
     document.getElementById('grid').innerHTML = slice.map(function(v){
-      return '<article class="card"><div class="frame"><iframe src="'+embedOf(v)+'" allow="autoplay;fullscreen;encrypted-media" allowfullscreen referrerpolicy="origin"></iframe></div><div class="info"><strong>'+titleOf(v)+'</strong></div></article>';
+      var id = codeOf(v);
+      return '<a class="card" href="/v/'+encodeURIComponent(id)+'"><div class="thumb"><div class="play">\u25b6</div></div><div class="info"><strong>'+titleOf(v)+'</strong><span>Buka halaman nonton</span></div></a>';
     }).join('') || '<p>Belum ada video.</p>';
     var html = '';
     if (p > 1) html += '<a href="#p'+(p-1)+'">Prev</a>';
