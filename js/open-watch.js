@@ -1,42 +1,39 @@
 (function () {
-  var list = [];
-  fetch('/data/videos.json?t=' + Date.now()).then(function (r) { return r.json(); }).then(function (d) { list = d || []; }).catch(function () {});
-  function keyOf(v) {
-    var u = String((v && (v.embed || v.direct || v.embedUrl)) || '');
+  if (window.__openWatchHooked) return;
+  window.__openWatchHooked = true;
+  function keyFromEmbed(u) {
+    if (!u) return '';
     try {
       var url = new URL(u, location.origin);
       var qid = url.searchParams.get('id');
       if (qid) return qid;
       var last = url.pathname.split('/').filter(Boolean).pop() || '';
-      return last.replace(/\.(mp4|mov)$/i, '') || String(v.id || '');
+      return last.replace(/\.(mp4|mov)$/i, '');
     } catch (e) {
-      return String((v && v.id) || '');
+      return '';
     }
   }
-  function go(v) {
-    if (!v) return;
-    location.href = '/v/' + encodeURIComponent(keyOf(v));
+  function jump(src) {
+    var key = keyFromEmbed(src);
+    if (!key) return;
+    if (location.pathname.indexOf('/v/') === 0) return;
+    location.href = '/v/' + encodeURIComponent(key);
   }
-  function findById(id) {
-    return list.find(function (v) { return String(v.id) === String(id); });
-  }
-  document.addEventListener('click', function (e) {
-    var hero = e.target.closest('#heroPlay');
-    if (hero) {
-      var title = (document.getElementById('heroTitle') || {}).textContent || '';
-      var hit = list.find(function (v) { return String(v.title || '') === title.trim(); });
-      if (hit) { e.preventDefault(); e.stopPropagation(); go(hit); }
-      return;
+  function hook() {
+    var modal = document.getElementById('videoModal');
+    var iframe = document.getElementById('modalIframe');
+    if (!iframe || iframe.__openWatchObs) return;
+    iframe.__openWatchObs = true;
+    function check() {
+      if (modal && modal.classList.contains('hidden')) return;
+      var src = iframe.getAttribute('src') || iframe.src || '';
+      if (src) jump(src);
     }
-    var card = e.target.closest('.video-card, [data-id]');
-    if (!card || e.target.closest('.card-share')) return;
-    if (!card.classList.contains('video-card') && !card.closest('#videoGrid, #trendingGrid, #searchResults')) return;
-    var id = card.getAttribute('data-id');
-    if (!id) return;
-    var video = findById(id);
-    if (!video) return;
-    e.preventDefault();
-    e.stopPropagation();
-    go(video);
-  }, true);
+    new MutationObserver(check).observe(iframe, { attributes: true, attributeFilter: ['src'] });
+    if (modal) new MutationObserver(check).observe(modal, { attributes: true, attributeFilter: ['class'] });
+  }
+  hook();
+  setTimeout(hook, 400);
+  setTimeout(hook, 1500);
+  setTimeout(hook, 3000);
 })();
