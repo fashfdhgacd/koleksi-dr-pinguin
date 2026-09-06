@@ -5,32 +5,92 @@
   "headers": [
     {
       "source": "/logo.png",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     },
     {
       "source": "/favicon.png",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     },
     {
       "source": "/favicon-32.png",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     },
     {
       "source": "/apple-touch-icon.png",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     },
     {
       "source": "/(.*)",
-      "headers": [{ "key": "Referrer-Policy", "value": "unsafe-url" }]
+      "headers": [
+        {
+          "key": "Referrer-Policy",
+          "value": "unsafe-url"
+        }
+      ]
     }
   ],
   "rewrites": [
-    { "source": "/putarin", "destination": "/putarin.html" },
-    { "source": "/putarin/", "destination": "/putarin.html" },
-    { "source": "/mumu", "destination": "/mumu.html" },
-    { "source": "/mumu/", "destination": "/mumu.html" },
-    { "source": "/v/:id", "destination": "/api/watch?id=:id" },
-    { "source": "/v/:id/", "destination": "/api/watch?id=:id" },
-    { "source": "/sitemap-v.xml", "destination": "/api/sitemap-v" }
+    {
+      "source": "/putarin",
+      "destination": "/putarin.html"
+    },
+    {
+      "source": "/putarin/",
+      "destination": "/putarin.html"
+    },
+    {
+      "source": "/mumu",
+      "destination": "/mumu.html"
+    },
+    {
+      "source": "/mumu/",
+      "destination": "/mumu.html"
+    },
+    {
+      "source": "/v/:id",
+      "destination": "/api/watch?id=:id"
+    },
+    {
+      "source": "/v/:id/",
+      "destination": "/api/watch?id=:id"
+    },
+    {
+      "source": "/sitemap-v.xml",
+      "destination": "/api/sitemap-v"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "query",
+          "key": "v",
+          "value": "(?<vid>[^&]+)"
+        }
+      ],
+      "destination": "/v/:vid",
+      "permanent": false
+    }
   ]
 }
