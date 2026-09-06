@@ -71,7 +71,7 @@
     return '';
   }
   function chip(label, href) {
-    return '<a href="' + href + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;height:30px;padding:0 10px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid #2a2a2a;background:#161616;color:#ddd;text-decoration:none">' + label + '</a>';
+    return '<a href="' + href + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;height:42px;padding:0 12px;border-radius:10px;font-size:12px;font-weight:700;border:1px solid #2a2a2a;background:#161616;color:#ddd;text-decoration:none">' + label + '</a>';
   }
   function hideOldMobileShare() {
     var a = document.getElementById('modalShareMobile');
@@ -135,9 +135,12 @@
     bar.innerHTML =
       chip('WhatsApp', 'https://wa.me/?text=' + txt) +
       chip('Telegram', 'https://t.me/share/url?url=' + u + '&text=' + t) +
+      chip('X', 'https://x.com/intent/post?text=' + txt) +
+      chip('Threads', 'https://www.threads.net/intent/post?text=' + txt) +
       chip('Facebook', 'https://www.facebook.com/sharer/sharer.php?u=' + u) +
-      '<button type="button" id="modalCopyLink" style="display:inline-flex;align-items:center;justify-content:center;height:30px;padding:0 10px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid #2a2a2a;background:#161616;color:#ddd">Salin link</button>' +
-      '<button type="button" id="modalNativeShare" style="display:inline-flex;align-items:center;justify-content:center;height:30px;padding:0 10px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid #2a2a2a;background:#161616;color:#ddd">Bagikan</button>';
+      chip('LINE', 'https://social-plugins.line.me/lineit/share?url=' + u) +
+      '<button type="button" id="modalCopyLink" style="display:inline-flex;align-items:center;justify-content:center;height:42px;padding:0 12px;border-radius:10px;font-size:12px;font-weight:700;border:1px solid #2a2a2a;background:#161616;color:#ddd">Salin link</button>' +
+      '<button type="button" id="modalNativeShare" style="display:inline-flex;align-items:center;justify-content:center;height:42px;padding:0 12px;border-radius:10px;font-size:12px;font-weight:700;border:1px solid #2a2a2a;background:#161616;color:#ddd">Bagikan</button>';
     var c = document.getElementById('modalCopyLink');
     if (c) c.onclick = function () {
       navigator.clipboard.writeText(x.page).then(function () {
