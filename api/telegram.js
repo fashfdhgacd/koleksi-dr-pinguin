@@ -11,7 +11,7 @@ function getEnv() {
     GH_TOKEN: pickEnv(["GH_TOKEN", "GITHUB_TOKEN"]),
     GH_OWNER: pickEnv(["GH_OWNER", "GITHUB_OWNER"]),
     GH_REPO: pickEnv(["GH_REPO", "GITHUB_REPO"]),
-    GH_REPO_2: pickEnv(["GH_REPO_2","GITHUB_REPO_2"]) || "koleksidrpinguin_site",
+    GH_REPO_2: "",
     GH_PATH: pickEnv(["GH_PATH"]) || "data/videos.json",
     GH_BRANCH: pickEnv(["GH_BRANCH"]) || "main",
     GH_STATE_REPO: pickEnv(["GH_STATE_REPO"]),
@@ -125,11 +125,8 @@ async function handleUpdate(update, env) {
       added += r.added; skipped += r.skipped; updated += r.updated || 0;
     }
     if (other.length) {
-      const repos = [env.GH_REPO, env.GH_REPO_2].filter(Boolean).filter(function (x, i, a) { return a.indexOf(x) === i; });
-      for (const repo of repos) {
-        const r = await mergeAndPush(env, repo, other, "data/videos.json");
-        added += r.added; skipped += r.skipped; updated += r.updated || 0;
-      }
+      const r = await mergeAndPush(env, env.GH_REPO, other, "data/videos.json");
+      added += r.added; skipped += r.skipped; updated += r.updated || 0;
     }
     await reply(env, chatId, "Selesai diproses.\nLink diterima: " + items.length + "\nPutarin: " + putItems.length + "\nMumu: " + mumuItems.length + " (ke /mumu)\n+" + added + " skip " + skipped);
   } catch (e) {
