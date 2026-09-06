@@ -24,7 +24,7 @@ h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}h
 .pager{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:20px}
 .pager a,.pager span{min-width:40px;height:40px;display:flex;align-items:center;justify-content:center;border:1px solid #333;border-radius:8px;color:#ddd;font-weight:800;font-size:13px}
 
-#ov{display:none;position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.86);padding:12px}
+#ov{display:none;position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.86);padding:12px;overflow:hidden;touch-action:none;-webkit-overflow-scrolling:auto}body.ov-lock{overflow:hidden;position:fixed;width:100%;height:100%;touch-action:none}
 #ov.on{display:flex;flex-direction:column;align-items:center;justify-content:center}
 #ov .box{width:min(960px,100%);background:#111;border:1px solid #333;border-radius:12px;overflow:hidden}
 #ov .hd{display:flex;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:1px solid #222}
@@ -159,8 +159,12 @@ h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}h
   function closeOv(){
     ov.className = '';
     ov.innerHTML = '';
+    document.body.classList.remove('ov-lock');
+    if (window._ovY != null) { window.scrollTo(0, window._ovY); window._ovY = null; }
   }
   function openOv(title, src, tall, id){
+    window._ovY = window.scrollY || 0;
+    document.body.classList.add('ov-lock');
     ov.className = 'on' + (tall ? ' tall' : '');
     ov.innerHTML = '<div class="box"><div class="hd"><b></b><div><button type="button" class="x" id="ovshare">Share</button> <button type="button" class="x" id="ovx">Tutup</button></div></div><div class="ph"><iframe src="" allow="autoplay;fullscreen;encrypted-media" allowfullscreen referrerpolicy="origin"></iframe></div></div>';
     ov.querySelector('b').textContent = title;
