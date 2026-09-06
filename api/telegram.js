@@ -279,9 +279,14 @@ async function handleShare(env, chatId, rawCmd) {
   if (/\bsite\b|\.site/.test(mode) && !/\bcom\b/.test(mode)) hostPick = "site";
   const lines = take.map(function (x, i) {
     let host = "https://koleksidrpinguin.com";
-    if (hostPick === "site") host = "https://koleksidrpinguin.site";
-    else if (hostPick === "mix") host = (i % 2 === 0) ? "https://koleksidrpinguin.com" : "https://koleksidrpinguin.site";
-    return "\u25b6 " + x.title + "\n" + host + "/?v=" + x.key;
+    if (src !== "puterin" && src !== "mumu") {
+      if (hostPick === "site") host = "https://koleksidrpinguin.site";
+      else if (hostPick === "mix") host = (i % 2 === 0) ? "https://koleksidrpinguin.com" : "https://koleksidrpinguin.site";
+    }
+    let path = "/?v=" + x.key;
+    if (src === "mumu") path = "/mumu?v=" + x.key;
+    if (src === "puterin") path = "/putarin?v=" + x.key;
+    return "\u25b6 " + x.title + "\n" + host + path;
   });
   await replyChunks(env, chatId, lines);
 }
