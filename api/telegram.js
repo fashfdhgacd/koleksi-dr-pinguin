@@ -80,7 +80,7 @@ async function handleUpdate(update, env) {
     await reply(env, chatId, [
       "Bot Dr. Pinguin",
       "",
-      "minta / sebar / minta 10 / minta 25",
+      "minta / minta 10 / minta indoav / minta userbokep / minta puterin / minta mumu / minta videy",
       "minta com         = 25 link .com saja",
       "minta site        = 25 link .site saja",
       "terbaru           = 25 video IndoAV/userbokep terbaru",
@@ -164,7 +164,8 @@ function shareKeyFromVideo(v) {
 function cleanTitle(t) {
   return String(t || "Video").replace(/^\u25b6\s*/, "").replace(/\s*-\s*koleksidrpinguin.*/i, "").replace(/_/g, " ").replace(/\s+/g, " ").trim();
 }
-const VIDEO_CACHE = { at: 0, data: null, ttl: 3 * 60 * 1000 };
+const JSON_CACHE = {};
+const VIDEO_CACHE_TTL = 3 * 60 * 1000;
 function shareCount(raw) {
   const m = String(raw || "").match(/\b(\d{1,2})\b/);
   if (!m) return 25;
@@ -184,13 +185,27 @@ async function readJsonPath(env, repo, path) {
   }
   return { data: raw && raw.trim() ? JSON.parse(raw) : [], sha: meta.sha };
 }
-async function readVideos(env, repo) {
+async function readCachedJson(env, repo, path) {
+  const key = repo + ":" + path;
   const now = Date.now();
-  if (VIDEO_CACHE.data && (now - VIDEO_CACHE.at) < VIDEO_CACHE.ttl) return VIDEO_CACHE.data;
-  const r = await readJsonPath(env, repo, env.GH_PATH || "data/videos.json");
-  VIDEO_CACHE.data = Array.isArray(r.data) ? r.data : [];
-  VIDEO_CACHE.at = now;
-  return VIDEO_CACHE.data;
+  const hit = JSON_CACHE[key];
+  if (hit && (now - hit.at) < VIDEO_CACHE_TTL) return hit.data;
+  const r = await readJsonPath(env, repo, path);
+  const data = Array.isArray(r.data) ? r.data : [];
+  JSON_CACHE[key] = { at: now, data: data };
+  return data;
+}
+async function readVideos(env, repo) {
+  return readCachedJson(env, repo, env.GH_PATH || "data/videos.json");
+}
+function shareSource(raw) {
+  const t = String(raw || "").toLowerCase();
+  if (/puterin|putarin/.test(t)) return "puterin";
+  if (/\bmumu\b/.test(t)) return "mumu";
+  if (/user\s*bokep|userbokep/.test(t)) return "userbokep";
+  if (/indoav/.test(t)) return "indoav";
+  if (/\bvidey\b/.test(t)) return "videy";
+  return "default";
 }
 async function stateRepo(env) { return env.GH_STATE_REPO || "kdp-bot-state"; }
 async function readShareState(env) {
@@ -226,15 +241,28 @@ async function handleLatest(env, chatId) {
   await replyChunks(env, chatId, lines);
 }
 async function handleShare(env, chatId, rawCmd) {
-  const videos = await readVideos(env, env.GH_REPO);
+  const src = shareSource(rawCmd);
+  let videos = [];
+  try {
+    if (src === "puterin") videos = await readCachedJson(env, env.GH_REPO, "data/putarin.json");
+    else if (src === "mumu") videos = await readCachedJson(env, env.GH_REPO, "data/mumu.json");
+    else videos = await readVideos(env, env.GH_REPO);
+  } catch (e) {
+    await reply(env, chatId, "Gagal baca data " + src + ": " + String(e.message || e));
+    return;
+  }
   let st = await readShareState(env);
   const now = Date.now(); const DAY = 24 * 60 * 60 * 1000;
   if (!st.resetAt || now - st.resetAt >= DAY) { st.resetAt = now; st.used = []; }
   const used = new Set((st.used || []).map(String));
   const pool = [];
   for (const v of videos) {
-    const blob = String(v.embed || v.direct || v.category || "");
-    if (/vicek|exastream|puterin|putarin/i.test(blob)) continue;
+    const blob = String(v.embed || v.direct || v.embedUrl || "") + " " + String(v.category || "");
+    if (/vicek|exastream/i.test(blob)) continue;
+    if (src === "default" && /puterin|putarin/i.test(blob)) continue;
+    if (src === "indoav" && !/indoav/i.test(blob)) continue;
+    if (src === "userbokep" && !/userbokep/i.test(blob)) continue;
+    if (src === "videy" && !/videy/i.test(blob)) continue;
     const key = shareKeyFromVideo(v);
     if (!key || used.has(key)) continue;
     pool.push({ key: key, title: cleanTitle(v.title) });
