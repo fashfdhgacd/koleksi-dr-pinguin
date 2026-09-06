@@ -152,39 +152,39 @@ h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}h
   
   
 
+
   function shareLink(title, id){
-    var url = 'https://koleksidrpinguin.com/v/' + encodeURIComponent(id || '');
-    var text = (title || 'Video') + '
-' + url;
+    var url = "https://koleksidrpinguin.com/v/" + encodeURIComponent(id || "");
+    var text = (title || "Video") + "
+" + url;
     var enc = encodeURIComponent(text);
     var uenc = encodeURIComponent(url);
-    var panel = document.getElementById('sharePanel');
+    var panel = document.getElementById("sharePanel");
     if (!panel) {
-      panel = document.createElement('div');
-      panel.id = 'sharePanel';
+      panel = document.createElement("div");
+      panel.id = "sharePanel";
       document.body.appendChild(panel);
     }
     panel.innerHTML = '<div class="sh-box"><div class="sh-t">Share this video</div><button type="button" class="sh-x" id="shClose">Close</button><div class="sh-row">'
-      + '<a class="sh-a" target="_blank" rel="noopener" href="https://wa.me/?text='+enc+'">WhatsApp</a>'
-      + '<a class="sh-a" target="_blank" rel="noopener" href="https://t.me/share/url?url='+uenc+'&text='+encodeURIComponent(title||'')+'">Telegram</a>'
-      + '<a class="sh-a" target="_blank" rel="noopener" href="https://www.facebook.com/sharer/sharer.php?u='+uenc+'">Facebook</a>'
-      + '<a class="sh-a" target="_blank" rel="noopener" href="https://twitter.com/intent/tweet?text='+enc+'">X</a>'
+      + '<a class="sh-a" target="_blank" rel="noopener" href="https://wa.me/?text=' + enc + '">WhatsApp</a>'
+      + '<a class="sh-a" target="_blank" rel="noopener" href="https://t.me/share/url?url=' + uenc + '&text=' + encodeURIComponent(title || "") + '">Telegram</a>'
+      + '<a class="sh-a" target="_blank" rel="noopener" href="https://www.facebook.com/sharer/sharer.php?u=' + uenc + '">Facebook</a>'
+      + '<a class="sh-a" target="_blank" rel="noopener" href="https://twitter.com/intent/tweet?text=' + enc + '">X</a>'
       + '<button type="button" class="sh-a" id="shCopy">Salin link</button>'
       + '<button type="button" class="sh-a" id="shNative">Share HP</button>'
       + '</div></div>';
-    panel.className = 'on';
-    panel.onclick = function(e){ if (e.target === panel) panel.className = ''; };
-    document.getElementById('shClose').onclick = function(){ panel.className = ''; };
-    document.getElementById('shCopy').onclick = function(){
+    panel.className = "on";
+    panel.onclick = function(e){ if (e.target === panel) panel.className = ""; };
+    document.getElementById("shClose").onclick = function(){ panel.className = ""; };
+    document.getElementById("shCopy").onclick = function(){
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text);
-      else window.prompt('Salin', text);
-      document.getElementById('shCopy').textContent = 'Tersalin';
+      document.getElementById("shCopy").textContent = "Tersalin";
     };
-    document.getElementById('shNative').onclick = function(){
+    document.getElementById("shNative").onclick = function(){
       if (navigator.share) navigator.share({ title: title, text: text, url: url }).catch(function(){});
-      else if (navigator.clipboard) navigator.clipboard.writeText(text);
     };
   }
+
 
   var ov = document.getElementById('ov');
   function closeOv(){
