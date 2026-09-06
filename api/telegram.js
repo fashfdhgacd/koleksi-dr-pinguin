@@ -80,7 +80,7 @@ async function handleUpdate(update, env) {
     await reply(env, chatId, [
       "Bot Dr. Pinguin",
       "",
-      "minta / sebar     = 25 link acak (.com + .site)",
+      "minta / sebar / minta 10 / minta 25",
       "minta com         = 25 link .com saja",
       "minta site        = 25 link .site saja",
       "terbaru           = 25 video IndoAV/userbokep terbaru",
@@ -164,6 +164,14 @@ function shareKeyFromVideo(v) {
 function cleanTitle(t) {
   return String(t || "Video").replace(/^\u25b6\s*/, "").replace(/\s*-\s*koleksidrpinguin.*/i, "").replace(/_/g, " ").replace(/\s+/g, " ").trim();
 }
+const VIDEO_CACHE = { at: 0, data: null, ttl: 3 * 60 * 1000 };
+function shareCount(raw) {
+  const m = String(raw || "").match(/\b(\d{1,2})\b/);
+  if (!m) return 25;
+  const n = parseInt(m[1], 10);
+  if (n < 1) return 25;
+  return Math.min(25, n);
+}
 async function readJsonPath(env, repo, path) {
   const owner = env.GH_OWNER; const branch = env.GH_BRANCH || "main";
   const meta = await gh(env, "/repos/" + owner + "/" + repo + "/contents/" + path + "?ref=" + branch);
@@ -177,8 +185,12 @@ async function readJsonPath(env, repo, path) {
   return { data: raw && raw.trim() ? JSON.parse(raw) : [], sha: meta.sha };
 }
 async function readVideos(env, repo) {
+  const now = Date.now();
+  if (VIDEO_CACHE.data && (now - VIDEO_CACHE.at) < VIDEO_CACHE.ttl) return VIDEO_CACHE.data;
   const r = await readJsonPath(env, repo, env.GH_PATH || "data/videos.json");
-  return r.data;
+  VIDEO_CACHE.data = Array.isArray(r.data) ? r.data : [];
+  VIDEO_CACHE.at = now;
+  return VIDEO_CACHE.data;
 }
 async function stateRepo(env) { return env.GH_STATE_REPO || "kdp-bot-state"; }
 async function readShareState(env) {
@@ -211,7 +223,7 @@ async function handleLatest(env, chatId) {
     const host = (i % 2 === 0) ? "https://koleksidrpinguin.com" : "https://koleksidrpinguin.site";
     return "\u25b6 " + x.title + "\n" + host + "/?v=" + x.key;
   });
-  await reply(env, chatId, lines.join("\n\n"));
+  await replyChunks(env, chatId, lines);
 }
 async function handleShare(env, chatId, rawCmd) {
   const videos = await readVideos(env, env.GH_REPO);
@@ -229,7 +241,7 @@ async function handleShare(env, chatId, rawCmd) {
   }
   if (!pool.length) { await reply(env, chatId, "Stok link sesi 24 jam habis."); return; }
   for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp; }
-  const take = pool.slice(0, 25);
+  const take = pool.slice(0, shareCount(rawCmd));
   take.forEach(function (x) { used.add(x.key); });
   st.used = Array.from(used);
   try { await writeShareState(env, st); } catch (_) {}
@@ -243,7 +255,7 @@ async function handleShare(env, chatId, rawCmd) {
     else if (hostPick === "mix") host = (i % 2 === 0) ? "https://koleksidrpinguin.com" : "https://koleksidrpinguin.site";
     return "\u25b6 " + x.title + "\n" + host + "/?v=" + x.key;
   });
-  await reply(env, chatId, lines.join("\n\n"));
+  await replyChunks(env, chatId, lines);
 }
 function parseNamedLinks(text) {
   const lines = String(text).split(/\r?\n/); const items = []; let pending = "";
@@ -350,4 +362,22 @@ async function reply(env, chatId, text) {
   const res = await fetch("https://api.telegram.org/bot" + env.BOT_TOKEN + "/sendMessage", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chat_id: chatId, text: text }) });
   const data = await res.json();
   if (!data.ok) console.error("[tg] sendMessage fail", data);
+}
+async function replyChunks(env, chatId, lines) {
+  const chunks = [];
+  let cur = [];
+  let n = 0;
+  for (const line of lines) {
+    const add = (cur.length ? 2 : 0) + line.length;
+    if (n + add > 3500 && cur.length) {
+      chunks.push(cur.join("\n\n"));
+      cur = [line];
+      n = line.length;
+    } else {
+      cur.push(line);
+      n += add;
+    }
+  }
+  if (cur.length) chunks.push(cur.join("\n\n"));
+  for (const part of chunks) await reply(env, chatId, part);
 }
