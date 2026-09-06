@@ -11,7 +11,7 @@ function getEnv() {
     GH_TOKEN: pickEnv(["GH_TOKEN", "GITHUB_TOKEN"]),
     GH_OWNER: pickEnv(["GH_OWNER", "GITHUB_OWNER"]),
     GH_REPO: pickEnv(["GH_REPO", "GITHUB_REPO"]),
-    GH_REPO_2: "",
+    GH_REPO_2: pickEnv(["GH_REPO_2","GITHUB_REPO_2"]) || "koleksidrpinguin_site",
     GH_PATH: pickEnv(["GH_PATH"]) || "data/videos.json",
     GH_BRANCH: pickEnv(["GH_BRANCH"]) || "main",
     GH_STATE_REPO: pickEnv(["GH_STATE_REPO"]),
@@ -65,8 +65,8 @@ function putarinCode(url) {
 }
 async function handleUpdate(update, env) {
   const msg = update.message || update.channel_post;
-  if (!msg || !msg.text) return { processed: false, command: "empty" };
-  const text = String(msg.text).trim();
+  const text = String(msg.text || msg.caption || "").trim();
+  if (!text) return { processed: false, command: "empty" };
   const chatId = msg.chat.id;
   const cmd = classifyCommand(text);
   if (!env.BOT_TOKEN) return { processed: false, command: cmd || "no_token" };
@@ -77,10 +77,22 @@ async function handleUpdate(update, env) {
     return { processed: true, command: "denied" };
   }
   if (cmd === "help") {
-    await reply(env, chatId, "Bot siap.\nKetik: minta\nKirim link: videy / indoav / userbokep / puterin.biz / mumu.watch\nVicek/ExaStream ditolak.");
+    await reply(env, chatId, [
+      "Bot Dr. Pinguin",
+      "",
+      "minta / sebar     = 25 link acak (.com + .site)",
+      "minta com         = 25 link .com saja",
+      "minta site        = 25 link .site saja",
+      "terbaru           = 25 video IndoAV/userbokep terbaru",
+      "",
+      "Kirim judul + link:",
+      "videy / indoav / userbokep / puterin.biz / mumu.watch",
+      "Vicek/ExaStream ditolak."
+    ].join("\n"));
     return { processed: true, command: "help" };
   }
-  if (cmd === "share") { await handleShare(env, chatId); return { processed: true, command: "share" }; }
+  if (cmd === "share") { await handleShare(env, chatId, text); return { processed: true, command: "share" }; }
+  if (cmd === "latest") { await handleLatest(env, chatId); return { processed: true, command: "latest" }; }
   const rawLinks = (text.match(/https?:\/\/[^\s<>\"']+/gi) || []).map(function (u) { return u.replace(/[).,]+$/, ""); });
   if (rawLinks.some(isBlockedHost) && !rawLinks.some(isAllowedHost)) {
     await reply(env, chatId, "Vicek/ExaStream sudah dihapus. Tidak diterima.");
@@ -113,8 +125,11 @@ async function handleUpdate(update, env) {
       added += r.added; skipped += r.skipped; updated += r.updated || 0;
     }
     if (other.length) {
-      const r = await mergeAndPush(env, env.GH_REPO, other, "data/videos.json");
-      added += r.added; skipped += r.skipped; updated += r.updated || 0;
+      const repos = [env.GH_REPO, env.GH_REPO_2].filter(Boolean).filter(function (x, i, a) { return a.indexOf(x) === i; });
+      for (const repo of repos) {
+        const r = await mergeAndPush(env, repo, other, "data/videos.json");
+        added += r.added; skipped += r.skipped; updated += r.updated || 0;
+      }
     }
     await reply(env, chatId, "Selesai diproses.\nLink diterima: " + items.length + "\nPutarin: " + putItems.length + "\nMumu: " + mumuItems.length + " (ke /mumu)\n+" + added + " skip " + skipped);
   } catch (e) {
@@ -125,6 +140,7 @@ async function handleUpdate(update, env) {
 function classifyCommand(text) {
   const t = String(text || "").trim().toLowerCase();
   if (t.startsWith("/start") || t.startsWith("/help")) return "help";
+  if (/^\/?(terbaru|baru|latest)(@\w+)?(\s|$)/.test(t)) return "latest";
   if (isShareCommand(t)) return "share";
   return "other";
 }
@@ -182,7 +198,25 @@ async function writeShareState(env, st) {
   if (st.sha) body.sha = st.sha;
   await gh(env, "/repos/" + owner + "/" + repo + "/contents/share-used.json", { method: "PUT", body: JSON.stringify(body) });
 }
-async function handleShare(env, chatId) {
+async function handleLatest(env, chatId) {
+  const videos = await readVideos(env, env.GH_REPO);
+  const pool = [];
+  for (const v of videos) {
+    const u = String(v.embed || v.direct || v.embedUrl || "").toLowerCase();
+    if (!/indoav|userbokep/.test(u)) continue;
+    const key = shareKeyFromVideo(v);
+    if (!key) continue;
+    pool.push({ key: key, title: cleanTitle(v.title) });
+    if (pool.length >= 25) break;
+  }
+  if (!pool.length) { await reply(env, chatId, "Tidak ada video terbaru."); return; }
+  const lines = pool.map(function (x, i) {
+    const host = (i % 2 === 0) ? "https://koleksidrpinguin.com" : "https://koleksidrpinguin.site";
+    return "\u25b6 " + x.title + "\n" + host + "/?v=" + x.key;
+  });
+  await reply(env, chatId, lines.join("\n\n"));
+}
+async function handleShare(env, chatId, rawCmd) {
   const videos = await readVideos(env, env.GH_REPO);
   let st = await readShareState(env);
   const now = Date.now(); const DAY = 24 * 60 * 60 * 1000;
@@ -202,9 +236,15 @@ async function handleShare(env, chatId) {
   take.forEach(function (x) { used.add(x.key); });
   st.used = Array.from(used);
   try { await writeShareState(env, st); } catch (_) {}
+  const mode = String(rawCmd || "").toLowerCase();
+  let hostPick = "mix";
+  if (/\bcom\b|\.com/.test(mode) && !/\bsite\b/.test(mode)) hostPick = "com";
+  if (/\bsite\b|\.site/.test(mode) && !/\bcom\b/.test(mode)) hostPick = "site";
   const lines = take.map(function (x, i) {
-    const host = (i % 2 === 0) ? "https://koleksidrpinguin.com" : "https://koleksidrpinguin.site";
-    return "\u25b6 " + x.title + "\n" + host + "/v/" + x.key;
+    let host = "https://koleksidrpinguin.com";
+    if (hostPick === "site") host = "https://koleksidrpinguin.site";
+    else if (hostPick === "mix") host = (i % 2 === 0) ? "https://koleksidrpinguin.com" : "https://koleksidrpinguin.site";
+    return "\u25b6 " + x.title + "\n" + host + "/?v=" + x.key;
   });
   await reply(env, chatId, lines.join("\n\n"));
 }
