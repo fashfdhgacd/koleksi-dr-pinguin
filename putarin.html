@@ -153,10 +153,10 @@ h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}h
   
 
 
+
   function shareLink(title, id){
     var url = "https://koleksidrpinguin.com/v/" + encodeURIComponent(id || "");
-    var text = (title || "Video") + "
-" + url;
+    var text = (title || "Video") + String.fromCharCode(10) + url;
     var enc = encodeURIComponent(text);
     var uenc = encodeURIComponent(url);
     var panel = document.getElementById("sharePanel");
@@ -171,8 +171,7 @@ h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}h
       + '<a class="sh-a" target="_blank" rel="noopener" href="https://www.facebook.com/sharer/sharer.php?u=' + uenc + '">Facebook</a>'
       + '<a class="sh-a" target="_blank" rel="noopener" href="https://twitter.com/intent/tweet?text=' + enc + '">X</a>'
       + '<button type="button" class="sh-a" id="shCopy">Salin link</button>'
-      + '<button type="button" class="sh-a" id="shNative">Share HP</button>'
-      + '</div></div>';
+      + '<button type="button" class="sh-a" id="shNative">Share HP</button></div></div>';
     panel.className = "on";
     panel.onclick = function(e){ if (e.target === panel) panel.className = ""; };
     document.getElementById("shClose").onclick = function(){ panel.className = ""; };
@@ -184,6 +183,7 @@ h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}h
       if (navigator.share) navigator.share({ title: title, text: text, url: url }).catch(function(){});
     };
   }
+
 
 
   var ov = document.getElementById('ov');
