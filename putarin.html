@@ -23,6 +23,17 @@ h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}h
 .btn.primary{background:#ff9000;color:#000;border-color:#ff9000}
 .pager{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:20px}
 .pager a,.pager span{min-width:40px;height:40px;display:flex;align-items:center;justify-content:center;border:1px solid #333;border-radius:8px;color:#ddd;font-weight:800;font-size:13px}
+
+#ov{display:none;position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.86);padding:12px}
+#ov.on{display:flex;flex-direction:column;align-items:center;justify-content:center}
+#ov .box{width:min(960px,100%);background:#111;border:1px solid #333;border-radius:12px;overflow:hidden}
+#ov .hd{display:flex;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:1px solid #222}
+#ov .hd b{font-size:13px;line-height:1.3}
+#ov .x{border:0;background:#ff9000;color:#000;font-weight:900;border-radius:8px;padding:8px 12px;cursor:pointer}
+#ov .ph{position:relative;width:100%;aspect-ratio:16/9;background:#000}
+#ov.tall .ph{aspect-ratio:9/16;max-height:78vh;width:min(100%,calc(78vh * 9 / 16));margin:0 auto}
+#ov .ph iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+
 .pager .on{background:#ff9000;color:#000;border-color:#ff9000}
 </style>
 </head>
@@ -35,6 +46,7 @@ h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}h
   <div class="grid" id="grid"></div>
   <div class="pager" id="pager"></div>
 </div>
+<div id="ov"></div>
 <script>
 (function(){
   var PER = 6;
@@ -105,15 +117,38 @@ h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}h
     });
     document.getElementById('grid').innerHTML = slice.map(function(v){
       var id = codeOf(v);
-      return '<article class="card"><div class="frame"><iframe src="'+embedOf(v)+'" allow="autoplay;fullscreen;encrypted-media" allowfullscreen referrerpolicy="origin"></iframe></div><div class="info"><strong>'+titleOf(v)+'</strong><div class="row"><a class="btn primary" href="/v/'+encodeURIComponent(id)+'">Halaman video</a><a class="btn" href="'+watchOf(v)+'" target="_blank" rel="noopener">Sumber</a></div></div></article>';
+      return '<article class="card" data-src="'+embedOf(v)+'" data-title="'+titleOf(v).replace(/"/g,'')+'"><div class="frame"><iframe src="'+embedOf(v)+'" allow="autoplay;fullscreen;encrypted-media" allowfullscreen referrerpolicy="origin"></iframe></div><div class="info"><strong>'+titleOf(v)+'</strong><div class="row"><button type="button" class="btn primary openv">Putar di sini</button><a class="btn" href="'+watchOf(v)+'" target="_blank" rel="noopener">Sumber</a></div></div></article>';
     }).join('') || '<p>Kosong di kategori ini.</p>';
     var html = '';
     if (p > 1) html += '<a href="#c='+encodeURIComponent(cat)+'&p'+(p-1)+'">Prev</a>';
     for (var i=1;i<=pages;i++) html += i===p ? '<span class="on">'+i+'</span>' : '<a href="#c='+encodeURIComponent(cat)+'&p'+i+'">'+i+'</a>';
     if (p < pages) html += '<a href="#c='+encodeURIComponent(cat)+'&p'+(p+1)+'">Next</a>';
     document.getElementById('pager').innerHTML = html;
+    document.querySelectorAll('.openv').forEach(function(el){
+      el.onclick = function(ev){
+        ev.preventDefault();
+        var card = el.closest('.card');
+        openOv(card.getAttribute('data-title'), card.getAttribute('data-src'), false);
+      };
+    });
     window.scrollTo(0,0);
   }
+  
+  var ov = document.getElementById('ov');
+  function closeOv(){
+    ov.className = '';
+    ov.innerHTML = '';
+  }
+  function openOv(title, src, tall){
+    ov.className = 'on' + (tall ? ' tall' : '');
+    ov.innerHTML = '<div class="box"><div class="hd"><b></b><button type="button" class="x" id="ovx">Tutup</button></div><div class="ph"><iframe src="" allow="autoplay;fullscreen;encrypted-media" allowfullscreen referrerpolicy="origin"></iframe></div></div>';
+    ov.querySelector('b').textContent = title;
+    ov.querySelector('iframe').src = src;
+    ov.querySelector('#ovx').onclick = closeOv;
+  }
+  ov.addEventListener('click', function(e){ if (e.target === ov) closeOv(); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeOv(); });
+
   window.addEventListener('hashchange', draw);
 })();
 </script>
