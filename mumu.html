@@ -124,7 +124,6 @@ h1{font-size:14px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 4px}h
     for (var i=1;i<=pages;i++) html += i===p ? '<span class="on">'+i+'</span>' : '<a href="#p'+i+'">'+i+'</a>';
     if (p < pages) html += '<a href="#p'+(p+1)+'">Next</a>';
     document.getElementById('pager').innerHTML = html;
-    watchFrames();
     document.querySelectorAll('.openv,.card .play').forEach(function(el){
       el.onclick = function(ev){
         ev.preventDefault();
