@@ -1,13 +1,8 @@
 (function () {
   var s = document.createElement('script');
-  s.src = 'https://cdn.jsdelivr.net/gh/fashfdhgacd/koleksi-dr-pinguin@64ee4c14c60cca54f5f1cdd6f7b6892c43a2b0a1/js/app.js';
-  s.onerror = function () {
-    var f = document.createElement('script');
-    f.src = '/js/gallery.js?v=20260907';
-    f.onload = bootNav;
-    document.head.appendChild(f);
-  };
+  s.src = '/js/gallery.js?v=' + Date.now();
   s.onload = bootNav;
+  s.onerror = bootNav;
   document.head.appendChild(s);
   function bootNav() {
     try {
