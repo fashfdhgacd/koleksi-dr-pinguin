@@ -1,11 +1,11 @@
 (function () {
   var s = document.createElement('script');
-  s.src = '/js/gallery.js?v=20260906a';
+  s.src = 'https://cdn.jsdelivr.net/gh/fashfdhgacd/koleksi-dr-pinguin@64ee4c14c60cca54f5f1cdd6f7b6892c43a2b0a1/js/app.js';
   s.onerror = function () {
-    s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/gh/fashfdhgacd/koleksi-dr-pinguin@64ee4c14c60cca54f5f1cdd6f7b6892c43a2b0a1/js/app.js';
-    s.onload = bootNav;
-    document.head.appendChild(s);
+    var f = document.createElement('script');
+    f.src = '/js/gallery.js?v=20260907';
+    f.onload = bootNav;
+    document.head.appendChild(f);
   };
   s.onload = bootNav;
   document.head.appendChild(s);
@@ -27,6 +27,10 @@
           localStorage.setItem(KEY, String(Date.now() + 30 * 24 * 60 * 60 * 1000));
           sessionStorage.setItem('age_ok', '1');
         } catch (e) {}
+      });
+      var leave = document.getElementById('btnLeave');
+      if (leave) leave.addEventListener('click', function () {
+        window.location.href = 'https://www.google.com';
       });
     } catch (e) {}
     var n = document.createElement('script');
