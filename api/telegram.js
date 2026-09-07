@@ -56,12 +56,38 @@ function parseBody(req) {
   if (typeof raw === "string") { try { return JSON.parse(raw); } catch (e) { return {}; } }
   return raw;
 }
+const MENU_KEYBOARD = {
+  keyboard: [
+    [{ text: "Minta 25" }, { text: "Lagi" }],
+    [{ text: "Menu" }, { text: "Bantuan" }]
+  ],
+  resize_keyboard: true,
+  persistent: true
+};
+const BOT_COMMANDS = [
+  { command: "start", description: "Buka menu bot" },
+  { command: "menu", description: "Tampil tombol menu" },
+  { command: "minta", description: "Minta 25 link share" },
+  { command: "sebar", description: "Sama seperti minta" },
+  { command: "help", description: "Bantuan perintah" }
+];
+async function ensureBotMenu(env) {
+  if (!env.BOT_TOKEN) return;
+  try {
+    await fetch("https://api.telegram.org/bot" + env.BOT_TOKEN + "/setMyCommands", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ commands: BOT_COMMANDS })
+    });
+  } catch (_) {}
+}
 module.exports = async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   const env = getEnv();
   if (req.method === "GET") {
     const probe = await probeGithub(env);
-    return res.status(200).json({ ...envStatus(env), ...probe });
+    await ensureBotMenu(env);
+    return res.status(200).json({ ...envStatus(env), ...probe, menu: true });
   }
   if (req.method !== "POST") {
     res.setHeader("Allow", "GET, POST");
@@ -105,9 +131,20 @@ async function handleUpdate(update, env) {
     await reply(env, chatId, "Akses ditolak.\nBot ini hanya untuk admin.");
     return { processed: true, command: "denied" };
   }
-  if (cmd === "help") {
-    await reply(env, chatId, "Bot Dr. Pinguin siap.\n\nPerintah:\n- minta / sebar / lagi  -> 25 link share\n- /help\n\nKirim link videy / indoav / userbokep / puterin.biz / mumu.watch\nVicek/ExaStream ditolak.");
-    return { processed: true, command: "help" };
+  if (cmd === "help" || cmd === "menu") {
+    await ensureBotMenu(env);
+    await reply(env, chatId, [
+      "Menu Dr. Pinguin",
+      "",
+      "Tombol bawah chat:",
+      "Minta 25  — 25 link share",
+      "Lagi  — batch berikutnya",
+      "Menu / Bantuan  — ini",
+      "",
+      "Atau ketik /minta /sebar /help",
+      "Kirim link videy / indoav / userbokep / puterin / mumu untuk upload."
+    ].join("\n"), MENU_KEYBOARD);
+    return { processed: true, command: cmd };
   }
   if (cmd === "share") { await handleShare(env, chatId); return { processed: true, command: "share" }; }
   const rawLinks = (text.match(/https?:\/\/[^\s<>"']+/gi) || []).map(function (u) { return u.replace(/[).,]+$/, ""); });
@@ -117,7 +154,7 @@ async function handleUpdate(update, env) {
   }
   const links = extractLinks(text);
   if (!links.length) {
-    await reply(env, chatId, "Tidak ada link yang dikenali.\nPakai videy.co, indoav.app, userbokep.com, puterin.biz, atau mumu.watch\nAtau ketik: minta");
+    await reply(env, chatId, "Tidak ada link yang dikenali.\nPakai tombol Menu, atau ketik minta.", MENU_KEYBOARD);
     return { processed: true, command: "no_links" };
   }
   const items = parseNamedLinks(text).filter(function (it) {
@@ -140,7 +177,7 @@ async function handleUpdate(update, env) {
       lines.push(repo + ": +" + r.added + " update " + (r.updated || 0) + " skip " + r.skipped);
     }
     lines.push("", "Tunggu deploy 1-2 menit, lalu hard refresh.");
-    await reply(env, chatId, lines.join("\n"));
+    await reply(env, chatId, lines.join("\n"), MENU_KEYBOARD);
   } catch (e) {
     await reply(env, chatId, "Gagal simpan: " + String(e.message || e) + "\nKalau Bad credentials: ganti GH_TOKEN di Vercel lalu Redeploy.");
   }
@@ -148,7 +185,8 @@ async function handleUpdate(update, env) {
 }
 function classifyCommand(text) {
   const t = String(text || "").trim().toLowerCase();
-  if (t.startsWith("/start") || t.startsWith("/help")) return "help";
+  if (t.startsWith("/start") || t.startsWith("/help") || t === "bantuan" || t === "help") return "help";
+  if (t.startsWith("/menu") || t === "menu") return "menu";
   if (isShareCommand(t)) return "share";
   return "other";
 }
@@ -156,7 +194,8 @@ function isShareCommand(text) {
   const t = String(text || "").trim().toLowerCase();
   if (/https?:\/\//i.test(t) && !/^\s*\/?(minta|sebar)\b/.test(t)) return false;
   if (/^\/?(sebar|share|link|minta)(@\w+)?(\s|$)/.test(t)) return true;
-  if (/kasih\s*link|nyebar|25\s*link|^lagi$|^gas$|^next$|^terus$/.test(t)) return true;
+  if (t === "minta 25" || t === "lagi" || t === "gas" || t === "next" || t === "terus") return true;
+  if (/kasih\s*link|nyebar|25\s*link/.test(t)) return true;
   return false;
 }
 function shareKeyFromVideo(v) {
@@ -230,7 +269,7 @@ async function handleShare(env, chatId) {
     if (!key || used.has(key)) continue;
     pool.push({ key: key, title: cleanTitle(v.title) });
   }
-  if (!pool.length) { await reply(env, chatId, "Stok link sesi 24 jam habis."); return; }
+  if (!pool.length) { await reply(env, chatId, "Stok link sesi 24 jam habis.", MENU_KEYBOARD); return; }
   for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp; }
   const take = pool.slice(0, 25);
   take.forEach(function (x) { used.add(x.key); });
@@ -240,7 +279,7 @@ async function handleShare(env, chatId) {
   }
   const host = String(env.PUBLIC_HOST || "https://koleksidrpinguin.com").replace(/\/$/, "");
   const lines = take.map(function (x) { return "\u25b6 " + x.title + "\n" + host + "/v/" + x.key; });
-  await reply(env, chatId, lines.join("\n\n"));
+  await reply(env, chatId, lines.join("\n\n"), MENU_KEYBOARD);
 }
 function parseNamedLinks(text) {
   const lines = String(text).split(/\r?\n/); const items = []; let pending = "";
@@ -330,9 +369,11 @@ async function gh(env, path, opt) {
   if (!res.ok) throw new Error(data.message || String(res.status));
   return data;
 }
-async function reply(env, chatId, text) {
+async function reply(env, chatId, text, keyboard) {
   if (!env.BOT_TOKEN) return;
-  const res = await fetch("https://api.telegram.org/bot" + env.BOT_TOKEN + "/sendMessage", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ chat_id: chatId, text: text }) });
+  const payload = { chat_id: chatId, text: text };
+  if (keyboard) payload.reply_markup = keyboard;
+  const res = await fetch("https://api.telegram.org/bot" + env.BOT_TOKEN + "/sendMessage", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
   const data = await res.json();
   if (!data.ok) console.error("[tg] sendMessage fail", data);
 }
