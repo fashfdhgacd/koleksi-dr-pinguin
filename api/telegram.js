@@ -11,7 +11,6 @@ function getEnv() {
     GH_TOKEN: pickEnv(["GH_TOKEN", "GITHUB_TOKEN"]),
     GH_OWNER: pickEnv(["GH_OWNER", "GITHUB_OWNER"]) || "fashfdhgacd",
     GH_REPO: pickEnv(["GH_REPO", "GITHUB_REPO"]) || "koleksi-dr-pinguin",
-    GH_REPO_2: pickEnv(["GH_REPO_2"]),
     GH_PATH: pickEnv(["GH_PATH"]) || "data/videos.json",
     GH_BRANCH: pickEnv(["GH_BRANCH"]) || "main",
     GH_STATE_REPO: pickEnv(["GH_STATE_REPO"]) || "kdp-bot-state",
@@ -50,30 +49,18 @@ const BOT_COMMANDS = [
   { command: "help", description: "Bantuan" }
 ];
 function envStatus(env) {
-  return {
-    ok: true, service: "telegram-webhook",
-    ready: Boolean(env.BOT_TOKEN && env.GH_OWNER && env.GH_REPO),
-    hasBot: Boolean(env.BOT_TOKEN), hasGh: Boolean(env.GH_TOKEN),
-    owner: env.GH_OWNER || null, repo: env.GH_REPO || null
-  };
+  return { ok: true, service: "telegram-webhook", ready: Boolean(env.BOT_TOKEN && env.GH_OWNER && env.GH_REPO), hasBot: Boolean(env.BOT_TOKEN), hasGh: Boolean(env.GH_TOKEN), owner: env.GH_OWNER || null, repo: env.GH_REPO || null };
 }
 async function probeGithub(env) {
   const tok = env.GH_TOKEN || "";
-  const hint = {
-    tokenLen: tok.length,
-    tokenKind: tok.startsWith("github_pat_") ? "fine-grained" : tok.startsWith("ghp_") ? "classic" : tok ? "unknown" : "empty"
-  };
+  const hint = { tokenLen: tok.length, tokenKind: tok.startsWith("github_pat_") ? "fine-grained" : tok.startsWith("ghp_") ? "classic" : tok ? "unknown" : "empty" };
   if (!tok) return { tokenValid: false, reason: "GH_TOKEN empty", ...hint };
   try {
-    const res = await fetch("https://api.github.com/user", {
-      headers: { Authorization: "Bearer " + tok, Accept: "application/vnd.github.v3+json", "User-Agent": "dr-pinguin-tg-bot" }
-    });
+    const res = await fetch("https://api.github.com/user", { headers: { Authorization: "Bearer " + tok, Accept: "application/vnd.github.v3+json", "User-Agent": "dr-pinguin-tg-bot" } });
     const data = await res.json();
     if (!res.ok) return { tokenValid: false, reason: data.message || String(res.status), ...hint };
     return { tokenValid: true, login: data.login || null, ...hint };
-  } catch (e) {
-    return { tokenValid: false, reason: String(e.message || e), ...hint };
-  }
+  } catch (e) { return { tokenValid: false, reason: String(e.message || e), ...hint }; }
 }
 function parseBody(req) {
   const raw = req.body;
@@ -84,10 +71,7 @@ function parseBody(req) {
 async function ensureBotMenu(env) {
   if (!env.BOT_TOKEN) return;
   try {
-    await fetch("https://api.telegram.org/bot" + env.BOT_TOKEN + "/setMyCommands", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ commands: BOT_COMMANDS })
-    });
+    await fetch("https://api.telegram.org/bot" + env.BOT_TOKEN + "/setMyCommands", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ commands: BOT_COMMANDS }) });
   } catch (_) {}
 }
 module.exports = async function handler(req, res) {
@@ -108,9 +92,7 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true, processed: Boolean(result && result.processed), command: (result && result.command) || null });
   } catch (e) {
     const msg = update.message || update.channel_post;
-    if (msg && env.BOT_TOKEN) {
-      try { await reply(env, msg.chat.id, "Error bot: " + String(e.message || e), MENU_KEYBOARD); } catch (_) {}
-    }
+    if (msg && env.BOT_TOKEN) { try { await reply(env, msg.chat.id, "Error bot: " + String(e.message || e), MENU_KEYBOARD); } catch (_) {} }
     return res.status(200).json({ ok: true, processed: false, error: String(e.message || e) });
   }
 };
@@ -138,17 +120,19 @@ function parseShareCat(text) {
 }
 function matchCat(v, key) {
   if (!key || key === "all") return true;
+  const cat = String(v.category || "").toLowerCase();
   const blob = [v.category, v.source, v.title, (v.tags || []).join(" "), v.embed, v.direct].join(" ").toLowerCase();
   if (key === "mumu") return /mumu|video ai china/.test(blob);
   if (key === "putarin") return /putarin|puterin/.test(blob);
   if (key === "videy") return /videy/.test(blob);
-  if (key === "amatir") return String(v.category || "").toLowerCase() === "amatir";
-  if (key === "ai") return String(v.category || "").toLowerCase() === "ai" || /video ai china/.test(blob);
+  if (cat === key) return true;
   if (key === "jilbab") return /jilbab|hijab/.test(blob);
   if (key === "abg") return /\babg\b/.test(blob);
   if (key === "stw") return /\bstw\b/.test(blob);
   if (key === "viral") return /viral/.test(blob);
-  return true;
+  if (key === "ai") return cat === "ai" || /video ai china/.test(blob);
+  if (key === "amatir") return cat === "amatir";
+  return false;
 }
 async function handleUpdate(update, env) {
   const msg = update.message || update.channel_post;
@@ -165,13 +149,7 @@ async function handleUpdate(update, env) {
   }
   if (cmd === "help" || cmd === "menu") {
     await ensureBotMenu(env);
-    await reply(env, chatId, [
-      "Menu Dr. Pinguin",
-      "",
-      "1. Pilih Minta 10 atau Minta 25",
-      "2. Kategori: Semua / Amatir / Videy / Mumu / Putarin / Jilbab / ABG / AI",
-      "3. Lagi = ulang jumlah + kategori terakhir"
-    ].join("\n"), MENU_KEYBOARD);
+    await reply(env, chatId, "Menu: Minta 10/25 lalu kategori.\nABG/Jilbab ada di videos.json (setelah file dipulihkan).", MENU_KEYBOARD);
     return { processed: true, command: cmd };
   }
   if (cmd === "share") {
@@ -202,7 +180,7 @@ async function handleUpdate(update, env) {
     return { processed: true, command: "parse_fail" };
   }
   if (!env.GH_TOKEN) {
-    await reply(env, chatId, "Upload butuh GH_TOKEN. Minta 10/25 tetap jalan.");
+    await reply(env, chatId, "Upload butuh GH_TOKEN.");
     return { processed: true, command: "missing_env" };
   }
   try {
@@ -214,9 +192,7 @@ async function handleUpdate(update, env) {
     }
     await reply(env, chatId, lines.join("\n"), MENU_KEYBOARD);
   } catch (e) {
-    const tok = env.GH_TOKEN || "";
-    const kind = tok.startsWith("github_pat_") ? "pat" : tok.startsWith("ghp_") ? "ghp" : "bukan pat utuh";
-    await reply(env, chatId, "Gagal simpan: " + String(e.message || e) + "\nToken len " + tok.length + " (" + kind + ")");
+    await reply(env, chatId, "Gagal simpan: " + String(e.message || e));
   }
   return { processed: true, command: "upload" };
 }
@@ -292,11 +268,7 @@ async function readShareState(env) {
 }
 async function writeShareState(env, st) {
   if (!env.GH_TOKEN) return;
-  const body = {
-    message: "state: share-used",
-    content: Buffer.from(JSON.stringify({ resetAt: st.resetAt, used: st.used, lastN: st.lastN || 25, lastCat: st.lastCat || "all" }, null, 2), "utf8").toString("base64"),
-    branch: env.GH_BRANCH || "main"
-  };
+  const body = { message: "state: share-used", content: Buffer.from(JSON.stringify({ resetAt: st.resetAt, used: st.used, lastN: st.lastN || 25, lastCat: st.lastCat || "all" }, null, 2), "utf8").toString("base64"), branch: env.GH_BRANCH || "main" };
   if (st.sha) body.sha = st.sha;
   await gh(env, "/repos/" + env.GH_OWNER + "/" + (env.GH_STATE_REPO || "kdp-bot-state") + "/contents/share-used.json", { method: "PUT", body: JSON.stringify(body) });
 }
@@ -333,7 +305,7 @@ async function handleShare(env, chatId, opt) {
   }
   const catLabel = (CATS.find(function (c) { return c.key === cat; }) || { label: cat }).label;
   if (!pool.length) {
-    await reply(env, chatId, catTotal === 0 ? ("Kategori " + catLabel + " kosong.") : ("Stok " + catLabel + " sesi ini habis."), MENU_KEYBOARD);
+    await reply(env, chatId, catTotal === 0 ? ("Kategori " + catLabel + " kosong di katalog. Total file: " + videos.length) : ("Stok " + catLabel + " sesi ini habis."), MENU_KEYBOARD);
     return;
   }
   for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp; }
@@ -395,13 +367,24 @@ function videoKey(v) {
   if (u.includes("id=")) return u.split("id=")[1].split("&")[0];
   return u.split("/").pop().replace(/\.(mp4|mov)$/, "");
 }
+async function loadJsonFile(env, repo, path) {
+  const branch = env.GH_BRANCH || "main";
+  const rawUrl = "https://raw.githubusercontent.com/" + env.GH_OWNER + "/" + repo + "/" + branch + "/" + path + "?t=" + Date.now();
+  const rr = await fetch(rawUrl, { headers: { "User-Agent": "dr-pinguin-tg-bot" } });
+  if (!rr.ok) throw new Error("gagal baca " + path + " HTTP " + rr.status);
+  const text = await rr.text();
+  let data = [];
+  try { data = JSON.parse(text); } catch (_) { throw new Error(path + " JSON rusak"); }
+  if (!Array.isArray(data)) data = [];
+  return data;
+}
 async function mergeAndPush(env, repo, path, items) {
   const branch = env.GH_BRANCH || "main";
+  const videos = await loadJsonFile(env, repo, path);
+  if (path === "data/videos.json" && videos.length < 100) {
+    throw new Error("videos.json cuma " + videos.length + " item. Abort biar katalog besar tidak tertimpa. Pulihkan file dulu dari commit 9228dc53.");
+  }
   const meta = await gh(env, "/repos/" + env.GH_OWNER + "/" + repo + "/contents/" + path + "?ref=" + branch);
-  let raw = meta.content ? Buffer.from(meta.content.replace(/\n/g, ""), "base64").toString("utf8") : "[]";
-  let videos = [];
-  try { videos = JSON.parse(raw); } catch (_) { videos = []; }
-  if (!Array.isArray(videos)) videos = [];
   const exist = new Set(videos.map(videoKey));
   let added = 0, skipped = 0; const fresh = [];
   for (const it of items) {
@@ -432,7 +415,5 @@ async function reply(env, chatId, text, keyboard) {
   if (!env.BOT_TOKEN) return;
   const payload = { chat_id: chatId, text: text };
   if (keyboard) payload.reply_markup = keyboard;
-  await fetch("https://api.telegram.org/bot" + env.BOT_TOKEN + "/sendMessage", {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
-  });
+  await fetch("https://api.telegram.org/bot" + env.BOT_TOKEN + "/sendMessage", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
 }
