@@ -1,0 +1,71 @@
+name: Backup katalog
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 17 * * *"
+  push:
+    paths:
+      - "data/videos.json"
+      - "data/mumu.json"
+      - "data/putarin.json"
+      - "data/blocklist.json"
+
+permissions:
+  contents: write
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Snapshot + hitung item
+        run: |
+          set -e
+          mkdir -p backup/latest /tmp/kdp-backup
+          for f in videos.json mumu.json putarin.json blocklist.json; do
+            if [ -f "data/$f" ]; then
+              cp "data/$f" "backup/latest/$f"
+              cp "data/$f" "/tmp/kdp-backup/$f"
+            fi
+          done
+          python3 - <<'PY'
+          import json, os, datetime
+          out = []
+          for name in ["videos.json", "mumu.json", "putarin.json", "blocklist.json"]:
+              p = os.path.join("data", name)
+              if not os.path.isfile(p):
+                  continue
+              try:
+                  data = json.load(open(p))
+                  n = len(data) if isinstance(data, list) else "obj"
+              except Exception as e:
+                  n = "ERR " + str(e)
+              out.append(f"{name}: {n}")
+          stamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+          text = stamp + "\n" + "\n".join(out) + "\nsha ${{ github.sha }}\n"
+          open("backup/latest/BACKUP.txt", "w").write(text.replace("${{ github.sha }}", os.environ.get("GITHUB_SHA", "")))
+          open("/tmp/kdp-backup/BACKUP.txt", "w").write(open("backup/latest/BACKUP.txt").read())
+          print(open("backup/latest/BACKUP.txt").read())
+          PY
+
+      - name: Commit snapshot ke backup/latest
+        run: |
+          git config user.name "kdp-backup"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backup/latest
+          if git diff --staged --quiet; then
+            echo "Tidak ada perubahan katalog"
+          else
+            git commit -m "backup: snapshot katalog $(date -u +%Y-%m-%d)"
+            git push
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kdp-catalog-${{ github.run_id }}
+          path: /tmp/kdp-backup
+          retention-days: 90
