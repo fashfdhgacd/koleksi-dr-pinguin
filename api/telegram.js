@@ -22,16 +22,20 @@ function getEnv() {
 }
 const CATS = [
   { key: "all", label: "Semua", match: null },
-  { key: "amatir", label: "Amatir", match: /amatir|indoav|userbokep|stw|jilbab|abg|viral/i },
+  { key: "amatir", label: "Amatir", match: /\bamatir\b/i },
   { key: "videy", label: "Videy", match: /videy/i },
-  { key: "mumu", label: "Mumu", match: /mumu|ai china|video ai/i },
-  { key: "putarin", label: "Putarin", match: /putarin|puterin|jav/i }
+  { key: "jilbab", label: "Jilbab", match: /jilbab|hijab/i },
+  { key: "abg", label: "ABG", match: /\babg\b/i },
+  { key: "stw", label: "STW", match: /\bstw\b/i },
+  { key: "viral", label: "Viral", match: /viral/i },
+  { key: "ai", label: "AI", match: /(^|\s)ai(\s|$)|kategori.:?\s*ai/i }
 ];
 const MENU_KEYBOARD = {
   keyboard: [
     [{ text: "Minta 10" }, { text: "Minta 25" }],
     [{ text: "Semua" }, { text: "Amatir" }, { text: "Videy" }],
-    [{ text: "Mumu" }, { text: "Putarin" }, { text: "Lagi" }],
+    [{ text: "Jilbab" }, { text: "ABG" }, { text: "STW" }],
+    [{ text: "Viral" }, { text: "AI" }, { text: "Lagi" }],
     [{ text: "Menu" }]
   ],
   resize_keyboard: true,
@@ -94,12 +98,6 @@ function isBlockedHost(u) { return /vicek\.id|exastream/i.test(String(u || ""));
 function isAllowedHost(u) {
   return /videy\.co|indoav\.|userbokep\.com|putarin\.(com|biz|xyz)|puterin\.(com|biz|xyz)|mumu\.watch|mumustream\.com|playmogo\./i.test(String(u || ""));
 }
-function putarinHost(url) { try { return new URL(url).origin; } catch (_) { return "https://puterin.biz"; } }
-function putarinCode(url) {
-  const m = String(url).match(/\/(?:e|v|watch)\/([A-Za-z0-9_-]+)/i);
-  if (m) return m[1];
-  return String(url).split("/").filter(Boolean).pop() || "";
-}
 function parseShareCount(text, fallback) {
   const t = String(text || "").toLowerCase();
   const m = t.match(/\b(5|10|15|20|25|30)\b/);
@@ -110,9 +108,11 @@ function parseShareCount(text, fallback) {
 }
 function parseShareCat(text) {
   const t = String(text || "").toLowerCase();
+  if (t === "mumu" || t.includes("mumu")) return "ai";
+  if (t === "putarin" || t.includes("putarin") || t.includes("puterin")) return "videy";
   for (const c of CATS) {
     if (c.key === "all") continue;
-    if (t.includes(c.key) || t === c.label.toLowerCase()) return c.key;
+    if (t === c.key || t === c.label.toLowerCase() || t.includes(c.label.toLowerCase())) return c.key;
   }
   if (t === "semua" || t.includes("semua")) return "all";
   return "";
@@ -124,7 +124,10 @@ function matchCat(v, key) {
   if (!key || key === "all") return true;
   const cat = CATS.find(function (c) { return c.key === key; });
   if (!cat || !cat.match) return true;
-  return cat.match.test(videoBlob(v));
+  if (key === "ai") return String(v.category || "").toLowerCase() === "ai" || /\bai\b/i.test(String(v.category || ""));
+  if (key === "videy") return /videy/i.test(String(v.category || "") + " " + String(v.embed || "") + " " + String(v.direct || ""));
+  if (key === "amatir") return String(v.category || "").toLowerCase() === "amatir";
+  return cat.match.test(String(v.category || "") + " " + videoBlob(v));
 }
 async function handleUpdate(update, env) {
   const msg = update.message || update.channel_post;
@@ -145,10 +148,10 @@ async function handleUpdate(update, env) {
       "Menu Dr. Pinguin",
       "",
       "1. Pilih Minta 10 atau Minta 25",
-      "2. Pilih kategori: Semua / Amatir / Videy / Mumu / Putarin",
+      "2. Kategori: Semua / Amatir / Videy / Jilbab / ABG / STW / Viral / AI",
       "3. Lagi = ulang jumlah + kategori terakhir",
       "",
-      "Contoh: minta 10 videy"
+      "Katalog sekarang: IndoAV + Videy. Belum ada file mumu.watch / puterin."
     ].join("\n"), MENU_KEYBOARD);
     return { processed: true, command: cmd };
   }
@@ -218,6 +221,7 @@ function isShareCommand(text) {
   if (/https?:\/\//i.test(t) && !/^\s*\/?(minta|sebar)/.test(t)) return false;
   if (/^\/?(sebar|share|link|minta)/.test(t)) return true;
   if (t === "minta 10" || t === "minta 25" || t === "lagi" || t === "gas" || t === "next" || t === "terus") return true;
+  if (t === "mumu" || t === "putarin") return true;
   if (CATS.some(function (c) { return t === c.label.toLowerCase() || t === c.key; })) return true;
   return false;
 }
@@ -233,37 +237,31 @@ function shareKeyFromVideo(v) {
   } catch (_) { return String(v.id || u.slice(-12)); }
 }
 function cleanTitle(t) {
-  return String(t || "Video").replace(/^\u25b6\s*/, "").replace(/\s*-\s*koleksidrpinguin.*/i, "").replace(/_/g, " ").replace(/\s+/g, " ").trim();
+  return String(t || "Video").replace(/^\u25b6\s*/, "").replace(/\s*-\s*koleksidrpinguin.*/i, "").replace(/\s*\(Koleksi Dr\. Pinguin.*$/i, "").replace(/_/g, " ").replace(/\s+/g, " ").trim();
 }
-async function readVideos(env, repo) {
-  const owner = env.GH_OWNER;
-  const path = env.GH_PATH || "data/videos.json";
-  const branch = env.GH_BRANCH || "main";
-  const rawUrl = "https://raw.githubusercontent.com/" + owner + "/" + repo + "/" + branch + "/" + path + "?t=" + Date.now();
+async function readVideos(env) {
+  const rawUrl = "https://raw.githubusercontent.com/" + env.GH_OWNER + "/" + env.GH_REPO + "/" + (env.GH_BRANCH || "main") + "/" + (env.GH_PATH || "data/videos.json") + "?t=" + Date.now();
   const rr = await fetch(rawUrl, { headers: { "User-Agent": "dr-pinguin-tg-bot" } });
   if (!rr.ok) throw new Error("gagal baca katalog HTTP " + rr.status);
   return rr.json();
 }
-async function stateRepo(env) { return env.GH_STATE_REPO || "kdp-bot-state"; }
 async function readShareState(env) {
   if (!env.GH_TOKEN) return { resetAt: 0, used: [], lastN: 25, lastCat: "all", sha: null };
-  const owner = env.GH_OWNER; const repo = await stateRepo(env);
   try {
-    const meta = await gh(env, "/repos/" + owner + "/" + repo + "/contents/share-used.json?ref=" + (env.GH_BRANCH || "main"));
+    const meta = await gh(env, "/repos/" + env.GH_OWNER + "/" + (env.GH_STATE_REPO || "kdp-bot-state") + "/contents/share-used.json?ref=" + (env.GH_BRANCH || "main"));
     const raw = Buffer.from((meta.content || "").replace(/\n/g, ""), "base64").toString("utf8");
     const st = JSON.parse(raw || "{}"); st.sha = meta.sha; return st;
   } catch (e) { return { resetAt: 0, used: [], lastN: 25, lastCat: "all", sha: null }; }
 }
 async function writeShareState(env, st) {
   if (!env.GH_TOKEN) return;
-  const owner = env.GH_OWNER; const repo = await stateRepo(env);
   const body = {
     message: "state: share-used",
     content: Buffer.from(JSON.stringify({ resetAt: st.resetAt, used: st.used, lastN: st.lastN || 25, lastCat: st.lastCat || "all" }, null, 2), "utf8").toString("base64"),
     branch: env.GH_BRANCH || "main"
   };
   if (st.sha) body.sha = st.sha;
-  await gh(env, "/repos/" + owner + "/" + repo + "/contents/share-used.json", { method: "PUT", body: JSON.stringify(body) });
+  await gh(env, "/repos/" + env.GH_OWNER + "/" + (env.GH_STATE_REPO || "kdp-bot-state") + "/contents/share-used.json", { method: "PUT", body: JSON.stringify(body) });
 }
 async function rememberPref(env, patch) {
   let st;
@@ -273,7 +271,7 @@ async function rememberPref(env, patch) {
 }
 async function handleShare(env, chatId, opt) {
   opt = opt || {};
-  const videos = await readVideos(env, env.GH_REPO);
+  const videos = await readVideos(env);
   let st = { resetAt: Date.now(), used: [], lastN: 25, lastCat: "all", sha: null };
   try { st = await readShareState(env); } catch (_) {}
   const now = Date.now(); const DAY = 24 * 60 * 60 * 1000;
@@ -288,16 +286,21 @@ async function handleShare(env, chatId, opt) {
   st.lastCat = cat;
   const used = new Set((st.used || []).map(String));
   const pool = [];
+  let catTotal = 0;
   for (const v of videos) {
     if (/vicek|exastream/i.test(String(v.embed || v.direct || v.category || ""))) continue;
     if (!matchCat(v, cat)) continue;
+    catTotal += 1;
     const key = shareKeyFromVideo(v);
     if (!key || used.has(key)) continue;
     pool.push({ key: key, title: cleanTitle(v.title) });
   }
-  const catLabel = (CATS.find(function (c) { return c.key === cat; }) || { label: "Semua" }).label;
+  const catLabel = (CATS.find(function (c) { return c.key === cat; }) || { label: cat }).label;
   if (!pool.length) {
-    await reply(env, chatId, "Stok " + catLabel + " habis untuk sesi 24 jam.", MENU_KEYBOARD);
+    const msg = catTotal === 0
+      ? ("Kategori " + catLabel + " kosong di katalog.\nPakai Semua / Amatir / Videy / Jilbab / ABG / STW / Viral / AI.")
+      : ("Stok " + catLabel + " sesi ini habis (" + catTotal + " sudah pernah dikasih 24 jam).\nPilih kategori lain atau Semua.");
+    await reply(env, chatId, msg, MENU_KEYBOARD);
     return;
   }
   for (let i = pool.length - 1; i > 0; i--) {
@@ -337,11 +340,7 @@ function extractLinks(text) {
 }
 function toItem(url) {
   const low = url.toLowerCase(); let category = "Amatir"; let source = "Telegram"; let direct = url; let embed = url; let id = "";
-  if (low.includes("mumu.watch") || low.includes("mumustream.com")) {
-    category = "Video AI China"; source = "Mumu";
-    const code = url.split("/").filter(Boolean).pop(); id = code;
-    embed = /\/e\//i.test(url) ? url : ("https://mumu.watch/e/" + code); direct = embed;
-  } else if (low.includes("videy.co")) {
+  if (low.includes("videy.co")) {
     category = "Videy"; source = "Videy";
     const m = url.match(/[?&]id=([A-Za-z0-9]+)/);
     const file = url.match(/cdn\d*\.videy\.co\/([^/?#]+)/i);
@@ -351,10 +350,11 @@ function toItem(url) {
     embed = id ? ("https://videy.co/v/?id=" + id) : url;
   } else if (/putarin\.|puterin\./i.test(low)) {
     category = "Putarin"; source = "Putarin";
-    const host = putarinHost(url); id = putarinCode(url);
-    embed = host + "/e/" + id; direct = host + "/v/" + id;
-  } else if (/playmogo|dood/i.test(low)) {
-    category = "AI Bokep"; source = "Dood"; embed = url; direct = url;
+    try { const host = new URL(url).origin; id = (url.match(/\/(?:e|v|watch)\/([A-Za-z0-9_-]+)/i) || [])[1] || ""; embed = host + "/e/" + id; direct = host + "/v/" + id; } catch (_) {}
+  } else if (low.includes("mumu.watch") || low.includes("mumustream.com")) {
+    category = "AI"; source = "Mumu";
+    const code = url.split("/").filter(Boolean).pop(); id = code;
+    embed = /\/e\//i.test(url) ? url : ("https://mumu.watch/e/" + code); direct = embed;
   } else {
     source = low.includes("userbokep") ? "Userbokep" : "IndoAV";
     embed = url.replace(/\/d\//, "/e/"); direct = embed;
@@ -367,16 +367,14 @@ function videoKey(v) {
   return u.split("/").pop().replace(/\.(mp4|mov)$/, "");
 }
 async function mergeAndPush(env, repo, items) {
-  const owner = env.GH_OWNER; const path = env.GH_PATH || "data/videos.json"; const branch = env.GH_BRANCH || "main";
-  const meta = await gh(env, "/repos/" + owner + "/" + repo + "/contents/" + path + "?ref=" + branch);
-  let raw = "";
-  if (meta.content) raw = Buffer.from(meta.content.replace(/\n/g, ""), "base64").toString("utf8");
-  else {
-    const dl = meta.download_url || ("https://raw.githubusercontent.com/" + owner + "/" + repo + "/" + branch + "/" + path);
-    const rr = await fetch(dl);
+  const path = env.GH_PATH || "data/videos.json"; const branch = env.GH_BRANCH || "main";
+  const meta = await gh(env, "/repos/" + env.GH_OWNER + "/" + repo + "/contents/" + path + "?ref=" + branch);
+  let raw = meta.content ? Buffer.from(meta.content.replace(/\n/g, ""), "base64").toString("utf8") : "";
+  if (!raw) {
+    const rr = await fetch(meta.download_url || ("https://raw.githubusercontent.com/" + env.GH_OWNER + "/" + repo + "/" + branch + "/" + path));
     raw = await rr.text();
   }
-  const videos = JSON.parse(raw).filter(function (v) { return !/vicek|exastream/i.test(String(v.embed || "") + String(v.direct || "")); });
+  const videos = JSON.parse(raw);
   const exist = new Set(videos.map(videoKey));
   let added = 0, skipped = 0; const fresh = [];
   for (const it of items) {
@@ -386,7 +384,7 @@ async function mergeAndPush(env, repo, items) {
   }
   for (let i = fresh.length - 1; i >= 0; i--) videos.unshift(fresh[i]);
   if (!added) return { added: added, skipped: skipped };
-  await gh(env, "/repos/" + owner + "/" + repo + "/contents/" + path, { method: "PUT", body: JSON.stringify({ message: "bot: add " + added + " videos", content: Buffer.from(JSON.stringify(videos, null, 2), "utf8").toString("base64"), sha: meta.sha, branch: branch }) });
+  await gh(env, "/repos/" + env.GH_OWNER + "/" + repo + "/contents/" + path, { method: "PUT", body: JSON.stringify({ message: "bot: add " + added + " videos", content: Buffer.from(JSON.stringify(videos, null, 2), "utf8").toString("base64"), sha: meta.sha, branch: branch }) });
   return { added: added, skipped: skipped };
 }
 async function gh(env, path, opt) {
@@ -404,9 +402,7 @@ async function reply(env, chatId, text, keyboard) {
   if (!env.BOT_TOKEN) return;
   const payload = { chat_id: chatId, text: text };
   if (keyboard) payload.reply_markup = keyboard;
-  const res = await fetch("https://api.telegram.org/bot" + env.BOT_TOKEN + "/sendMessage", {
+  await fetch("https://api.telegram.org/bot" + env.BOT_TOKEN + "/sendMessage", {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
   });
-  const data = await res.json();
-  if (!data.ok) console.error("[tg] sendMessage fail", data);
 }
