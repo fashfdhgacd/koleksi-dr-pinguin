@@ -22,14 +22,11 @@ function getEnv() {
 }
 function envStatus(env) {
   return {
-    ok: true,
-    service: "telegram-webhook",
+    ok: true, service: "telegram-webhook",
     ready: Boolean(env.BOT_TOKEN && env.GH_OWNER && env.GH_REPO),
-    hasBot: Boolean(env.BOT_TOKEN),
-    hasGh: Boolean(env.GH_TOKEN),
+    hasBot: Boolean(env.BOT_TOKEN), hasGh: Boolean(env.GH_TOKEN),
     hasGithubRepo: Boolean(env.GH_OWNER && env.GH_REPO),
-    owner: env.GH_OWNER || null,
-    repo: env.GH_REPO || null,
+    owner: env.GH_OWNER || null, repo: env.GH_REPO || null,
     webhookSecretConfigured: Boolean(env.TELEGRAM_WEBHOOK_SECRET)
   };
 }
@@ -37,18 +34,12 @@ async function probeGithub(env) {
   if (!env.GH_TOKEN) return { tokenValid: false, reason: "GH_TOKEN empty" };
   try {
     const res = await fetch("https://api.github.com/user", {
-      headers: {
-        Authorization: "token " + env.GH_TOKEN,
-        Accept: "application/vnd.github.v3+json",
-        "User-Agent": "dr-pinguin-tg-bot"
-      }
+      headers: { Authorization: "token " + env.GH_TOKEN, Accept: "application/vnd.github.v3+json", "User-Agent": "dr-pinguin-tg-bot" }
     });
     const data = await res.json();
     if (!res.ok) return { tokenValid: false, reason: data.message || String(res.status) };
     return { tokenValid: true, login: data.login || null };
-  } catch (e) {
-    return { tokenValid: false, reason: String(e.message || e) };
-  }
+  } catch (e) { return { tokenValid: false, reason: String(e.message || e) }; }
 }
 function parseBody(req) {
   const raw = req.body;
@@ -58,8 +49,8 @@ function parseBody(req) {
 }
 const MENU_KEYBOARD = {
   keyboard: [
-    [{ text: "Minta 25" }, { text: "Lagi" }],
-    [{ text: "Menu" }, { text: "Bantuan" }]
+    [{ text: "Minta 10" }, { text: "Minta 25" }],
+    [{ text: "Lagi" }, { text: "Menu" }]
   ],
   resize_keyboard: true,
   persistent: true
@@ -67,16 +58,16 @@ const MENU_KEYBOARD = {
 const BOT_COMMANDS = [
   { command: "start", description: "Buka menu bot" },
   { command: "menu", description: "Tampil tombol menu" },
-  { command: "minta", description: "Minta 25 link share" },
-  { command: "sebar", description: "Sama seperti minta" },
-  { command: "help", description: "Bantuan perintah" }
+  { command: "minta10", description: "Minta 10 link" },
+  { command: "minta25", description: "Minta 25 link" },
+  { command: "minta", description: "Minta 25 link" },
+  { command: "help", description: "Bantuan" }
 ];
 async function ensureBotMenu(env) {
   if (!env.BOT_TOKEN) return;
   try {
     await fetch("https://api.telegram.org/bot" + env.BOT_TOKEN + "/setMyCommands", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ commands: BOT_COMMANDS })
     });
   } catch (_) {}
@@ -118,6 +109,14 @@ function putarinCode(url) {
   if (m) return m[1];
   return String(url).split("/").filter(Boolean).pop() || "";
 }
+function parseShareCount(text, fallback) {
+  const t = String(text || "").toLowerCase();
+  const m = t.match(/\b(5|10|15|20|25|30)\b/);
+  if (m) return Math.min(30, parseInt(m[1], 10));
+  if (/minta10|sebar10/.test(t.replace(/\s+/g, ""))) return 10;
+  if (/minta25|sebar25/.test(t.replace(/\s+/g, ""))) return 25;
+  return fallback || 25;
+}
 async function handleUpdate(update, env) {
   const msg = update.message || update.channel_post;
   if (!msg || !msg.text) return { processed: false, command: "empty" };
@@ -136,17 +135,21 @@ async function handleUpdate(update, env) {
     await reply(env, chatId, [
       "Menu Dr. Pinguin",
       "",
-      "Tombol bawah chat:",
-      "Minta 25  — 25 link share",
-      "Lagi  — batch berikutnya",
-      "Menu / Bantuan  — ini",
+      "Pilih jumlah:",
+      "Minta 10  — 10 link",
+      "Minta 25  — 25 link",
+      "Lagi  — ulangi jumlah terakhir",
       "",
-      "Atau ketik /minta /sebar /help",
+      "Atau ketik: minta 10 / minta 25 / /minta10 / /minta25",
       "Kirim link videy / indoav / userbokep / puterin / mumu untuk upload."
     ].join("\n"), MENU_KEYBOARD);
     return { processed: true, command: cmd };
   }
-  if (cmd === "share") { await handleShare(env, chatId); return { processed: true, command: "share" }; }
+  if (cmd === "share") {
+    const n = parseShareCount(text, 25);
+    await handleShare(env, chatId, n, /^(lagi|gas|next|terus)$/i.test(text.trim()));
+    return { processed: true, command: "share" };
+  }
   const rawLinks = (text.match(/https?:\/\/[^\s<>"']+/gi) || []).map(function (u) { return u.replace(/[).,]+$/, ""); });
   if (rawLinks.some(isBlockedHost) && !rawLinks.some(isAllowedHost)) {
     await reply(env, chatId, "Vicek/ExaStream sudah dihapus. Tidak diterima.");
@@ -154,7 +157,7 @@ async function handleUpdate(update, env) {
   }
   const links = extractLinks(text);
   if (!links.length) {
-    await reply(env, chatId, "Tidak ada link yang dikenali.\nPakai tombol Menu, atau ketik minta.", MENU_KEYBOARD);
+    await reply(env, chatId, "Tidak dikenali. Pilih Minta 10 / Minta 25, atau kirim link.", MENU_KEYBOARD);
     return { processed: true, command: "no_links" };
   }
   const items = parseNamedLinks(text).filter(function (it) {
@@ -166,7 +169,7 @@ async function handleUpdate(update, env) {
     return { processed: true, command: "parse_fail" };
   }
   if (!env.GH_TOKEN) {
-    await reply(env, chatId, "Upload butuh GH_TOKEN yang valid di Vercel.\nPerintah minta tetap bisa tanpa token.");
+    await reply(env, chatId, "Upload butuh GH_TOKEN valid di Vercel. Minta 10/25 tetap jalan tanpa token.");
     return { processed: true, command: "missing_env" };
   }
   try {
@@ -174,12 +177,11 @@ async function handleUpdate(update, env) {
     const lines = ["Selesai diproses.", "Link diterima: " + items.length];
     for (const repo of repos) {
       const r = await mergeAndPush(env, repo, items);
-      lines.push(repo + ": +" + r.added + " update " + (r.updated || 0) + " skip " + r.skipped);
+      lines.push(repo + ": +" + r.added + " skip " + r.skipped);
     }
-    lines.push("", "Tunggu deploy 1-2 menit, lalu hard refresh.");
     await reply(env, chatId, lines.join("\n"), MENU_KEYBOARD);
   } catch (e) {
-    await reply(env, chatId, "Gagal simpan: " + String(e.message || e) + "\nKalau Bad credentials: ganti GH_TOKEN di Vercel lalu Redeploy.");
+    await reply(env, chatId, "Gagal simpan: " + String(e.message || e));
   }
   return { processed: true, command: "upload" };
 }
@@ -192,10 +194,10 @@ function classifyCommand(text) {
 }
 function isShareCommand(text) {
   const t = String(text || "").trim().toLowerCase();
-  if (/https?:\/\//i.test(t) && !/^\s*\/?(minta|sebar)\b/.test(t)) return false;
-  if (/^\/?(sebar|share|link|minta)(@\w+)?(\s|$)/.test(t)) return true;
-  if (t === "minta 25" || t === "lagi" || t === "gas" || t === "next" || t === "terus") return true;
-  if (/kasih\s*link|nyebar|25\s*link/.test(t)) return true;
+  if (/https?:\/\//i.test(t) && !/^\s*\/?(minta|sebar)/.test(t)) return false;
+  if (/^\/?(sebar|share|link|minta)/.test(t)) return true;
+  if (t === "minta 10" || t === "minta 25" || t === "lagi" || t === "gas" || t === "next" || t === "terus") return true;
+  if (/kasih\s*link|nyebar/.test(t)) return true;
   return false;
 }
 function shareKeyFromVideo(v) {
@@ -207,9 +209,7 @@ function shareKeyFromVideo(v) {
     if (qid) return qid;
     const last = url.pathname.split("/").filter(Boolean).pop() || "";
     return last.replace(/\.(mp4|mov)$/i, "") || String(v.id || "");
-  } catch (_) {
-    return String(v.id || u.slice(-12));
-  }
+  } catch (_) { return String(v.id || u.slice(-12)); }
 }
 function cleanTitle(t) {
   return String(t || "Video").replace(/^\u25b6\s*/, "").replace(/\s*-\s*koleksidrpinguin.*/i, "").replace(/_/g, " ").replace(/\s+/g, " ").trim();
@@ -231,9 +231,7 @@ async function readVideos(env, repo) {
       }
       return JSON.parse(raw);
     }
-  } catch (e) {
-    console.error("gh read fail, fallback public", e.message || e);
-  }
+  } catch (e) { console.error("gh read fail, fallback public", e.message || e); }
   const rr = await fetch(rawUrl, { headers: { "User-Agent": "dr-pinguin-tg-bot" } });
   if (!rr.ok) throw new Error("gagal baca katalog publik HTTP " + rr.status);
   return rr.json();
@@ -245,21 +243,25 @@ async function readShareState(env) {
     const meta = await gh(env, "/repos/" + owner + "/" + repo + "/contents/share-used.json?ref=" + (env.GH_BRANCH || "main"));
     const raw = Buffer.from((meta.content || "").replace(/\n/g, ""), "base64").toString("utf8");
     const st = JSON.parse(raw || "{}"); st.sha = meta.sha; return st;
-  } catch (e) { return { resetAt: 0, used: [], sha: null, readOnly: true }; }
+  } catch (e) { return { resetAt: 0, used: [], lastN: 25, sha: null }; }
 }
 async function writeShareState(env, st) {
   if (!env.GH_TOKEN) return;
   const owner = env.GH_OWNER; const repo = await stateRepo(env);
-  const body = { message: "state: share-used", content: Buffer.from(JSON.stringify({ resetAt: st.resetAt, used: st.used }, null, 2), "utf8").toString("base64"), branch: env.GH_BRANCH || "main" };
+  const body = { message: "state: share-used", content: Buffer.from(JSON.stringify({ resetAt: st.resetAt, used: st.used, lastN: st.lastN || 25 }, null, 2), "utf8").toString("base64"), branch: env.GH_BRANCH || "main" };
   if (st.sha) body.sha = st.sha;
   await gh(env, "/repos/" + owner + "/" + repo + "/contents/share-used.json", { method: "PUT", body: JSON.stringify(body) });
 }
-async function handleShare(env, chatId) {
+async function handleShare(env, chatId, count, useLast) {
   const videos = await readVideos(env, env.GH_REPO);
-  let st = { resetAt: Date.now(), used: [], sha: null };
+  let st = { resetAt: Date.now(), used: [], lastN: 25, sha: null };
   try { st = await readShareState(env); } catch (_) {}
   const now = Date.now(); const DAY = 24 * 60 * 60 * 1000;
   if (!st.resetAt || now - st.resetAt >= DAY) { st.resetAt = now; st.used = []; }
+  let n = count || 25;
+  if (useLast) n = st.lastN || n || 25;
+  n = Math.max(1, Math.min(30, n));
+  st.lastN = n;
   const used = new Set((st.used || []).map(String));
   const pool = [];
   for (const v of videos) {
@@ -271,12 +273,10 @@ async function handleShare(env, chatId) {
   }
   if (!pool.length) { await reply(env, chatId, "Stok link sesi 24 jam habis.", MENU_KEYBOARD); return; }
   for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp; }
-  const take = pool.slice(0, 25);
+  const take = pool.slice(0, n);
   take.forEach(function (x) { used.add(x.key); });
   st.used = Array.from(used);
-  try { await writeShareState(env, st); } catch (e) {
-    console.error("share state write skipped", e.message || e);
-  }
+  try { await writeShareState(env, st); } catch (e) { console.error("share state write skipped", e.message || e); }
   const host = String(env.PUBLIC_HOST || "https://koleksidrpinguin.com").replace(/\/$/, "");
   const lines = take.map(function (x) { return "\u25b6 " + x.title + "\n" + host + "/v/" + x.key; });
   await reply(env, chatId, lines.join("\n\n"), MENU_KEYBOARD);
@@ -300,9 +300,8 @@ function extractLinks(text) {
   const raw = text.match(/https?:\/\/[^\s<>"']+/gi) || []; const out = []; const seen = new Set();
   for (let u of raw) {
     u = u.replace(/[).,]+$/, "");
-    if (isBlockedHost(u)) continue;
-    if (!isAllowedHost(u)) continue;
-    if (seen.has(u)) continue; seen.add(u); out.push(u);
+    if (isBlockedHost(u) || !isAllowedHost(u) || seen.has(u)) continue;
+    seen.add(u); out.push(u);
   }
   return out;
 }
@@ -351,16 +350,16 @@ async function mergeAndPush(env, repo, items) {
   if (!raw || !raw.trim()) throw new Error("videos.json kosong / gagal dibaca");
   const videos = JSON.parse(raw).filter(function (v) { return !/vicek|exastream/i.test(String(v.embed || "") + String(v.direct || "") + String(v.category || "")); });
   const exist = new Set(videos.map(videoKey));
-  let added = 0, skipped = 0, updated = 0; const fresh = [];
+  let added = 0, skipped = 0; const fresh = [];
   for (const it of items) {
     const k = videoKey(it);
     if (exist.has(k)) { skipped += 1; continue; }
     exist.add(k); fresh.push(it); added += 1;
   }
   for (let i = fresh.length - 1; i >= 0; i--) videos.unshift(fresh[i]);
-  if (!added && !updated) return { added: added, skipped: skipped, updated: updated };
+  if (!added) return { added: added, skipped: skipped };
   await gh(env, "/repos/" + owner + "/" + repo + "/contents/" + path, { method: "PUT", body: JSON.stringify({ message: "bot: add " + added + " videos from Telegram", content: Buffer.from(JSON.stringify(videos, null, 2), "utf8").toString("base64"), sha: meta.sha, branch: branch }) });
-  return { added: added, skipped: skipped, updated: updated };
+  return { added: added, skipped: skipped };
 }
 async function gh(env, path, opt) {
   opt = opt || {};
