@@ -47,20 +47,28 @@ function parseBody(req) {
   if (typeof raw === "string") { try { return JSON.parse(raw); } catch (e) { return {}; } }
   return raw;
 }
+const CATS = [
+  { key: "all", label: "Semua", match: null },
+  { key: "amatir", label: "Amatir", match: /amatir|indoav|userbokep|stw|jilbab|abg|viral/i },
+  { key: "videy", label: "Videy", match: /videy/i },
+  { key: "mumu", label: "Mumu", match: /mumu|ai china|video ai/i },
+  { key: "putarin", label: "Putarin", match: /putarin|puterin|jav/i }
+];
 const MENU_KEYBOARD = {
   keyboard: [
     [{ text: "Minta 10" }, { text: "Minta 25" }],
-    [{ text: "Lagi" }, { text: "Menu" }]
+    [{ text: "Semua" }, { text: "Amatir" }, { text: "Videy" }],
+    [{ text: "Mumu" }, { text: "Putarin" }, { text: "Lagi" }],
+    [{ text: "Menu" }]
   ],
   resize_keyboard: true,
   persistent: true
 };
 const BOT_COMMANDS = [
-  { command: "start", description: "Buka menu bot" },
-  { command: "menu", description: "Tampil tombol menu" },
-  { command: "minta10", description: "Minta 10 link" },
-  { command: "minta25", description: "Minta 25 link" },
-  { command: "minta", description: "Minta 25 link" },
+  { command: "start", description: "Buka menu" },
+  { command: "menu", description: "Tampil tombol" },
+  { command: "minta10", description: "10 link semua" },
+  { command: "minta25", description: "25 link semua" },
   { command: "help", description: "Bantuan" }
 ];
 async function ensureBotMenu(env) {
@@ -117,6 +125,24 @@ function parseShareCount(text, fallback) {
   if (/minta25|sebar25/.test(t.replace(/\s+/g, ""))) return 25;
   return fallback || 25;
 }
+function parseShareCat(text) {
+  const t = String(text || "").toLowerCase();
+  for (const c of CATS) {
+    if (c.key === "all") continue;
+    if (t.includes(c.key) || t === c.label.toLowerCase()) return c.key;
+  }
+  if (t === "semua" || t.includes("semua")) return "all";
+  return "";
+}
+function videoBlob(v) {
+  return [v.category, v.source, v.title, (v.tags || []).join(" "), v.embed, v.direct].join(" ");
+}
+function matchCat(v, key) {
+  if (!key || key === "all") return true;
+  const cat = CATS.find(function (c) { return c.key === key; });
+  if (!cat || !cat.match) return true;
+  return cat.match.test(videoBlob(v));
+}
 async function handleUpdate(update, env) {
   const msg = update.message || update.channel_post;
   if (!msg || !msg.text) return { processed: false, command: "empty" };
@@ -135,19 +161,30 @@ async function handleUpdate(update, env) {
     await reply(env, chatId, [
       "Menu Dr. Pinguin",
       "",
-      "Pilih jumlah:",
-      "Minta 10  — 10 link",
-      "Minta 25  — 25 link",
-      "Lagi  — ulangi jumlah terakhir",
+      "1. Pilih Minta 10 atau Minta 25",
+      "2. Pilih kategori: Semua / Amatir / Videy / Mumu / Putarin",
+      "3. Lagi = ulang jumlah + kategori terakhir",
       "",
-      "Atau ketik: minta 10 / minta 25 / /minta10 / /minta25",
-      "Kirim link videy / indoav / userbokep / puterin / mumu untuk upload."
+      "Contoh ketik: minta 10 videy"
     ].join("\n"), MENU_KEYBOARD);
     return { processed: true, command: cmd };
   }
   if (cmd === "share") {
-    const n = parseShareCount(text, 25);
-    await handleShare(env, chatId, n, /^(lagi|gas|next|terus)$/i.test(text.trim()));
+    const onlyCount = /^(minta|sebar)?\s*(10|25)$/i.test(text.replace(/^\//, "").trim()) || /^\/?(minta|sebar)(10|25)?$/i.test(text.trim());
+    const cat = parseShareCat(text);
+    const n = parseShareCount(text, 0);
+    if (onlyCount && !cat) {
+      await rememberPref(env, { lastN: n || 25, lastCat: "all", waitCat: true });
+      await reply(env, chatId, "Siap " + (n || 25) + " link. Pilih kategori:", MENU_KEYBOARD);
+      return { processed: true, command: "wait_cat" };
+    }
+    const useLast = /^(lagi|gas|next|terus)$/i.test(text.trim());
+    await handleShare(env, chatId, {
+      count: n || 0,
+      cat: cat || "",
+      useLast: useLast,
+      catOnly: !!(cat && !n && !useLast && !/^minta|^sebar|^\//i.test(text))
+    });
     return { processed: true, command: "share" };
   }
   const rawLinks = (text.match(/https?:\/\/[^\s<>"']+/gi) || []).map(function (u) { return u.replace(/[).,]+$/, ""); });
@@ -157,7 +194,7 @@ async function handleUpdate(update, env) {
   }
   const links = extractLinks(text);
   if (!links.length) {
-    await reply(env, chatId, "Tidak dikenali. Pilih Minta 10 / Minta 25, atau kirim link.", MENU_KEYBOARD);
+    await reply(env, chatId, "Tidak dikenali. Pilih Minta 10 / kategori, atau kirim link.", MENU_KEYBOARD);
     return { processed: true, command: "no_links" };
   }
   const items = parseNamedLinks(text).filter(function (it) {
@@ -169,7 +206,7 @@ async function handleUpdate(update, env) {
     return { processed: true, command: "parse_fail" };
   }
   if (!env.GH_TOKEN) {
-    await reply(env, chatId, "Upload butuh GH_TOKEN valid di Vercel. Minta 10/25 tetap jalan tanpa token.");
+    await reply(env, chatId, "Upload butuh GH_TOKEN valid. Minta 10/25 tetap jalan.");
     return { processed: true, command: "missing_env" };
   }
   try {
@@ -197,6 +234,7 @@ function isShareCommand(text) {
   if (/https?:\/\//i.test(t) && !/^\s*\/?(minta|sebar)/.test(t)) return false;
   if (/^\/?(sebar|share|link|minta)/.test(t)) return true;
   if (t === "minta 10" || t === "minta 25" || t === "lagi" || t === "gas" || t === "next" || t === "terus") return true;
+  if (CATS.some(function (c) { return t === c.label.toLowerCase() || t === c.key; })) return true;
   if (/kasih\s*link|nyebar/.test(t)) return true;
   return false;
 }
@@ -243,43 +281,64 @@ async function readShareState(env) {
     const meta = await gh(env, "/repos/" + owner + "/" + repo + "/contents/share-used.json?ref=" + (env.GH_BRANCH || "main"));
     const raw = Buffer.from((meta.content || "").replace(/\n/g, ""), "base64").toString("utf8");
     const st = JSON.parse(raw || "{}"); st.sha = meta.sha; return st;
-  } catch (e) { return { resetAt: 0, used: [], lastN: 25, sha: null }; }
+  } catch (e) { return { resetAt: 0, used: [], lastN: 25, lastCat: "all", sha: null }; }
 }
 async function writeShareState(env, st) {
   if (!env.GH_TOKEN) return;
   const owner = env.GH_OWNER; const repo = await stateRepo(env);
-  const body = { message: "state: share-used", content: Buffer.from(JSON.stringify({ resetAt: st.resetAt, used: st.used, lastN: st.lastN || 25 }, null, 2), "utf8").toString("base64"), branch: env.GH_BRANCH || "main" };
+  const body = {
+    message: "state: share-used",
+    content: Buffer.from(JSON.stringify({ resetAt: st.resetAt, used: st.used, lastN: st.lastN || 25, lastCat: st.lastCat || "all" }, null, 2), "utf8").toString("base64"),
+    branch: env.GH_BRANCH || "main"
+  };
   if (st.sha) body.sha = st.sha;
   await gh(env, "/repos/" + owner + "/" + repo + "/contents/share-used.json", { method: "PUT", body: JSON.stringify(body) });
 }
-async function handleShare(env, chatId, count, useLast) {
+async function rememberPref(env, patch) {
+  let st;
+  try { st = await readShareState(env); } catch (_) { st = { used: [], resetAt: Date.now() }; }
+  Object.assign(st, patch);
+  try { await writeShareState(env, st); } catch (_) {}
+}
+async function handleShare(env, chatId, opt) {
+  opt = opt || {};
   const videos = await readVideos(env, env.GH_REPO);
-  let st = { resetAt: Date.now(), used: [], lastN: 25, sha: null };
+  let st = { resetAt: Date.now(), used: [], lastN: 25, lastCat: "all", sha: null };
   try { st = await readShareState(env); } catch (_) {}
   const now = Date.now(); const DAY = 24 * 60 * 60 * 1000;
   if (!st.resetAt || now - st.resetAt >= DAY) { st.resetAt = now; st.used = []; }
-  let n = count || 25;
-  if (useLast) n = st.lastN || n || 25;
+  let n = opt.count || 0;
+  let cat = opt.cat || "";
+  if (opt.useLast || opt.catOnly || !n) n = st.lastN || 25;
+  if (opt.useLast || !cat) cat = cat || st.lastCat || "all";
   n = Math.max(1, Math.min(30, n));
+  if (!cat) cat = "all";
   st.lastN = n;
+  st.lastCat = cat;
   const used = new Set((st.used || []).map(String));
   const pool = [];
   for (const v of videos) {
     const blob = String(v.embed || v.direct || v.category || "");
     if (/vicek|exastream/i.test(blob)) continue;
+    if (!matchCat(v, cat)) continue;
     const key = shareKeyFromVideo(v);
     if (!key || used.has(key)) continue;
     pool.push({ key: key, title: cleanTitle(v.title) });
   }
-  if (!pool.length) { await reply(env, chatId, "Stok link sesi 24 jam habis.", MENU_KEYBOARD); return; }
+  const catLabel = (CATS.find(function (c) { return c.key === cat; }) || { label: "Semua" }).label;
+  if (!pool.length) {
+    await reply(env, chatId, "Stok " + catLabel + " habis untuk sesi 24 jam.", MENU_KEYBOARD);
+    return;
+  }
   for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp; }
   const take = pool.slice(0, n);
   take.forEach(function (x) { used.add(x.key); });
   st.used = Array.from(used);
   try { await writeShareState(env, st); } catch (e) { console.error("share state write skipped", e.message || e); }
   const host = String(env.PUBLIC_HOST || "https://koleksidrpinguin.com").replace(/\/$/, "");
+  const head = catLabel + " · " + take.length + " link\n\n";
   const lines = take.map(function (x) { return "\u25b6 " + x.title + "\n" + host + "/v/" + x.key; });
-  await reply(env, chatId, lines.join("\n\n"), MENU_KEYBOARD);
+  await reply(env, chatId, head + lines.join("\n\n"), MENU_KEYBOARD);
 }
 function parseNamedLinks(text) {
   const lines = String(text).split(/\r?\n/); const items = []; let pending = "";
@@ -289,8 +348,7 @@ function parseNamedLinks(text) {
     if (m) {
       const url = m[0].replace(/[).,]+$/, "");
       if (/koleksidrpinguin\.(com|site)/i.test(url)) continue;
-      if (isBlockedHost(url)) continue;
-      if (!isAllowedHost(url)) continue;
+      if (isBlockedHost(url) || !isAllowedHost(url)) continue;
       const it = toItem(url); if (pending) it.title = cleanTitle(pending); items.push(it); pending = "";
     } else if (!line.startsWith("/")) pending = line;
   }
