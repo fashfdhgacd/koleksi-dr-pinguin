@@ -24,7 +24,7 @@ function envStatus(env) {
   return {
     ok: true,
     service: "telegram-webhook",
-    ready: Boolean(env.BOT_TOKEN && env.GH_TOKEN && env.GH_OWNER && env.GH_REPO),
+    ready: Boolean(env.BOT_TOKEN && env.GH_OWNER && env.GH_REPO),
     hasBot: Boolean(env.BOT_TOKEN),
     hasGh: Boolean(env.GH_TOKEN),
     hasGithubRepo: Boolean(env.GH_OWNER && env.GH_REPO),
@@ -32,6 +32,23 @@ function envStatus(env) {
     repo: env.GH_REPO || null,
     webhookSecretConfigured: Boolean(env.TELEGRAM_WEBHOOK_SECRET)
   };
+}
+async function probeGithub(env) {
+  if (!env.GH_TOKEN) return { tokenValid: false, reason: "GH_TOKEN empty" };
+  try {
+    const res = await fetch("https://api.github.com/user", {
+      headers: {
+        Authorization: "token " + env.GH_TOKEN,
+        Accept: "application/vnd.github.v3+json",
+        "User-Agent": "dr-pinguin-tg-bot"
+      }
+    });
+    const data = await res.json();
+    if (!res.ok) return { tokenValid: false, reason: data.message || String(res.status) };
+    return { tokenValid: true, login: data.login || null };
+  } catch (e) {
+    return { tokenValid: false, reason: String(e.message || e) };
+  }
 }
 function parseBody(req) {
   const raw = req.body;
@@ -42,7 +59,10 @@ function parseBody(req) {
 module.exports = async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   const env = getEnv();
-  if (req.method === "GET") return res.status(200).json(envStatus(env));
+  if (req.method === "GET") {
+    const probe = await probeGithub(env);
+    return res.status(200).json({ ...envStatus(env), ...probe });
+  }
   if (req.method !== "POST") {
     res.setHeader("Allow", "GET, POST");
     return res.status(405).json({ ok: false, error: "Method not allowed" });
@@ -108,8 +128,8 @@ async function handleUpdate(update, env) {
     await reply(env, chatId, "Link terbaca tapi ditolak / gagal diproses.");
     return { processed: true, command: "parse_fail" };
   }
-  if (!env.GH_TOKEN || !env.GH_OWNER || !env.GH_REPO) {
-    await reply(env, chatId, "Env GitHub belum lengkap di Vercel.\nIsi BOT_TOKEN, GH_TOKEN, GH_OWNER, GH_REPO lalu Redeploy.");
+  if (!env.GH_TOKEN) {
+    await reply(env, chatId, "Upload butuh GH_TOKEN yang valid di Vercel.\nPerintah minta tetap bisa tanpa token.");
     return { processed: true, command: "missing_env" };
   }
   try {
@@ -122,7 +142,7 @@ async function handleUpdate(update, env) {
     lines.push("", "Tunggu deploy 1-2 menit, lalu hard refresh.");
     await reply(env, chatId, lines.join("\n"));
   } catch (e) {
-    await reply(env, chatId, "Gagal simpan: " + String(e.message || e));
+    await reply(env, chatId, "Gagal simpan: " + String(e.message || e) + "\nKalau Bad credentials: ganti GH_TOKEN di Vercel lalu Redeploy.");
   }
   return { processed: true, command: "upload" };
 }
@@ -156,16 +176,28 @@ function cleanTitle(t) {
   return String(t || "Video").replace(/^\u25b6\s*/, "").replace(/\s*-\s*koleksidrpinguin.*/i, "").replace(/_/g, " ").replace(/\s+/g, " ").trim();
 }
 async function readVideos(env, repo) {
-  const owner = env.GH_OWNER; const path = env.GH_PATH || "data/videos.json"; const branch = env.GH_BRANCH || "main";
-  const meta = await gh(env, "/repos/" + owner + "/" + repo + "/contents/" + path + "?ref=" + branch);
-  let raw = "";
-  if (meta.content && meta.content.length < 500000) raw = Buffer.from(meta.content.replace(/\n/g, ""), "base64").toString("utf8");
-  else {
-    const dl = meta.download_url;
-    const rr = await fetch(dl + (dl.includes("?") ? "&" : "?") + "t=" + Date.now(), { headers: { Authorization: "token " + env.GH_TOKEN, "User-Agent": "dr-pinguin-tg-bot", Accept: "application/vnd.github.v3.raw" } });
-    raw = await rr.text();
+  const owner = env.GH_OWNER;
+  const path = env.GH_PATH || "data/videos.json";
+  const branch = env.GH_BRANCH || "main";
+  const rawUrl = "https://raw.githubusercontent.com/" + owner + "/" + repo + "/" + branch + "/" + path + "?t=" + Date.now();
+  try {
+    if (env.GH_TOKEN) {
+      const meta = await gh(env, "/repos/" + owner + "/" + repo + "/contents/" + path + "?ref=" + branch);
+      let raw = "";
+      if (meta.content && meta.content.length < 500000) raw = Buffer.from(meta.content.replace(/\n/g, ""), "base64").toString("utf8");
+      else {
+        const dl = meta.download_url || rawUrl;
+        const rr = await fetch(dl + (dl.includes("?") ? "&" : "?") + "t=" + Date.now(), { headers: { Authorization: "token " + env.GH_TOKEN, "User-Agent": "dr-pinguin-tg-bot", Accept: "application/vnd.github.v3.raw" } });
+        raw = await rr.text();
+      }
+      return JSON.parse(raw);
+    }
+  } catch (e) {
+    console.error("gh read fail, fallback public", e.message || e);
   }
-  return JSON.parse(raw);
+  const rr = await fetch(rawUrl, { headers: { "User-Agent": "dr-pinguin-tg-bot" } });
+  if (!rr.ok) throw new Error("gagal baca katalog publik HTTP " + rr.status);
+  return rr.json();
 }
 async function stateRepo(env) { return env.GH_STATE_REPO || "kdp-bot-state"; }
 async function readShareState(env) {
@@ -174,9 +206,10 @@ async function readShareState(env) {
     const meta = await gh(env, "/repos/" + owner + "/" + repo + "/contents/share-used.json?ref=" + (env.GH_BRANCH || "main"));
     const raw = Buffer.from((meta.content || "").replace(/\n/g, ""), "base64").toString("utf8");
     const st = JSON.parse(raw || "{}"); st.sha = meta.sha; return st;
-  } catch (e) { return { resetAt: 0, used: [], sha: null }; }
+  } catch (e) { return { resetAt: 0, used: [], sha: null, readOnly: true }; }
 }
 async function writeShareState(env, st) {
+  if (!env.GH_TOKEN) return;
   const owner = env.GH_OWNER; const repo = await stateRepo(env);
   const body = { message: "state: share-used", content: Buffer.from(JSON.stringify({ resetAt: st.resetAt, used: st.used }, null, 2), "utf8").toString("base64"), branch: env.GH_BRANCH || "main" };
   if (st.sha) body.sha = st.sha;
@@ -184,7 +217,8 @@ async function writeShareState(env, st) {
 }
 async function handleShare(env, chatId) {
   const videos = await readVideos(env, env.GH_REPO);
-  let st = await readShareState(env);
+  let st = { resetAt: Date.now(), used: [], sha: null };
+  try { st = await readShareState(env); } catch (_) {}
   const now = Date.now(); const DAY = 24 * 60 * 60 * 1000;
   if (!st.resetAt || now - st.resetAt >= DAY) { st.resetAt = now; st.used = []; }
   const used = new Set((st.used || []).map(String));
@@ -202,7 +236,7 @@ async function handleShare(env, chatId) {
   take.forEach(function (x) { used.add(x.key); });
   st.used = Array.from(used);
   try { await writeShareState(env, st); } catch (e) {
-    await reply(env, chatId, "State share gagal ditulis: " + String(e.message || e) + "\nCek repo kdp-bot-state + token GitHub.");
+    console.error("share state write skipped", e.message || e);
   }
   const host = String(env.PUBLIC_HOST || "https://koleksidrpinguin.com").replace(/\/$/, "");
   const lines = take.map(function (x) { return "\u25b6 " + x.title + "\n" + host + "/v/" + x.key; });
