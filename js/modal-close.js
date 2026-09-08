@@ -1,34 +1,42 @@
 (function () {
   if (window.__modalCloseFix) return;
   window.__modalCloseFix = true;
+  if (!document.getElementById('modalCloseCss')) {
+    var s = document.createElement('style');
+    s.id = 'modalCloseCss';
+    s.textContent = '#videoModal.hidden{display:none!important;pointer-events:none!important}';
+    document.head.appendChild(s);
+  }
+  function unlock() {
+    document.documentElement.style.overflow = '';
+    document.documentElement.style.touchAction = '';
+    document.body.style.overflow = '';
+    document.body.style.touchAction = '';
+    document.body.classList.remove('overflow-hidden');
+    document.documentElement.classList.remove('overflow-hidden');
+  }
   function closeModal() {
     var modal = document.getElementById('videoModal');
     if (modal) {
       modal.classList.add('hidden');
-      modal.style.display = 'none';
-      modal.style.pointerEvents = 'none';
+      modal.removeAttribute('style');
     }
     var iframe = document.getElementById('modalIframe');
-    if (iframe) iframe.src = 'about:blank';
+    if (iframe) {
+      iframe.removeAttribute('style');
+      iframe.src = 'about:blank';
+    }
     var native = document.getElementById('modalNativeVideo');
     if (native) {
       try { native.pause(); } catch (e) {}
       native.removeAttribute('src');
       native.style.display = 'none';
     }
-    document.documentElement.style.overflow = '';
-    document.body.style.overflow = '';
-    document.body.classList.remove('overflow-hidden');
-  }
-  function openFix(modal) {
-    if (!modal) return;
-    modal.style.display = '';
-    modal.style.pointerEvents = '';
+    unlock();
   }
   function hook() {
     var btn = document.getElementById('modalClose');
     var backdrop = document.getElementById('modalBackdrop');
-    var modal = document.getElementById('videoModal');
     if (btn && !btn.__closeFix) {
       btn.__closeFix = true;
       btn.addEventListener('click', function (e) {
@@ -44,14 +52,7 @@
         closeModal();
       }, true);
     }
-    if (modal && !modal.__closeObs) {
-      modal.__closeObs = true;
-      new MutationObserver(function () {
-        if (!modal.classList.contains('hidden')) openFix(modal);
-      }).observe(modal, { attributes: true, attributeFilter: ['class'] });
-    }
   }
   hook();
   setTimeout(hook, 400);
-  setTimeout(hook, 1500);
 })();
