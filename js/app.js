@@ -22,17 +22,10 @@
         if (main) { main.classList.remove('opacity-0'); main.classList.add('opacity-100'); }
       }
     } catch (e) {}
-    var n = document.createElement('script');
-    n.src = '/js/putarin-nav.js?t=' + Date.now();
-    document.body.appendChild(n);
-    var m = document.createElement('script');
-    m.src = '/js/modal-share.js?t=' + Date.now();
-    document.body.appendChild(m);
-    var t = document.createElement('script');
-    t.src = '/js/thumb-fix.js?v=1';
-    document.body.appendChild(t);
-    var w = document.createElement('script');
-    w.src = '/js/open-watch.js?v=2';
-    document.body.appendChild(w);
+    ['/js/putarin-nav.js', '/js/modal-share.js', '/js/thumb-fix.js', '/js/modal-close.js'].forEach(function (src) {
+      var el = document.createElement('script');
+      el.src = src + '?t=' + Date.now();
+      document.body.appendChild(el);
+    });
   }
 })();
