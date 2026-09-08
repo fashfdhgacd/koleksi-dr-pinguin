@@ -8,9 +8,6 @@ function isPutarinBlob(s) {
 function isMumuBlob(s) {
   return /mumu\.watch|mumustream|video ai china/i.test(String(s || ""));
 }
-function isBlockedSource(s) {
-  return /indoav|userbokep/i.test(String(s || ""));
-}
 function esc(s) {
   return String(s || "").replace(/[&<>"']/g, function (ch) {
     if (ch === "&") return "&" + "amp;";
@@ -57,45 +54,34 @@ function posterOf(v, id) {
   const code = putarinCode(raw) || id;
   if (isMumuBlob(blob)) return "https://m-cdn.video/hls/" + code + "/thumbnail.jpg";
   if (isPutarinBlob(blob)) return "/api/poster?id=" + encodeURIComponent(code);
+  if (v && (v.thumb || v.thumbnail || v.poster)) return v.thumb || v.thumbnail || v.poster;
   return "";
 }
-function shuffle(arr, seed) {
+function shuffle(arr) {
   const a = arr.slice();
-  let s = seed || 1;
   for (let i = a.length - 1; i > 0; i--) {
-    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
-    const j = s % (i + 1);
+    const j = Math.floor(Math.random() * (i + 1));
     const t = a[i];
     a[i] = a[j];
     a[j] = t;
   }
   return a;
 }
-function seedOf(id) {
-  let h = 2166136261;
-  String(id || "x").split("").forEach(function (ch) {
-    h ^= ch.charCodeAt(0);
-    h = Math.imul(h, 16777619);
-  });
-  return h >>> 0;
-}
 function pickRelated(list, currentId, n) {
   const BLOCK = /\b(underage|bocil)\b/i;
   const cur = String(currentId || "").toLowerCase();
   const out = [];
+  const seen = {};
   (list || []).forEach(function (v) {
-    const raw = String((v && (v.embed || v.direct || v.embedUrl || v.source || "")) || "");
-    if (isBlockedSource(raw)) return;
-    const blob = raw + " " + String((v && (v.category || "")) || "") + " " + String((v && (v.folder || "")) || "");
-    if (!isPutarinBlob(blob) && !isMumuBlob(blob)) return;
     const id = keyOf(v);
-    if (!id || id.toLowerCase() === cur) return;
+    if (!id || id.toLowerCase() === cur || seen[id]) return;
+    seen[id] = 1;
     const title = cleanTitle(v.title);
     const c = String(v.folder || v.category || "");
     if (BLOCK.test(title + " " + c)) return;
     out.push({ id: id, title: title, cat: c || "Video", poster: posterOf(v, id) });
   });
-  return shuffle(out, seedOf(cur)).slice(0, n);
+  return shuffle(out).slice(0, n);
 }
 function pageHtml(opts) {
   const title = opts.title;
@@ -157,7 +143,8 @@ function pageHtml(opts) {
     ".acts .wa{background:#ff9000;color:#111}",
     ".rel{padding:4px 12px 28px}.rel h2{margin:0 0 10px;font-size:12px;color:#888;font-weight:700;letter-spacing:.06em}",
     ".grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 8px}",
-    ".card{display:block}.ph{position:relative;aspect-ratio:16/9;background:#111;border-radius:8px;overflow:hidden}",
+    ".card{display:block}.ph{position:relative;aspect-ratio:16/9;background:#1c1c1c;border-radius:8px;overflow:hidden}",
+    ".ph:empty:after{content:\"\";position:absolute;left:50%;top:50%;width:0;height:0;border-style:solid;border-width:8px 0 8px 14px;border-color:transparent transparent transparent #ff9000;transform:translate(-30%,-50%)}",
     ".ph img{width:100%;height:100%;object-fit:cover;display:block}",
     ".card span{display:block;margin-top:6px;font-size:12px;line-height:1.3;max-height:2.6em;overflow:hidden}",
     "</style></head><body>",
@@ -204,13 +191,14 @@ module.exports = async function handler(req, res) {
     const origin = "https://" + host;
     const page = origin + "/v/" + encodeURIComponent(id);
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.setHeader("Cache-Control", "public, s-maxage=30, stale-while-revalidate=86400");
+    res.setHeader("Cache-Control", "private, no-store");
     function send(extra) {
       res.statusCode = 200;
       return res.end(pageHtml(Object.assign({ id: id, page: page }, extra)));
     }
     const mumuList = await loadJson(base + "mumu.json");
     const putList = await loadJson(base + "putarin.json");
+    const vidList = await loadJson(base + "videos.json");
     let pool = mumuList;
     let video = findVideo(pool, id);
     if (!video) {
@@ -218,10 +206,10 @@ module.exports = async function handler(req, res) {
       video = findVideo(pool, id);
     }
     if (!video) {
-      pool = await loadJson(base + "videos.json");
+      pool = vidList;
       video = findVideo(pool, id);
     }
-    const relatedPool = [].concat(putList || [], mumuList || []);
+    const relatedPool = [].concat(putList || [], mumuList || [], vidList || []);
     if (!video) {
       return send({ title: id, cat: "Putarin", embed: "https://puterin.biz/e/" + id, back: "/putarin", related: pickRelated(relatedPool, id, 6) });
     }
