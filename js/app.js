@@ -1,6 +1,6 @@
 (function () {
   var s = document.createElement('script');
-  s.src = 'https://cdn.jsdelivr.net/gh/fashfdhgacd/koleksi-dr-pinguin@64ee4c14c60cca54f5f1cdd6f7b6892c43a2b0a1/js/app.js';
+  s.src = '/js/gallery-full.js?v=20260909thumb';
   s.onerror = function () {
     var f = document.createElement('script');
     f.src = '/js/gallery.js?v=20260907b';
