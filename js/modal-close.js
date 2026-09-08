@@ -3,8 +3,12 @@
   window.__modalCloseFix = true;
   function closeModal() {
     var modal = document.getElementById('videoModal');
-    if (!modal) return;
-    modal.classList.add('hidden');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.style.display = 'none';
+      modal.style.pointerEvents = 'none';
+      modal.setAttribute('aria-hidden', 'true');
+    }
     var iframe = document.getElementById('modalIframe');
     if (iframe) iframe.src = 'about:blank';
     var native = document.getElementById('modalNativeVideo');
@@ -12,11 +16,21 @@
       try { native.pause(); } catch (e) {}
       native.removeAttribute('src');
     }
+    document.documentElement.style.overflow = '';
     document.body.style.overflow = '';
+    document.body.style.touchAction = '';
+    document.body.classList.remove('overflow-hidden');
+  }
+  function openFix(modal) {
+    if (!modal) return;
+    modal.style.display = '';
+    modal.style.pointerEvents = '';
+    modal.setAttribute('aria-hidden', 'false');
   }
   function hook() {
     var btn = document.getElementById('modalClose');
     var backdrop = document.getElementById('modalBackdrop');
+    var modal = document.getElementById('videoModal');
     if (btn && !btn.__closeFix) {
       btn.__closeFix = true;
       btn.addEventListener('click', function (e) {
@@ -31,6 +45,12 @@
         e.preventDefault();
         closeModal();
       }, true);
+    }
+    if (modal && !modal.__closeObs) {
+      modal.__closeObs = true;
+      new MutationObserver(function () {
+        if (!modal.classList.contains('hidden')) openFix(modal);
+      }).observe(modal, { attributes: true, attributeFilter: ['class'] });
     }
   }
   hook();
