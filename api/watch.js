@@ -8,6 +8,9 @@ function isPutarinBlob(s) {
 function isMumuBlob(s) {
   return /mumu\.watch|mumustream|video ai china/i.test(String(s || ""));
 }
+function isBlockedSource(s) {
+  return /indoav|userbokep/i.test(String(s || ""));
+}
 function esc(s) {
   return String(s || "").replace(/[&<>"']/g, function (ch) {
     if (ch === "&") return "&" + "amp;";
@@ -48,23 +51,22 @@ function mp4Of(v, id) {
   if (/videy/i.test(d + blob) && id) return "https://cdn.videy.co/" + id + ".mp4";
   return "";
 }
-function pickRelated(list, currentId, cat, n) {
+function pickRelated(list, currentId, n) {
   const BLOCK = /\b(underage|bocil)\b/i;
   const cur = String(currentId || "").toLowerCase();
-  const want = String(cat || "").toLowerCase();
   const out = [];
-  const rest = [];
   (list || []).forEach(function (v) {
+    const raw = String((v && (v.embed || v.direct || v.embedUrl || v.source || "")) || "");
+    if (isBlockedSource(raw)) return;
+    if (!isPutarinBlob(raw + " " + (v.category || "") + " " + (v.folder || "")) && !isMumuBlob(raw + " " + (v.category || "") + " " + (v.folder || ""))) return;
     const id = keyOf(v);
     if (!id || id.toLowerCase() === cur) return;
     const title = cleanTitle(v.title);
     const c = String(v.folder || v.category || "");
     if (BLOCK.test(title + " " + c)) return;
-    const item = { id: id, title: title, cat: c || "Video" };
-    if (want && c.toLowerCase() === want) out.push(item);
-    else rest.push(item);
+    out.push({ id: id, title: title, cat: c || "Video" });
   });
-  return out.concat(rest).slice(0, n);
+  return out.slice(0, n);
 }
 function pageHtml(opts) {
   const title = opts.title;
@@ -76,8 +78,6 @@ function pageHtml(opts) {
   const date = String(opts.date || "").slice(0, 10);
   const tall = Boolean(opts.tall);
   const related = Array.isArray(opts.related) ? opts.related : [];
-  const origin = String(page || "https://koleksidrpinguin.com").split("/v/")[0] || "https://koleksidrpinguin.com";
-  const thumb = origin + "/logo.png";
   const t = encodeURIComponent(title || "");
   const u = encodeURIComponent(page || "");
   const txt = encodeURIComponent((title || "") + "\n" + (page || ""));
@@ -91,8 +91,7 @@ function pageHtml(opts) {
     isFamilyFriendly: false,
     genre: cat,
     url: page,
-    embedUrl: embed,
-    thumbnailUrl: thumb
+    embedUrl: embed
   };
   if (mp4) ld.contentUrl = mp4;
   if (date) ld.uploadDate = date;
@@ -178,18 +177,21 @@ module.exports = async function handler(req, res) {
       res.statusCode = 200;
       return res.end(pageHtml(Object.assign({ id: id, page: page }, extra)));
     }
-    let pool = await loadJson(base + "mumu.json");
+    const mumuList = await loadJson(base + "mumu.json");
+    const putList = await loadJson(base + "putarin.json");
+    let pool = mumuList;
     let video = findVideo(pool, id);
     if (!video) {
-      pool = await loadJson(base + "putarin.json");
+      pool = putList;
       video = findVideo(pool, id);
     }
     if (!video) {
       pool = await loadJson(base + "videos.json");
       video = findVideo(pool, id);
     }
+    const relatedPool = [].concat(putList || [], mumuList || []);
     if (!video) {
-      return send({ title: id, cat: "Putarin", embed: "https://puterin.biz/e/" + id, back: "/putarin" });
+      return send({ title: id, cat: "Putarin", embed: "https://puterin.biz/e/" + id, back: "/putarin", related: pickRelated(relatedPool, id, 8) });
     }
     const title = cleanTitle(video.title);
     const cat0 = String(video.folder || video.category || "Video");
@@ -220,7 +222,7 @@ module.exports = async function handler(req, res) {
       tall: Boolean(mumu),
       contentUrl: mp4Of(video, id),
       date: String(video.date || "").slice(0, 10),
-      related: pickRelated(pool, id, cat, 8)
+      related: pickRelated(relatedPool, id, 8)
     });
   } catch (e) {
     res.statusCode = 500;
