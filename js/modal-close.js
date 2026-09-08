@@ -7,7 +7,6 @@
       modal.classList.add('hidden');
       modal.style.display = 'none';
       modal.style.pointerEvents = 'none';
-      modal.setAttribute('aria-hidden', 'true');
     }
     var iframe = document.getElementById('modalIframe');
     if (iframe) iframe.src = 'about:blank';
@@ -15,17 +14,16 @@
     if (native) {
       try { native.pause(); } catch (e) {}
       native.removeAttribute('src');
+      native.style.display = 'none';
     }
     document.documentElement.style.overflow = '';
     document.body.style.overflow = '';
-    document.body.style.touchAction = '';
     document.body.classList.remove('overflow-hidden');
   }
   function openFix(modal) {
     if (!modal) return;
     modal.style.display = '';
     modal.style.pointerEvents = '';
-    modal.setAttribute('aria-hidden', 'false');
   }
   function hook() {
     var btn = document.getElementById('modalClose');

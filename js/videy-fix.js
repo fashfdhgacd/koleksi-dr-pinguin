@@ -30,7 +30,6 @@
     vid.id = 'modalNativeVideo';
     vid.controls = true;
     vid.setAttribute('playsinline', '');
-    vid.setAttribute('webkit-playsinline', '');
     vid.preload = 'metadata';
     vid.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;background:#000;z-index:2;display:none';
     frame.appendChild(vid);
@@ -92,5 +91,5 @@
   }
   hook();
   setTimeout(hook, 400);
-  setTimeout(hook, 1600);
+  setTimeout(hook, 1500);
 })();
