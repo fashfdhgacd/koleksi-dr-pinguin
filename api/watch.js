@@ -10,10 +10,10 @@ function isMumuBlob(s) {
 }
 function esc(s) {
   return String(s || "").replace(/[&<>"']/g, function (ch) {
-    if (ch === "&") return "&";
-    if (ch === "<") return "<";
-    if (ch === ">") return ">";
-    if (ch === '"') return """;
+    if (ch === "&") return "&" + "amp;";
+    if (ch === "<") return "&" + "lt;";
+    if (ch === ">") return "&" + "gt;";
+    if (ch === '"') return "&" + "quot;";
     return "&#39;";
   });
 }
@@ -40,19 +40,19 @@ function pageHtml(opts) {
   const title = opts.title;
   const cat = opts.cat;
   const embed = opts.embed;
-  const back = opts.back;
+  const back = opts.back || "/";
   const page = opts.page;
-  const vid = opts.id || "";
   const mp4 = String(opts.contentUrl || "");
   const date = String(opts.date || "").slice(0, 10);
   const tall = Boolean(opts.tall);
-  const desc = String(opts.desc || (title + " — " + cat + " | koleksidrpinguin.com. Konten dewasa 18+."))
+  const desc = String(opts.desc || (title + " - " + cat + " | koleksidrpinguin.com. 18+."))
     .replace(/\s+/g, " ")
     .slice(0, 160);
-  const thumb = page.split("/v/")[0] + "/api/thumb?title=" + encodeURIComponent(title) + "&cat=" + encodeURIComponent(cat || "Video");
-  const t = encodeURIComponent(title);
-  const u = encodeURIComponent(page);
-  const txt = encodeURIComponent(title + "\n" + page);
+  const origin = String(page || "https://koleksidrpinguin.com").split("/v/")[0] || "https://koleksidrpinguin.com";
+  const thumb = origin + "/api/thumb?title=" + encodeURIComponent(title || "Video") + "&cat=" + encodeURIComponent(cat || "Video");
+  const t = encodeURIComponent(title || "");
+  const u = encodeURIComponent(page || "");
+  const txt = encodeURIComponent((title || "") + "\n" + (page || ""));
   const playerClass = tall ? "player tall" : "player";
   const ld = {
     "@context": "https://schema.org",
@@ -65,16 +65,16 @@ function pageHtml(opts) {
     url: page,
     embedUrl: embed,
     thumbnailUrl: thumb,
-    publisher: { "@type": "Organization", name: "Dr. Pinguin", url: "https://koleksidrpinguin.com/" }
+    publisher: { "@type": "Organization", name: "Dr. Pinguin", url: origin + "/" }
   };
   if (mp4) ld.contentUrl = mp4;
   if (date) ld.uploadDate = date;
   const player = mp4
-    ? "<video controls playsinline preload=\"metadata\" poster=\"" + esc(thumb) + "\" src=\"" + esc(mp4) + "\" style=\"position:absolute;inset:0;width:100%;height:100%;background:#111\"></video>"
+    ? "<video controls playsinline preload=\"metadata\" poster=\"" + esc(thumb) + "\" src=\"" + esc(mp4) + "\"></video>"
     : "<iframe src=\"" + esc(embed) + "\" allow=\"autoplay;encrypted-media\" referrerpolicy=\"origin\"></iframe>";
   return [
     "<!DOCTYPE html><html lang=\"id\"><head><meta charset=\"utf-8\">",
-    "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1,viewport-fit=cover\">",
+    "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">",
     "<title>", esc(title), " | Dr. Pinguin</title>",
     "<meta name=\"description\" content=\"", esc(desc), "\">",
     "<meta name=\"robots\" content=\"index,follow\">",
@@ -82,25 +82,17 @@ function pageHtml(opts) {
     "<link rel=\"canonical\" href=\"", esc(page), "\">",
     "<meta property=\"og:type\" content=\"video.other\">",
     "<meta property=\"og:title\" content=\"", esc(title), "\">",
-    "<meta property=\"og:description\" content=\"", esc(desc), "\">",
     "<meta property=\"og:url\" content=\"", esc(page), "\">",
     "<meta property=\"og:image\" content=\"", esc(thumb), "\">",
-    "<meta name=\"twitter:card\" content=\"summary_large_image\">",
     "<script type=\"application/ld+json\">", JSON.stringify(ld), "</script>",
-    "<script defer src=\"/_vercel/insights/script.js\"></script>",
-    "<style>*{box-sizing:border-box}html,body{margin:0;background:#050505;color:#eee;font-family:system-ui,sans-serif}a,button{color:#ff9000;text-decoration:none;font:inherit}header{position:sticky;top:0;z-index:20;background:#000;border-bottom:2px solid #ff9000}.nav{display:flex;justify-content:space-between;align-items:center;padding:8px 12px}.brand{font-weight:900}.brand b{color:#ff9000}.player{position:relative;width:100%;aspect-ratio:16/9;background:#111}.player.tall{aspect-ratio:9/16;max-height:72vh;width:min(100%,calc(72vh * 9 / 16))}.player iframe,.player video{position:absolute;inset:0;width:100%;height:100%;border:0}.body{padding:12px}h1{font-size:16px;margin:0 0 6px}.meta{color:#888;font-size:12px}.actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.btn{display:inline-flex;align-items:center;height:30px;padding:0 9px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid #2a2a2a;background:#161616;color:#ddd}</style></head><body>",
-    "<header><div class=\"nav\"><a class=\"brand\" href=\"/\">DR.<b>PINGUIN</b></a><a href=\"", back, "\">Kembali</a></div></header>",
-    "<div class=\"player \", playerClass, "\" id=\"playerBox\">", player, "</div>",
-    "<div class=\"body\"><h1>", esc(title), "</h1><p class=\"meta\">", esc(cat), " · 18+</p>",
-    "<div class=\"actions\">",
-    "<a class=\"btn\" href=\"https://wa.me/?text=", txt, "\" target=\"_blank\" rel=\"noopener\">WhatsApp</a>",
-    "<a class=\"btn\" href=\"https://t.me/share/url?url=", u, "&text=", t, "\" target=\"_blank\" rel=\"noopener\">Telegram</a>",
-    "<a class=\"btn\" href=\"https://x.com/intent/post?text=", txt, "\" target=\"_blank\" rel=\"noopener\">X</a>",
+    "<style>*{box-sizing:border-box}html,body{margin:0;background:#050505;color:#eee;font-family:system-ui,sans-serif}a,button{color:#ff9000;text-decoration:none}header{background:#000;border-bottom:2px solid #ff9000}.nav{display:flex;justify-content:space-between;align-items:center;padding:8px 12px}.brand{font-weight:900}.brand b{color:#ff9000}.player{position:relative;width:100%;aspect-ratio:16/9;background:#111}.player.tall{aspect-ratio:9/16;max-height:72vh}.player iframe,.player video{position:absolute;inset:0;width:100%;height:100%;border:0}.body{padding:12px}h1{font-size:16px}.meta{color:#888;font-size:12px}.btn{display:inline-flex;margin:4px 4px 0 0;padding:6px 10px;border:1px solid #333;background:#161616;color:#ddd;border-radius:8px}</style></head><body>",
+    "<header><div class=\"nav\"><a class=\"brand\" href=\"/\">DR.<b>PINGUIN</b></a><a href=\"", esc(back), "\">Kembali</a></div></header>",
+    "<div class=\"", playerClass, "\">", player, "</div>",
+    "<div class=\"body\"><h1>", esc(title), "</h1><p class=\"meta\">", esc(cat), " - 18+</p>",
+    "<a class=\"btn\" href=\"https://wa.me/?text=", txt, "\">WhatsApp</a>",
+    "<a class=\"btn\" href=\"https://t.me/share/url?url=", u, "&text=", t, "\">Telegram</a>",
     "<button class=\"btn\" type=\"button\" id=\"btnCopy\">Salin link</button>",
-    "</div></div><script>",
-    "var PAGE=", JSON.stringify(page), ";",
-    "document.getElementById('btnCopy').onclick=function(){navigator.clipboard.writeText(PAGE);this.textContent='Tersalin';};",
-    "</script></body></html>"
+    "</div><script>var PAGE=", JSON.stringify(page), ";document.getElementById('btnCopy').onclick=function(){navigator.clipboard.writeText(PAGE);};</script></body></html>"
   ].join("");
 }
 async function loadJson(url) {
@@ -149,7 +141,6 @@ module.exports = async function handler(req, res) {
     const cat0 = String(video.folder || video.category || "Video");
     if (BLOCK.test(title + " " + cat0)) {
       res.statusCode = 404;
-      res.setHeader("X-Robots-Tag", "noindex");
       return res.end("<p>Konten tidak tersedia. <a href='/'>Home</a></p>");
     }
     const raw = String(video.embed || video.direct || video.embedUrl || "");
