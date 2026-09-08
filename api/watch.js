@@ -51,6 +51,14 @@ function mp4Of(v, id) {
   if (/videy/i.test(d + blob) && id) return "https://cdn.videy.co/" + id + ".mp4";
   return "";
 }
+function previewOf(v, id) {
+  const raw = String((v && (v.embed || v.direct || v.embedUrl)) || "");
+  const blob = raw + " " + String((v && (v.source || v.category || v.folder)) || "");
+  const code = putarinCode(raw) || id;
+  if (isMumuBlob(blob)) return "https://mumu.watch/e/" + code;
+  if (isPutarinBlob(blob)) return "https://puterin.biz/e/" + code;
+  return "";
+}
 function pickRelated(list, currentId, n) {
   const BLOCK = /\b(underage|bocil)\b/i;
   const cur = String(currentId || "").toLowerCase();
@@ -58,13 +66,14 @@ function pickRelated(list, currentId, n) {
   (list || []).forEach(function (v) {
     const raw = String((v && (v.embed || v.direct || v.embedUrl || v.source || "")) || "");
     if (isBlockedSource(raw)) return;
-    if (!isPutarinBlob(raw + " " + (v.category || "") + " " + (v.folder || "")) && !isMumuBlob(raw + " " + (v.category || "") + " " + (v.folder || ""))) return;
+    const blob = raw + " " + String((v && (v.category || "")) || "") + " " + String((v && (v.folder || "")) || "");
+    if (!isPutarinBlob(blob) && !isMumuBlob(blob)) return;
     const id = keyOf(v);
     if (!id || id.toLowerCase() === cur) return;
     const title = cleanTitle(v.title);
     const c = String(v.folder || v.category || "");
     if (BLOCK.test(title + " " + c)) return;
-    out.push({ id: id, title: title, cat: c || "Video" });
+    out.push({ id: id, title: title, cat: c || "Video", preview: previewOf(v, id) });
   });
   return out.slice(0, n);
 }
@@ -99,7 +108,10 @@ function pageHtml(opts) {
     ? "<video controls playsinline preload=\"metadata\" src=\"" + esc(mp4) + "\"></video>"
     : "<iframe src=\"" + esc(embed) + "\" allow=\"autoplay;encrypted-media;fullscreen\" allowfullscreen referrerpolicy=\"origin\"></iframe>";
   const relHtml = related.map(function (r) {
-    return "<a class=\"card\" href=\"/v/" + encodeURIComponent(r.id) + "\"><div class=\"ph\"></div><span>" + esc(r.title) + "</span></a>";
+    const frame = r.preview
+      ? "<iframe src=\"" + esc(r.preview) + "\" loading=\"lazy\" tabindex=\"-1\"></iframe>"
+      : "";
+    return "<a class=\"card\" href=\"/v/" + encodeURIComponent(r.id) + "\"><div class=\"ph\">" + frame + "</div><span>" + esc(r.title) + "</span></a>";
   }).join("");
   return [
     "<!DOCTYPE html><html lang=\"id\"><head><meta charset=\"utf-8\">",
@@ -125,8 +137,8 @@ function pageHtml(opts) {
     ".acts .wa{background:#ff9000;color:#111}",
     ".rel{padding:4px 12px 28px}.rel h2{margin:0 0 10px;font-size:12px;color:#888;font-weight:700;letter-spacing:.06em}",
     ".grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 8px}",
-    ".card{display:block}.ph{position:relative;aspect-ratio:16/9;background:#1c1c1c;border-radius:8px}",
-    ".ph:after{content:\"\";position:absolute;left:50%;top:50%;width:0;height:0;border-style:solid;border-width:8px 0 8px 14px;border-color:transparent transparent transparent #ff9000;transform:translate(-30%,-50%)}",
+    ".card{display:block}.ph{position:relative;aspect-ratio:16/9;background:#111;border-radius:8px;overflow:hidden}",
+    ".ph iframe{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none}",
     ".card span{display:block;margin-top:6px;font-size:12px;line-height:1.3;max-height:2.6em;overflow:hidden}",
     "</style></head><body>",
     "<header><a class=\"brand\" href=\"/\"><img src=\"/logo.png\" alt=\"\"><span>DR.<b>PINGUIN</b></span></a><a class=\"back\" href=\"", esc(back), "\">Kembali</a></header>",
@@ -191,7 +203,7 @@ module.exports = async function handler(req, res) {
     }
     const relatedPool = [].concat(putList || [], mumuList || []);
     if (!video) {
-      return send({ title: id, cat: "Putarin", embed: "https://puterin.biz/e/" + id, back: "/putarin", related: pickRelated(relatedPool, id, 8) });
+      return send({ title: id, cat: "Putarin", embed: "https://puterin.biz/e/" + id, back: "/putarin", related: pickRelated(relatedPool, id, 6) });
     }
     const title = cleanTitle(video.title);
     const cat0 = String(video.folder || video.category || "Video");
@@ -222,7 +234,7 @@ module.exports = async function handler(req, res) {
       tall: Boolean(mumu),
       contentUrl: mp4Of(video, id),
       date: String(video.date || "").slice(0, 10),
-      related: pickRelated(relatedPool, id, 8)
+      related: pickRelated(relatedPool, id, 6)
     });
   } catch (e) {
     res.statusCode = 500;
