@@ -7,9 +7,14 @@
     var s = card.querySelector('span');
     return (s && s.textContent || '').trim();
   }
+  function keepIframe(src) {
+    var u = String(src || '').toLowerCase();
+    return u.indexOf('indoav') !== -1 || u.indexOf('userbokep') !== -1;
+  }
   function fixIframe(card) {
     var frame = card.querySelector('iframe');
     if (!frame) return;
+    if (keepIframe(frame.getAttribute('src') || frame.src)) return;
     var title = cardTitle(card);
     var cat = cardCat(card);
     var img = document.createElement('img');
