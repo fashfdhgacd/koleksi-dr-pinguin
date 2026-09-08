@@ -29,6 +29,18 @@ function cleanTitle(s) {
     .replace(/\s+/g, " ")
     .trim() || "Video";
 }
+function seriesKey(s) {
+  return cleanTitle(s)
+    .replace(/s\d{1,2}\s*e\d{1,3}/ig, "")
+    .replace(/episode\s*\d+/ig, "")
+    .replace(/eps?\.?\s*\d+/ig, "")
+    .replace(/part\s*\d+/ig, "")
+    .replace(/\b\d{1,3}\b/g, "")
+    .replace(/[-\u2013\u2014:|]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
 function keyOf(v) {
   const u = String((v && (v.embed || v.direct || v.embedUrl)) || "");
   try {
@@ -67,21 +79,39 @@ function shuffle(arr) {
   }
   return a;
 }
-function pickRelated(list, currentId, n) {
+function pickBucket(list, currentId, usedSeries, n) {
   const BLOCK = /\b(underage|bocil)\b/i;
   const cur = String(currentId || "").toLowerCase();
+  const pool = shuffle(list || []);
   const out = [];
-  const seen = {};
-  (list || []).forEach(function (v) {
+  const seenId = {};
+  for (let i = 0; i < pool.length && out.length < n; i++) {
+    const v = pool[i];
     const id = keyOf(v);
-    if (!id || id.toLowerCase() === cur || seen[id]) return;
-    seen[id] = 1;
+    if (!id || id.toLowerCase() === cur || seenId[id]) continue;
     const title = cleanTitle(v.title);
     const c = String(v.folder || v.category || "");
-    if (BLOCK.test(title + " " + c)) return;
+    if (BLOCK.test(title + " " + c)) continue;
+    const sk = seriesKey(title);
+    if (sk && usedSeries[sk]) continue;
+    seenId[id] = 1;
+    if (sk) usedSeries[sk] = 1;
     out.push({ id: id, title: title, cat: c || "Video", poster: posterOf(v, id) });
-  });
-  return shuffle(out).slice(0, n);
+  }
+  return out;
+}
+function mixRelated(putList, mumuList, vidList, currentId, currentTitle) {
+  const used = {};
+  const curSeries = seriesKey(currentTitle || "");
+  if (curSeries) used[curSeries] = 1;
+  const a = pickBucket(putList, currentId, used, 2);
+  const b = pickBucket(mumuList, currentId, used, 2);
+  const c = pickBucket(vidList, currentId, used, 2);
+  let extra = [];
+  if (a.length + b.length + c.length < 6) {
+    extra = pickBucket([].concat(putList || [], mumuList || [], vidList || []), currentId, used, 6 - (a.length + b.length + c.length));
+  }
+  return shuffle(a.concat(b, c, extra)).slice(0, 6);
 }
 function pageHtml(opts) {
   const title = opts.title;
@@ -196,9 +226,12 @@ module.exports = async function handler(req, res) {
       res.statusCode = 200;
       return res.end(pageHtml(Object.assign({ id: id, page: page }, extra)));
     }
-    const mumuList = await loadJson(base + "mumu.json");
-    const putList = await loadJson(base + "putarin.json");
-    const vidList = await loadJson(base + "videos.json");
+    let mumuList = await loadJson(base + "mumu.json");
+    let putList = await loadJson(base + "putarin.json");
+    let vidList = await loadJson(base + "videos.json");
+    if (!vidList.length) vidList = await loadJson(origin + "/data/videos.json");
+    if (!putList.length) putList = await loadJson(origin + "/data/putarin.json");
+    if (!mumuList.length) mumuList = await loadJson(origin + "/data/mumu.json");
     let pool = mumuList;
     let video = findVideo(pool, id);
     if (!video) {
@@ -209,9 +242,11 @@ module.exports = async function handler(req, res) {
       pool = vidList;
       video = findVideo(pool, id);
     }
-    const relatedPool = [].concat(putList || [], mumuList || [], vidList || []);
+    const relatedOf = function (title) {
+      return mixRelated(putList, mumuList, vidList, id, title);
+    };
     if (!video) {
-      return send({ title: id, cat: "Putarin", embed: "https://puterin.biz/e/" + id, back: "/putarin", related: pickRelated(relatedPool, id, 6) });
+      return send({ title: id, cat: "Putarin", embed: "https://puterin.biz/e/" + id, back: "/putarin", related: relatedOf(id) });
     }
     const title = cleanTitle(video.title);
     const cat0 = String(video.folder || video.category || "Video");
@@ -242,7 +277,7 @@ module.exports = async function handler(req, res) {
       tall: Boolean(mumu),
       contentUrl: mp4Of(video, id),
       date: String(video.date || "").slice(0, 10),
-      related: pickRelated(relatedPool, id, 6)
+      related: relatedOf(title)
     });
   } catch (e) {
     res.statusCode = 500;
