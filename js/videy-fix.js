@@ -26,13 +26,27 @@
     if (id.length === 9 && id.charAt(8) === '2') return [a, b];
     return [b, a];
   }
+  function stopNative() {
+    var vid = document.getElementById('modalNativeVideo');
+    if (!vid) return;
+    try { vid.pause(); } catch (e) {}
+    vid.removeAttribute('src');
+    vid.removeAttribute('data-id');
+    vid.load();
+    vid.style.display = 'none';
+  }
   function apply() {
     var iframe = document.getElementById('modalIframe');
     var frame = document.querySelector('#videoModal .player-frame');
     if (!iframe || !frame) return;
     var src = iframe.getAttribute('data-orig') || iframe.getAttribute('src') || iframe.src || '';
     var id = videyId(src);
-    if (!id) return;
+    if (!id) {
+      iframe.removeAttribute('data-orig');
+      iframe.style.display = '';
+      stopNative();
+      return;
+    }
     iframe.setAttribute('data-orig', src);
     var list = candidates(id);
     var vid = document.getElementById('modalNativeVideo');
@@ -68,7 +82,13 @@
     if (modal && !modal.__videyObs) {
       modal.__videyObs = true;
       new MutationObserver(function () {
-        if (!modal.classList.contains('hidden')) setTimeout(apply, 40);
+        if (modal.classList.contains('hidden')) {
+          stopNative();
+          var iframe2 = document.getElementById('modalIframe');
+          if (iframe2) iframe2.removeAttribute('data-orig');
+        } else {
+          setTimeout(apply, 40);
+        }
       }).observe(modal, { attributes: true, attributeFilter: ['class'] });
     }
   }
