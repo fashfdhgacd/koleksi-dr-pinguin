@@ -28,5 +28,8 @@
     var m = document.createElement('script');
     m.src = '/js/modal-share.js?t=' + Date.now();
     document.body.appendChild(m);
+    var t = document.createElement('script');
+    t.src = '/js/thumb-fix.js?v=1';
+    document.body.appendChild(t);
   }
 })();
