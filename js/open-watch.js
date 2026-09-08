@@ -17,24 +17,37 @@
     }
   }
   function go(id) {
-    if (!id) return;
+    if (!id || window.__goingWatch) return;
+    window.__goingWatch = true;
     location.href = '/v/' + encodeURIComponent(id);
   }
-  function hookModal() {
-    var modal = document.getElementById('videoModal');
-    if (!modal || modal.__watchHook) return;
-    modal.__watchHook = true;
-    new MutationObserver(function () {
-      if (!isCompact()) return;
-      if (modal.classList.contains('hidden')) return;
-      var iframe = document.getElementById('modalIframe');
-      var native = document.getElementById('modalNativeVideo');
-      var src = (iframe && (iframe.getAttribute('src') || iframe.src)) || (native && (native.currentSrc || native.src)) || '';
-      var id = keyFrom(src);
-      if (id) go(id);
-    }).observe(modal, { attributes: true, attributeFilter: ['class'] });
+  function currentSrc() {
+    var iframe = document.getElementById('modalIframe');
+    var native = document.getElementById('modalNativeVideo');
+    return (iframe && (iframe.getAttribute('src') || iframe.src)) || (native && (native.currentSrc || native.src)) || '';
   }
-  hookModal();
-  setTimeout(hookModal, 400);
-  setTimeout(hookModal, 1500);
+  function tryGo() {
+    if (!isCompact()) return;
+    var modal = document.getElementById('videoModal');
+    if (!modal || modal.classList.contains('hidden')) return;
+    var id = keyFrom(currentSrc());
+    if (id) go(id);
+  }
+  function hook() {
+    var modal = document.getElementById('videoModal');
+    var iframe = document.getElementById('modalIframe');
+    if (modal && !modal.__watchHook) {
+      modal.__watchHook = true;
+      new MutationObserver(tryGo).observe(modal, { attributes: true, attributeFilter: ['class'] });
+    }
+    if (iframe && !iframe.__watchHook) {
+      iframe.__watchHook = true;
+      new MutationObserver(tryGo).observe(iframe, { attributes: true, attributeFilter: ['src'] });
+    }
+    tryGo();
+  }
+  hook();
+  setInterval(hook, 250);
+  setTimeout(hook, 80);
+  setTimeout(hook, 400);
 })();

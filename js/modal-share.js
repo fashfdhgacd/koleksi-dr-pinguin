@@ -1,13 +1,17 @@
 (function () {
   if (window.__modalShare) return;
   window.__modalShare = true;
-  var list = [];
+  var putList = [];
+  var mumuList = [];
+  var vidList = [];
   Promise.all([
     fetch('/data/videos.json').then(function (r) { return r.json(); }).catch(function () { return []; }),
     fetch('/data/putarin.json').then(function (r) { return r.json(); }).catch(function () { return []; }),
     fetch('/data/mumu.json').then(function (r) { return r.json(); }).catch(function () { return []; })
   ]).then(function (arr) {
-    list = [].concat(arr[1] || [], arr[2] || [], arr[0] || []);
+    vidList = arr[0] || [];
+    putList = arr[1] || [];
+    mumuList = arr[2] || [];
   });
   if (!document.getElementById('modalShareCss')) {
     var css = document.createElement('style');
@@ -15,8 +19,7 @@
     css.textContent = [
       '@media(max-width:1024px){',
       '#videoModal .player-stage{flex:0 0 auto!important;padding:0!important;background:#000!important}',
-      '#videoModal .player-frame{aspect-ratio:16/9;width:100%;max-height:none;border-radius:0}',
-      '#videoModal .player-shell{background:#0f0f0f}',
+      '#videoModal .player-frame{aspect-ratio:16/9;width:100%}',
       '#modalShareMobile,#modalOpenExternalMobile,#modalShare{display:none!important}',
       '#modalShareBar{display:grid!important;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;padding:10px 12px!important;border-top:1px solid #272727;background:#0f0f0f}',
       '#modalShareBar a,#modalShareBar button{height:40px!important;width:100%!important;padding:0!important;border-radius:10px!important;font-size:12px!important}',
@@ -26,8 +29,6 @@
     ].join('');
     document.head.appendChild(css);
   }
-  function isPhone() { return window.innerWidth < 600; }
-  function showNext() { return window.innerWidth <= 1024; }
   function cleanTitle(s) {
     return String(s || 'Video')
       .replace(/\(Koleksi[^)]*Pinguin[^)]*\)/ig, '')
@@ -37,6 +38,18 @@
       .replace(/[<>]/g, '')
       .replace(/\s+/g, ' ')
       .trim();
+  }
+  function seriesKey(s) {
+    return cleanTitle(s)
+      .replace(/s\d{1,2}\s*e\d{1,3}/ig, '')
+      .replace(/episode\s*\d+/ig, '')
+      .replace(/eps?\.?\s*\d+/ig, '')
+      .replace(/part\s*\d+/ig, '')
+      .replace(/\b\d{1,3}\b/g, '')
+      .replace(/[-\u2013\u2014:|]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
   }
   function keyFromEmbed(u) {
     if (!u || u === 'about:blank') return '';
@@ -50,18 +63,6 @@
       return '';
     }
   }
-  function toVideyMp4(url) {
-    if (!url) return '';
-    try {
-      var u = new URL(url, location.origin);
-      if (u.hostname.indexOf('cdn.videy.co') !== -1 && /\.(mp4|mov)($|\?)/i.test(u.pathname)) return url;
-      if (u.hostname.indexOf('videy.co') !== -1) {
-        var id = u.searchParams.get('id');
-        if (id) return 'https://cdn.videy.co/' + id + ((id.length === 9 && id[8] === '2') ? '.mov' : '.mp4');
-      }
-    } catch (e) {}
-    return '';
-  }
   function posterOf(v) {
     var raw = String((v && (v.embed || v.direct || v.embedUrl)) || '');
     var id = keyFromEmbed(raw);
@@ -69,39 +70,39 @@
     if (/putarin|puterin/i.test(raw + ' ' + (v.source || '') + ' ' + (v.category || ''))) return '/api/poster?id=' + encodeURIComponent(id);
     return v.thumb || v.thumbnail || v.poster || '';
   }
-  function norm(s) { return cleanTitle(s).toLowerCase(); }
-  function info() {
-    var title = cleanTitle(((document.getElementById('modalTitle') || {}).textContent || '').trim());
-    var iframe = document.getElementById('modalIframe');
-    var native = document.getElementById('modalNativeVideo');
-    var src = (iframe && iframe.getAttribute('src')) || (native && native.currentSrc) || (native && native.src) || '';
-    var key = keyFromEmbed(src);
-    var page = location.origin + '/v/' + encodeURIComponent(key || title || '');
-    return { title: title, page: page, src: src };
+  function shuffle(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+  function pickBucket(list, currentTitle, used, n) {
+    var cur = seriesKey(currentTitle);
+    var pool = shuffle(list || []);
+    var out = [];
+    for (var i = 0; i < pool.length && out.length < n; i++) {
+      var v = pool[i];
+      var title = cleanTitle(v.title);
+      var sk = seriesKey(title);
+      if (!title || (cur && sk === cur) || (sk && used[sk])) continue;
+      if (sk) used[sk] = 1;
+      out.push(v);
+    }
+    return out;
   }
   function nextVideos() {
     var title = cleanTitle(((document.getElementById('modalTitle') || {}).textContent || '').trim());
-    var cat = ((document.getElementById('modalMeta') || {}).textContent || '').trim().toLowerCase();
-    var pool = list.filter(function (v) {
-      var raw = String(v.embed || v.direct || v.source || '');
-      return /putarin|puterin|mumu\.watch/i.test(raw + ' ' + (v.category || '') + ' ' + (v.source || ''));
-    });
-    if (!pool.length) pool = list.slice();
-    var same = pool.filter(function (v) {
-      return String(v.category || '').toLowerCase() === cat && norm(v.title) !== norm(title);
-    });
-    if (same.length < 3) same = pool.filter(function (v) { return norm(v.title) !== norm(title); });
-    var seed = title.length + cat.length;
-    same = same.slice().sort(function (a, b) {
-      return ((String(a.title).length + seed) % 17) - ((String(b.title).length + seed) % 17);
-    });
-    return same.slice(0, isPhone() ? 4 : 6);
+    var used = {};
+    var a = pickBucket(putList, title, used, 2);
+    var b = pickBucket(mumuList, title, used, 2);
+    var c = pickBucket(vidList, title, used, 2);
+    return shuffle(a.concat(b, c)).slice(0, 6);
   }
   function previewHtml(v) {
     var th = posterOf(v);
-    var mp4 = toVideyMp4(v.direct || v.embed || '');
     if (th) return '<img src="' + th + '" alt="" style="width:100%;height:100%;object-fit:cover">';
-    if (mp4) return '<video src="' + mp4 + '" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover"></video>';
     return '';
   }
   function hideOldMobileShare() {
@@ -110,12 +111,18 @@
   }
   function playVideo(v) {
     if (!v) return;
+    var raw = String(v.embed || v.direct || '');
+    var id = keyFromEmbed(raw);
+    if (id && window.innerWidth <= 1024) {
+      location.href = '/v/' + encodeURIComponent(id);
+      return;
+    }
     var titleEl = document.getElementById('modalTitle');
     var metaEl = document.getElementById('modalMeta');
     var iframe = document.getElementById('modalIframe');
     if (titleEl) titleEl.textContent = cleanTitle(v.title || '');
     if (metaEl) metaEl.textContent = v.category || '';
-    if (iframe) iframe.src = v.embed || v.direct || '';
+    if (iframe) iframe.src = raw;
     setTimeout(draw, 80);
   }
   function rowHtml(v, idx) {
@@ -130,7 +137,7 @@
       box.id = 'modalNextCard';
       shell.appendChild(box);
     }
-    if (!showNext()) {
+    if (window.innerWidth > 1024) {
       box.innerHTML = '';
       return;
     }
@@ -157,10 +164,14 @@
       bar.id = 'modalShareBar';
       shell.appendChild(bar);
     }
-    var x = info();
-    var t = encodeURIComponent(x.title);
-    var u = encodeURIComponent(x.page);
-    var txt = encodeURIComponent(x.title + '\n' + x.page);
+    var iframe = document.getElementById('modalIframe');
+    var src = (iframe && (iframe.getAttribute('src') || iframe.src)) || '';
+    var key = keyFromEmbed(src);
+    var title = cleanTitle(((document.getElementById('modalTitle') || {}).textContent || '').trim());
+    var page = location.origin + '/v/' + encodeURIComponent(key || title || '');
+    var t = encodeURIComponent(title);
+    var u = encodeURIComponent(page);
+    var txt = encodeURIComponent(title + '\n' + page);
     bar.innerHTML =
       '<a href="https://wa.me/?text=' + txt + '" target="_blank" rel="noopener" style="background:#ff9000;color:#111;display:flex;align-items:center;justify-content:center;text-decoration:none;font-weight:700">WA</a>' +
       '<a href="https://t.me/share/url?url=' + u + '&text=' + t + '" target="_blank" rel="noopener" style="background:#272727;color:#fff;display:flex;align-items:center;justify-content:center;text-decoration:none;font-weight:700">Tele</a>' +
@@ -168,7 +179,7 @@
       '<button type="button" id="modalCopyLink" style="background:#272727;color:#fff;font-weight:700">Salin</button>';
     var c = document.getElementById('modalCopyLink');
     if (c) c.onclick = function () {
-      navigator.clipboard.writeText(x.page).then(function () {
+      navigator.clipboard.writeText(page).then(function () {
         c.textContent = 'Tersalin';
         setTimeout(function () { c.textContent = 'Salin'; }, 1200);
       });
