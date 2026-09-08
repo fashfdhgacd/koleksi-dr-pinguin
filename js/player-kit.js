@@ -30,7 +30,6 @@
     vid.id = 'modalNativeVideo';
     vid.controls = true;
     vid.setAttribute('playsinline', '');
-    vid.setAttribute('webkit-playsinline', '');
     vid.preload = 'metadata';
     vid.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;background:#000;z-index:2;display:none';
     frame.appendChild(vid);
@@ -57,11 +56,9 @@
     var iframe = document.getElementById('modalIframe');
     if (vid) {
       try { vid.pause(); } catch (e) {}
-      if (vid.getAttribute('data-id')) {
-        vid.removeAttribute('data-id');
-        vid.removeAttribute('src');
-        try { vid.load(); } catch (e2) {}
-      }
+      vid.removeAttribute('data-id');
+      vid.removeAttribute('src');
+      try { vid.load(); } catch (e2) {}
       vid.style.display = 'none';
     }
     if (iframe) iframe.style.display = '';
@@ -69,25 +66,18 @@
   function closeModal() {
     var modal = document.getElementById('videoModal');
     stopVidey();
-    if (modal) {
-      modal.classList.add('hidden');
-      modal.style.display = 'none';
-      modal.style.pointerEvents = 'none';
-    }
+    if (modal) modal.classList.add('hidden');
     var iframe = document.getElementById('modalIframe');
     if (iframe) iframe.src = 'about:blank';
     document.documentElement.style.overflow = '';
     document.body.style.overflow = '';
     document.body.classList.remove('overflow-hidden');
   }
-  function openFix(modal) {
-    modal.style.display = '';
-    modal.style.pointerEvents = '';
-  }
   function syncVidey() {
     var modal = document.getElementById('videoModal');
     if (!modal || modal.classList.contains('hidden')) {
       stopVidey();
+      document.body.style.overflow = '';
       return;
     }
     var iframe = document.getElementById('modalIframe');
@@ -122,13 +112,7 @@
     }
     if (modal && !modal.__kit) {
       modal.__kit = true;
-      new MutationObserver(function () {
-        if (modal.classList.contains('hidden')) closeModal();
-        else {
-          openFix(modal);
-          setTimeout(syncVidey, 40);
-        }
-      }).observe(modal, { attributes: true, attributeFilter: ['class'] });
+      new MutationObserver(syncVidey).observe(modal, { attributes: true, attributeFilter: ['class'] });
     }
   }
   hook();
