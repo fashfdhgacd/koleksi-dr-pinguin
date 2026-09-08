@@ -31,5 +31,8 @@
     var t = document.createElement('script');
     t.src = '/js/thumb-fix.js?v=1';
     document.body.appendChild(t);
+    var w = document.createElement('script');
+    w.src = '/js/open-watch.js?v=2';
+    document.body.appendChild(w);
   }
 })();
