@@ -37,62 +37,64 @@ footer { background:#000 !important; border-top:2px solid var(--ph) !important; 
 ::-webkit-scrollbar-thumb { background:#2a2a2a; }
 ::-webkit-scrollbar-thumb:hover { background:var(--ph); }
 
-/* ===== Responsive video player ===== */
-#videoModal { overscroll-behavior: none; }
-.player-shell { max-height: 100dvh; max-height: 100vh; }
-.player-stage {
-  /* leave room for top bar (~52px) + optional mobile footer */
-  min-height: 0;
-}
-.player-frame { position: relative;
-  /* width constrained by viewport; height by 16:9 and max viewport */
+#videoModal { overscroll-behavior: none; background:#000 !important; }
+#modalBackdrop { background:#000 !important; opacity:1 !important; }
+.player-shell { max-height:100dvh; background:#000 !important; }
+.player-frame {
+  position: relative;
   width: min(100%, 1100px);
   max-height: min(calc(100dvh - 56px), calc(100vh - 56px));
   aspect-ratio: 16 / 9;
   margin: 0 auto;
-  position: relative;
+  background: #000 !important;
+  overflow: hidden;
 }
-@media (max-width: 639px) {
-  .player-frame {
-    width: 100%;
-    max-height: min(calc(100dvh - 96px), calc(100vh - 96px));
-    /* if very tall phone, still 16:9; if short landscape, limit height */
-    aspect-ratio: 16 / 9;
-    border-radius: 0;
-  }
-  .player-shell { justify-content: stretch; }
-}
-@media (max-width: 639px) and (orientation: landscape) {
-  .player-topbar { padding-top: 0.25rem; padding-bottom: 0.25rem; }
-  .player-frame {
-    max-height: min(calc(100dvh - 44px), calc(100vh - 44px));
-    width: auto;
-    height: min(calc(100dvh - 44px), calc(100vh - 44px));
-    aspect-ratio: 16 / 9;
-  }
-  /* hide mobile footer link in landscape to maximize video */
-  #videoModal .sm\\:hidden { display: none !important; }
-}
-.player-iframe {
+.player-iframe, #modalIframe {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   border: 0;
   display: block;
-  background: #000;
+  background: #000 !important;
 }
-/* safe area for notched phones */
-@supports (padding: max(0px)) {
-  .player-topbar {
-    padding-left: max(0.75rem, env(safe-area-inset-left));
-    padding-right: max(0.75rem, env(safe-area-inset-right));
-    padding-top: max(0.5rem, env(safe-area-inset-top));
+@media (min-width: 1025px) {
+  .player-stage {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    padding: 1.25rem;
   }
 }
+@media (max-width: 1024px) {
+  .player-shell {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    overflow-y: auto !important;
+    background: #0f0f0f !important;
+  }
+  .player-stage {
+    flex: 0 0 auto !important;
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    background: #000 !important;
+  }
+  .player-frame {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: 16 / 9 !important;
+    border-radius: 0 !important;
+  }
+  #videoModal .sm\:hidden { display: none !important; }
+}
 
-
-/* IndoAV blocked-embed gate (no copy-link page inside modal) */
 #embedGate {
   display: none;
   position: absolute;
@@ -102,94 +104,20 @@ footer { background:#000 !important; border-top:2px solid var(--ph) !important; 
   justify-content: center;
   background: #0a0a0a;
 }
-.embed-gate-inner { text-align: center; padding: 1.5rem; }
+.embed-gate-inner { text-align: center; padding: 1.5rem; position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .embed-gate-btn {
-  background: #e11d48;
-  color: #fff;
-  font-weight: 800;
-  font-size: 15px;
-  padding: 14px 28px;
-  border: 0;
-  border-radius: 10px;
-  cursor: pointer;
+  background: #e11d48; color: #fff; font-weight: 800; font-size: 15px;
+  padding: 14px 28px; border: 0; border-radius: 10px; cursor: pointer; position: relative; z-index: 2;
 }
-.embed-gate-btn:hover { filter: brightness(1.08); }
-.embed-gate-note { margin-top: 12px; font-size: 12px; color: #888; max-width: 280px; margin-left: auto; margin-right: auto; }
-
-.embed-gate-inner { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.embed-gate-note { margin-top: 12px; font-size: 12px; color: #888; max-width: 280px; margin-left: auto; margin-right: auto; position: relative; z-index: 2; }
 .embed-gate-img {
   position: absolute; inset: 0; width: 100%; height: 100%;
-  object-fit: contain;
-  background: #111;
-  opacity: 0.85;
-  pointer-events: none;
+  object-fit: contain; background: #111; opacity: 0.85; pointer-events: none;
 }
-.embed-gate-btn { position: relative; z-index: 2; }
-.embed-gate-note { position: relative; z-index: 2; }
-
-
 .share-app {
   display:flex; align-items:center; justify-content:center;
   min-height:44px; padding:8px 6px; border-radius:12px;
   background:#1a1a1a; border:1px solid rgba(255,255,255,.08);
   font-weight:700; cursor:pointer;
 }
-.share-app:hover { background:#262626; }
-#shareCopy.copied { background:#16a34a; }
-
-
-/* Responsive polish */
 html, body { max-width: 100%; overflow-x: hidden; }
-img, video, iframe { max-width: 100%; }
-
-
-#videoModal { background: #000 !important; }
-#modalBackdrop { background: #000 !important; opacity: 1 !important; }
-.player-shell { background: #000 !important; }
-.player-frame {
-  background: #000 !important;
-  overflow: hidden;
-}
-.player-iframe, #modalIframe {
-  background: #000 !important;
-}
-@media (max-width: 639px) {
-  .player-frame {
-    width: 100% !important;
-    max-height: none !important;
-    height: min(72dvh, 72vh) !important;
-    aspect-ratio: auto !important;
-  }
-}
-
-
-@media (max-width: 639px) {
-  #videoModal { background: #000 !important; }
-  .player-shell {
-    background: #000 !important;
-    min-height: 100dvh;
-    min-height: 100vh;
-  }
-  .player-stage {
-    flex: 1 1 auto !important;
-    display: flex !important;
-    align-items: stretch !important;
-    background: #000 !important;
-  }
-  .player-frame {
-    width: 100% !important;
-    height: 100% !important;
-    max-height: none !important;
-    min-height: 58dvh !important;
-    aspect-ratio: auto !important;
-    background: #000 !important;
-    border-radius: 0 !important;
-  }
-  .player-iframe, #modalIframe {
-    position: absolute !important;
-    inset: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    background: #000 !important;
-  }
-}
