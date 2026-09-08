@@ -27,7 +27,8 @@ module.exports = async function handler(req, res) {
       const id = keyOf(v);
       if (!id || seen.has(id)) return;
       seen.add(id);
-      urls.push(origin + "/v/" + encodeURIComponent(id));
+      const lm = String(v.date || "").slice(0, 10);
+      urls.push({ loc: origin + "/v/" + encodeURIComponent(id), lastmod: lm });
     });
     const chunks = [];
     for (let i = 0; i < urls.length; i += 10000) chunks.push(urls.slice(i, i + 10000));
@@ -47,7 +48,11 @@ module.exports = async function handler(req, res) {
     const slice = chunks[part - 1] || [];
     let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
     slice.forEach((u) => {
-      xml += "<url><loc>" + u + "</loc><changefreq>weekly</changefreq></url>\n";
+      const loc = typeof u === "string" ? u : u.loc;
+      const lm = typeof u === "string" ? "" : u.lastmod;
+      xml += "<url><loc>" + loc + "</loc>";
+      if (lm) xml += "<lastmod>" + lm + "</lastmod>";
+      xml += "<changefreq>weekly</changefreq></url>\n";
     });
     xml += "</urlset>";
     return res.status(200).send(xml);
