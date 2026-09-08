@@ -7,6 +7,7 @@ module.exports = async function handler(req, res) {
     const rr = await fetch(
       "https://raw.githubusercontent.com/" + owner + "/" + repo + "/main/data/videos.json"
     );
+    if (!rr.ok) throw new Error("videos.json " + rr.status);
     const list = await rr.json();
     const BLOCK = /\b(underage|bocil)\b/i;
     function keyOf(v) {
@@ -30,33 +31,19 @@ module.exports = async function handler(req, res) {
       const lm = String(v.date || "").slice(0, 10);
       urls.push({ loc: origin + "/v/" + encodeURIComponent(id), lastmod: lm });
     });
-    const chunks = [];
-    for (let i = 0; i < urls.length; i += 10000) chunks.push(urls.slice(i, i + 10000));
-    const type = String((req.query && req.query.part) || "");
     res.setHeader("Content-Type", "application/xml; charset=utf-8");
-    res.setHeader("Cache-Control", "public, s-maxage=3600");
-    if (!type) {
-      let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
-      xml += "<sitemap><loc>" + origin + "/sitemap.xml</loc></sitemap>\n";
-      chunks.forEach((_, i) => {
-        xml += "<sitemap><loc>" + origin + "/sitemap-v.xml?part=" + (i + 1) + "</loc></sitemap>\n";
-      });
-      xml += "</sitemapindex>";
-      return res.status(200).send(xml);
-    }
-    const part = Math.max(1, parseInt(type, 10) || 1);
-    const slice = chunks[part - 1] || [];
-    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
-    slice.forEach((u) => {
-      const loc = typeof u === "string" ? u : u.loc;
-      const lm = typeof u === "string" ? "" : u.lastmod;
-      xml += "<url><loc>" + loc + "</loc>";
-      if (lm) xml += "<lastmod>" + lm + "</lastmod>";
+    res.setHeader("Cache-Control", "public, s-maxage=1800");
+    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+    urls.forEach((u) => {
+      xml += "<url><loc>" + u.loc + "</loc>";
+      if (u.lastmod) xml += "<lastmod>" + u.lastmod + "</lastmod>";
       xml += "<changefreq>weekly</changefreq></url>\n";
     });
     xml += "</urlset>";
     return res.status(200).send(xml);
   } catch (e) {
+    console.error(e);
     res.status(500).send("sitemap error");
   }
 };

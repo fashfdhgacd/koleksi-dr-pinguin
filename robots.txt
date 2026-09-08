@@ -5,6 +5,8 @@ Allow: /putarin
 Allow: /mumu
 Allow: /sitemap.xml
 Allow: /sitemap-v.xml
+Allow: /api/sitemap-v
+Allow: /api/thumb
 Disallow: /admin.html
 Disallow: /api/
 
