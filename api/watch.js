@@ -96,7 +96,8 @@ function pickBucket(list, currentId, usedSeries, n) {
     if (sk && usedSeries[sk]) continue;
     seenId[id] = 1;
     if (sk) usedSeries[sk] = 1;
-    out.push({ id: id, title: title, cat: c || "Video", poster: posterOf(v, id) });
+    const raw = String(v.embed || v.direct || v.embedUrl || "").replace("/d/", "/e/");
+    out.push({ id: id, title: title, cat: c || "Video", poster: posterOf(v, id), embed: raw, mp4: mp4Of(v, id) });
   }
   return out;
 }
@@ -144,10 +145,11 @@ function pageHtml(opts) {
     ? "<video controls playsinline preload=\"metadata\" src=\"" + esc(mp4) + "\"></video>"
     : "<iframe src=\"" + esc(embed) + "\" allow=\"autoplay;encrypted-media;fullscreen\" allowfullscreen referrerpolicy=\"origin\"></iframe>";
   const relHtml = related.map(function (r) {
-    const img = r.poster
-      ? "<img src=\"" + esc(r.poster) + "\" alt=\"\" loading=\"lazy\">"
-      : "";
-    return "<a class=\"card\" href=\"/v/" + encodeURIComponent(r.id) + "\"><div class=\"ph\">" + img + "</div><span>" + esc(r.title) + "</span></a>";
+    var media = "";
+    if (r.poster) media = "<img src=\"" + esc(r.poster) + "\" alt=\"\" loading=\"lazy\">";
+    else if (r.mp4) media = "<video src=\"" + esc(r.mp4) + "\" muted playsinline preload=\"metadata\"></video>";
+    else if (r.embed) media = "<iframe src=\"" + esc(r.embed) + "\" loading=\"lazy\" tabindex=\"-1\"></iframe>";
+    return "<a class=\"card\" href=\"/v/" + encodeURIComponent(r.id) + "\"><div class=\"ph\">" + media + "</div><span>" + esc(r.title) + "</span></a>";
   }).join("");
   return [
     "<!DOCTYPE html><html lang=\"id\"><head><meta charset=\"utf-8\">",
@@ -174,8 +176,7 @@ function pageHtml(opts) {
     ".rel{padding:4px 12px 28px}.rel h2{margin:0 0 10px;font-size:12px;color:#888;font-weight:700;letter-spacing:.06em}",
     ".grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 8px}",
     ".card{display:block}.ph{position:relative;aspect-ratio:16/9;background:#1c1c1c;border-radius:8px;overflow:hidden}",
-    ".ph:empty:after{content:\"\";position:absolute;left:50%;top:50%;width:0;height:0;border-style:solid;border-width:8px 0 8px 14px;border-color:transparent transparent transparent #ff9000;transform:translate(-30%,-50%)}",
-    ".ph img{width:100%;height:100%;object-fit:cover;display:block}",
+    ".ph img,.ph iframe,.ph video{position:absolute;inset:0;width:100%;height:100%;border:0;object-fit:cover;pointer-events:none}",
     ".card span{display:block;margin-top:6px;font-size:12px;line-height:1.3;max-height:2.6em;overflow:hidden}",
     "</style></head><body>",
     "<header><a class=\"brand\" href=\"/\"><img src=\"/logo.png\" alt=\"\"><span>DR.<b>PINGUIN</b></span></a><a class=\"back\" href=\"", esc(back), "\">Kembali</a></header>",
