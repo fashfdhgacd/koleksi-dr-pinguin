@@ -59,6 +59,26 @@ function posterOf(v, id) {
   if (isPutarinBlob(blob)) return "/api/poster?id=" + encodeURIComponent(code);
   return "";
 }
+function shuffle(arr, seed) {
+  const a = arr.slice();
+  let s = seed || 1;
+  for (let i = a.length - 1; i > 0; i--) {
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+    const j = s % (i + 1);
+    const t = a[i];
+    a[i] = a[j];
+    a[j] = t;
+  }
+  return a;
+}
+function seedOf(id) {
+  let h = 2166136261;
+  String(id || "x").split("").forEach(function (ch) {
+    h ^= ch.charCodeAt(0);
+    h = Math.imul(h, 16777619);
+  });
+  return h >>> 0;
+}
 function pickRelated(list, currentId, n) {
   const BLOCK = /\b(underage|bocil)\b/i;
   const cur = String(currentId || "").toLowerCase();
@@ -75,7 +95,7 @@ function pickRelated(list, currentId, n) {
     if (BLOCK.test(title + " " + c)) return;
     out.push({ id: id, title: title, cat: c || "Video", poster: posterOf(v, id) });
   });
-  return out.slice(0, n);
+  return shuffle(out, seedOf(cur)).slice(0, n);
 }
 function pageHtml(opts) {
   const title = opts.title;
