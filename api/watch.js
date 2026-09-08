@@ -22,6 +22,8 @@ function cleanTitle(s) {
     .replace(/\(Koleksi[^)]*Pinguin[^)]*\)/ig, "")
     .replace(/Koleksi Dr\.?\s*Pinguin[^\n]*/ig, "")
     .replace(/Dr\.?\s*Pinguin Bokep,?\s*M\.?S\.?B\.?/ig, "")
+    .replace(/\s*[-|\u2013\u2014]\s*koleksidrpinguin\.com/ig, "")
+    .replace(/koleksidrpinguin\.com/ig, "")
     .replace(/\s*[-|\u2013\u2014]\s*$/g, "")
     .replace(/_/g, " ")
     .replace(/\s+/g, " ")
@@ -75,11 +77,11 @@ function pageHtml(opts) {
   const tall = Boolean(opts.tall);
   const related = Array.isArray(opts.related) ? opts.related : [];
   const origin = String(page || "https://koleksidrpinguin.com").split("/v/")[0] || "https://koleksidrpinguin.com";
-  const thumb = origin + "/api/thumb?title=" + encodeURIComponent(title || "Video") + "&cat=" + encodeURIComponent(cat || "Video");
+  const thumb = origin + "/logo.png";
   const t = encodeURIComponent(title || "");
   const u = encodeURIComponent(page || "");
   const txt = encodeURIComponent((title || "") + "\n" + (page || ""));
-  const desc = (title + " - " + cat + " | koleksidrpinguin.com. 18+.").slice(0, 160);
+  const desc = (title + " - " + cat + " | 18+.").slice(0, 160);
   const ld = {
     "@context": "https://schema.org",
     "@type": "VideoObject",
@@ -98,9 +100,7 @@ function pageHtml(opts) {
     ? "<video controls playsinline preload=\"metadata\" src=\"" + esc(mp4) + "\"></video>"
     : "<iframe src=\"" + esc(embed) + "\" allow=\"autoplay;encrypted-media;fullscreen\" allowfullscreen referrerpolicy=\"origin\"></iframe>";
   const relHtml = related.map(function (r) {
-    const href = "/v/" + encodeURIComponent(r.id);
-    const img = "/api/thumb?title=" + encodeURIComponent(r.title) + "&cat=" + encodeURIComponent(r.cat || "");
-    return "<a class=\"card\" href=\"" + href + "\"><img src=\"" + esc(img) + "\" alt=\"\"><span>" + esc(r.title) + "</span></a>";
+    return "<a class=\"card\" href=\"/v/" + encodeURIComponent(r.id) + "\"><div class=\"ph\"></div><span>" + esc(r.title) + "</span></a>";
   }).join("");
   return [
     "<!DOCTYPE html><html lang=\"id\"><head><meta charset=\"utf-8\">",
@@ -109,13 +109,11 @@ function pageHtml(opts) {
     "<meta name=\"description\" content=\"", esc(desc), "\">",
     "<meta name=\"robots\" content=\"index,follow\"><meta name=\"rating\" content=\"adult\">",
     "<link rel=\"canonical\" href=\"", esc(page), "\">",
-    "<meta property=\"og:title\" content=\"", esc(title), "\">",
-    "<meta property=\"og:image\" content=\"", esc(thumb), "\">",
     "<script type=\"application/ld+json\">", JSON.stringify(ld), "</script>",
     "<style>",
     "*{box-sizing:border-box}html,body{margin:0;background:#0f0f0f;color:#f1f1f1;font-family:Roboto,system-ui,sans-serif}",
     "a{color:#fff;text-decoration:none}button{font:inherit;background:0;border:0;color:#fff}",
-    "header{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:#0f0f0f}",
+    "header{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 12px}",
     ".brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:14px}.brand img{width:22px;height:22px;border-radius:4px}.brand b{color:#ff9000}",
     ".back{font-size:13px;color:#aaa}",
     ".player{position:relative;width:100%;aspect-ratio:16/9;background:#000}",
@@ -126,9 +124,10 @@ function pageHtml(opts) {
     ".acts{display:flex;gap:6px;padding:6px 12px 10px;overflow:auto}",
     ".acts a,.acts button{flex:0 0 auto;height:32px;padding:0 11px;border-radius:16px;background:#272727;font-size:12px;font-weight:600}",
     ".acts .wa{background:#ff9000;color:#111}",
-    ".rel{padding:8px 12px 28px}.rel h2{margin:0 0 10px;font-size:13px;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:.04em}",
-    ".grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}",
-    ".card{display:block}.card img{width:100%;aspect-ratio:16/9;object-fit:cover;background:#1a1a1a;border-radius:8px;display:block}",
+    ".rel{padding:4px 12px 28px}.rel h2{margin:0 0 10px;font-size:12px;color:#888;font-weight:700;letter-spacing:.06em}",
+    ".grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 8px}",
+    ".card{display:block}.ph{position:relative;aspect-ratio:16/9;background:#1c1c1c;border-radius:8px}",
+    ".ph:after{content:\"\";position:absolute;left:50%;top:50%;width:0;height:0;border-style:solid;border-width:8px 0 8px 14px;border-color:transparent transparent transparent #ff9000;transform:translate(-30%,-50%)}",
     ".card span{display:block;margin-top:6px;font-size:12px;line-height:1.3;max-height:2.6em;overflow:hidden}",
     "</style></head><body>",
     "<header><a class=\"brand\" href=\"/\"><img src=\"/logo.png\" alt=\"\"><span>DR.<b>PINGUIN</b></span></a><a class=\"back\" href=\"", esc(back), "\">Kembali</a></header>",
@@ -138,7 +137,7 @@ function pageHtml(opts) {
     "<a href=\"https://t.me/share/url?url=", u, "&text=", t, "\">Telegram</a>",
     "<a href=\"https://x.com/intent/post?text=", txt, "\">X</a>",
     "<button type=\"button\" id=\"btnCopy\">Salin</button></div>",
-    related.length ? "<div class=\"rel\"><h2>Berikutnya</h2><div class=\"grid\">" + relHtml + "</div></div>" : "",
+    related.length ? "<div class=\"rel\"><h2>BERIKUTNYA</h2><div class=\"grid\">" + relHtml + "</div></div>" : "",
     "<script>var PAGE=", JSON.stringify(page), ";var b=document.getElementById('btnCopy');if(b)b.onclick=function(){navigator.clipboard.writeText(PAGE).then(function(){b.textContent='Tersalin';});};</script>",
     "</body></html>"
   ].join("");
