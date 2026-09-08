@@ -17,6 +17,16 @@ function esc(s) {
     return "&#39;";
   });
 }
+function cleanTitle(s) {
+  return String(s || "Video")
+    .replace(/\(Koleksi[^)]*Pinguin[^)]*\)/ig, "")
+    .replace(/Koleksi Dr\.?\s*Pinguin[^\n]*/ig, "")
+    .replace(/Dr\.?\s*Pinguin Bokep,?\s*M\.?S\.?B\.?/ig, "")
+    .replace(/\s*[-|\u2013\u2014]\s*$/g, "")
+    .replace(/_/g, " ")
+    .replace(/\s+/g, " ")
+    .trim() || "Video";
+}
 function keyOf(v) {
   const u = String((v && (v.embed || v.direct || v.embedUrl)) || "");
   try {
@@ -36,6 +46,24 @@ function mp4Of(v, id) {
   if (/videy/i.test(d + blob) && id) return "https://cdn.videy.co/" + id + ".mp4";
   return "";
 }
+function pickRelated(list, currentId, cat, n) {
+  const BLOCK = /\b(underage|bocil)\b/i;
+  const cur = String(currentId || "").toLowerCase();
+  const want = String(cat || "").toLowerCase();
+  const out = [];
+  const rest = [];
+  (list || []).forEach(function (v) {
+    const id = keyOf(v);
+    if (!id || id.toLowerCase() === cur) return;
+    const title = cleanTitle(v.title);
+    const c = String(v.folder || v.category || "");
+    if (BLOCK.test(title + " " + c)) return;
+    const item = { id: id, title: title, cat: c || "Video" };
+    if (want && c.toLowerCase() === want) out.push(item);
+    else rest.push(item);
+  });
+  return out.concat(rest).slice(0, n);
+}
 function pageHtml(opts) {
   const title = opts.title;
   const cat = opts.cat;
@@ -45,14 +73,13 @@ function pageHtml(opts) {
   const mp4 = String(opts.contentUrl || "");
   const date = String(opts.date || "").slice(0, 10);
   const tall = Boolean(opts.tall);
-  const desc = String(opts.desc || (title + " - " + cat + " | koleksidrpinguin.com. 18+."))
-    .replace(/\s+/g, " ")
-    .slice(0, 160);
+  const related = Array.isArray(opts.related) ? opts.related : [];
   const origin = String(page || "https://koleksidrpinguin.com").split("/v/")[0] || "https://koleksidrpinguin.com";
   const thumb = origin + "/api/thumb?title=" + encodeURIComponent(title || "Video") + "&cat=" + encodeURIComponent(cat || "Video");
   const t = encodeURIComponent(title || "");
   const u = encodeURIComponent(page || "");
   const txt = encodeURIComponent((title || "") + "\n" + (page || ""));
+  const desc = (title + " - " + cat + " | koleksidrpinguin.com. 18+.").slice(0, 160);
   const ld = {
     "@context": "https://schema.org",
     "@type": "VideoObject",
@@ -63,14 +90,18 @@ function pageHtml(opts) {
     genre: cat,
     url: page,
     embedUrl: embed,
-    thumbnailUrl: thumb,
-    publisher: { "@type": "Organization", name: "Dr. Pinguin", url: origin + "/" }
+    thumbnailUrl: thumb
   };
   if (mp4) ld.contentUrl = mp4;
   if (date) ld.uploadDate = date;
   const player = mp4
-    ? "<video controls playsinline preload=\"metadata\" poster=\"" + esc(thumb) + "\" src=\"" + esc(mp4) + "\"></video>"
+    ? "<video controls playsinline preload=\"metadata\" src=\"" + esc(mp4) + "\"></video>"
     : "<iframe src=\"" + esc(embed) + "\" allow=\"autoplay;encrypted-media;fullscreen\" allowfullscreen referrerpolicy=\"origin\"></iframe>";
+  const relHtml = related.map(function (r) {
+    const href = "/v/" + encodeURIComponent(r.id);
+    const img = "/api/thumb?title=" + encodeURIComponent(r.title) + "&cat=" + encodeURIComponent(r.cat || "");
+    return "<a class=\"card\" href=\"" + href + "\"><img src=\"" + esc(img) + "\" alt=\"\"><span>" + esc(r.title) + "</span></a>";
+  }).join("");
   return [
     "<!DOCTYPE html><html lang=\"id\"><head><meta charset=\"utf-8\">",
     "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1,viewport-fit=cover\">",
@@ -79,38 +110,35 @@ function pageHtml(opts) {
     "<meta name=\"robots\" content=\"index,follow\"><meta name=\"rating\" content=\"adult\">",
     "<link rel=\"canonical\" href=\"", esc(page), "\">",
     "<meta property=\"og:title\" content=\"", esc(title), "\">",
-    "<meta property=\"og:url\" content=\"", esc(page), "\">",
     "<meta property=\"og:image\" content=\"", esc(thumb), "\">",
     "<script type=\"application/ld+json\">", JSON.stringify(ld), "</script>",
     "<style>",
     "*{box-sizing:border-box}html,body{margin:0;background:#0f0f0f;color:#f1f1f1;font-family:Roboto,system-ui,sans-serif}",
     "a{color:#fff;text-decoration:none}button{font:inherit;background:0;border:0;color:#fff}",
-    "header{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:#0f0f0f;border-bottom:1px solid #272727}",
+    "header{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:#0f0f0f}",
     ".brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:14px}.brand img{width:22px;height:22px;border-radius:4px}.brand b{color:#ff9000}",
     ".back{font-size:13px;color:#aaa}",
     ".player{position:relative;width:100%;aspect-ratio:16/9;background:#000}",
     ".player.tall{aspect-ratio:9/16;max-height:70vh}",
     ".player iframe,.player video{position:absolute;inset:0;width:100%;height:100%;border:0}",
-    ".info{padding:10px 12px 8px}h1{margin:0;font-size:16px;line-height:1.3;font-weight:700}",
-    ".sub{margin:6px 0 0;color:#aaa;font-size:12px}",
-    ".acts{display:flex;gap:6px;padding:4px 12px 12px;overflow:auto}",
-    ".acts a,.acts button{flex:0 0 auto;height:34px;padding:0 12px;border-radius:18px;background:#272727;font-size:12px;font-weight:600;color:#fff;white-space:nowrap}",
+    ".info{padding:10px 12px 6px}h1{margin:0;font-size:15px;line-height:1.35;font-weight:700}",
+    ".sub{margin:4px 0 0;color:#aaa;font-size:12px}",
+    ".acts{display:flex;gap:6px;padding:6px 12px 10px;overflow:auto}",
+    ".acts a,.acts button{flex:0 0 auto;height:32px;padding:0 11px;border-radius:16px;background:#272727;font-size:12px;font-weight:600}",
     ".acts .wa{background:#ff9000;color:#111}",
-    ".links{display:flex;gap:8px;padding:0 12px 24px;border-top:1px solid #272727;padding-top:12px}",
-    ".links a{font-size:13px;color:#aaa}",
-    "@media(min-width:900px){header,.info,.acts,.links{max-width:960px;margin-left:auto;margin-right:auto}.player{max-width:960px;margin:12px auto;border-radius:12px;overflow:hidden}}",
+    ".rel{padding:8px 12px 28px}.rel h2{margin:0 0 10px;font-size:13px;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:.04em}",
+    ".grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}",
+    ".card{display:block}.card img{width:100%;aspect-ratio:16/9;object-fit:cover;background:#1a1a1a;border-radius:8px;display:block}",
+    ".card span{display:block;margin-top:6px;font-size:12px;line-height:1.3;max-height:2.6em;overflow:hidden}",
     "</style></head><body>",
     "<header><a class=\"brand\" href=\"/\"><img src=\"/logo.png\" alt=\"\"><span>DR.<b>PINGUIN</b></span></a><a class=\"back\" href=\"", esc(back), "\">Kembali</a></header>",
     "<div class=\"player", tall ? " tall" : "", "\">", player, "</div>",
-    "<div class=\"info\"><h1>", esc(title), "</h1>",
-    "<p class=\"sub\">", esc(cat), " · 18+", date ? " · " + esc(date) : "", "</p></div>",
-    "<div class=\"acts\">",
-    "<a class=\"wa\" href=\"https://wa.me/?text=", txt, "\">WhatsApp</a>",
+    "<div class=\"info\"><h1>", esc(title), "</h1><p class=\"sub\">", esc(cat), " · 18+", date ? " · " + esc(date) : "", "</p></div>",
+    "<div class=\"acts\"><a class=\"wa\" href=\"https://wa.me/?text=", txt, "\">WhatsApp</a>",
     "<a href=\"https://t.me/share/url?url=", u, "&text=", t, "\">Telegram</a>",
     "<a href=\"https://x.com/intent/post?text=", txt, "\">X</a>",
-    "<button type=\"button\" id=\"btnCopy\">Salin</button>",
-    "</div>",
-    "<div class=\"links\"><a href=\"/\">Terbaru</a><a href=\"/putarin\">Putarin</a><a href=\"/mumu\">Mumu</a></div>",
+    "<button type=\"button\" id=\"btnCopy\">Salin</button></div>",
+    related.length ? "<div class=\"rel\"><h2>Berikutnya</h2><div class=\"grid\">" + relHtml + "</div></div>" : "",
     "<script>var PAGE=", JSON.stringify(page), ";var b=document.getElementById('btnCopy');if(b)b.onclick=function(){navigator.clipboard.writeText(PAGE).then(function(){b.textContent='Tersalin';});};</script>",
     "</body></html>"
   ].join("");
@@ -151,13 +179,20 @@ module.exports = async function handler(req, res) {
       res.statusCode = 200;
       return res.end(pageHtml(Object.assign({ id: id, page: page }, extra)));
     }
-    let video = findVideo(await loadJson(base + "mumu.json"), id);
-    if (!video) video = findVideo(await loadJson(base + "putarin.json"), id);
-    if (!video) video = findVideo(await loadJson(base + "videos.json"), id);
+    let pool = await loadJson(base + "mumu.json");
+    let video = findVideo(pool, id);
+    if (!video) {
+      pool = await loadJson(base + "putarin.json");
+      video = findVideo(pool, id);
+    }
+    if (!video) {
+      pool = await loadJson(base + "videos.json");
+      video = findVideo(pool, id);
+    }
     if (!video) {
       return send({ title: id, cat: "Putarin", embed: "https://puterin.biz/e/" + id, back: "/putarin" });
     }
-    const title = String(video.title || "Video").replace(/\s*-\s*koleksidrpinguin.*/i, "").replace(/_/g, " ").trim() || "Video";
+    const title = cleanTitle(video.title);
     const cat0 = String(video.folder || video.category || "Video");
     if (BLOCK.test(title + " " + cat0)) {
       res.statusCode = 404;
@@ -185,7 +220,8 @@ module.exports = async function handler(req, res) {
       back: back,
       tall: Boolean(mumu),
       contentUrl: mp4Of(video, id),
-      date: String(video.date || "").slice(0, 10)
+      date: String(video.date || "").slice(0, 10),
+      related: pickRelated(pool, id, cat, 8)
     });
   } catch (e) {
     res.statusCode = 500;
