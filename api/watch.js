@@ -71,10 +71,10 @@ function pageHtml(opts) {
   if (date) ld.uploadDate = date;
   const player = mp4
     ? "<video controls playsinline preload=\"metadata\" poster=\"" + esc(thumb) + "\" src=\"" + esc(mp4) + "\"></video>"
-    : "<iframe src=\"" + esc(embed) + "\" allow=\"autoplay;encrypted-media\" referrerpolicy=\"origin\"></iframe>";
+    : "<iframe src=\"" + esc(embed) + "\" allow=\"autoplay;encrypted-media;fullscreen\" allowfullscreen referrerpolicy=\"origin\"></iframe>";
   return [
     "<!DOCTYPE html><html lang=\"id\"><head><meta charset=\"utf-8\">",
-    "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">",
+    "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1,viewport-fit=cover\">",
     "<title>", esc(title), " | Dr. Pinguin</title>",
     "<meta name=\"description\" content=\"", esc(desc), "\">",
     "<meta name=\"robots\" content=\"index,follow\">",
@@ -84,15 +84,45 @@ function pageHtml(opts) {
     "<meta property=\"og:title\" content=\"", esc(title), "\">",
     "<meta property=\"og:url\" content=\"", esc(page), "\">",
     "<meta property=\"og:image\" content=\"", esc(thumb), "\">",
+    "<meta name=\"twitter:card\" content=\"summary_large_image\">",
     "<script type=\"application/ld+json\">", JSON.stringify(ld), "</script>",
-    "<style>*{box-sizing:border-box}html,body{margin:0;background:#050505;color:#eee;font-family:system-ui,sans-serif}a,button{color:#ff9000;text-decoration:none}header{background:#000;border-bottom:2px solid #ff9000}.nav{display:flex;justify-content:space-between;align-items:center;padding:8px 12px}.brand{font-weight:900}.brand b{color:#ff9000}.player{position:relative;width:100%;aspect-ratio:16/9;background:#111}.player.tall{aspect-ratio:9/16;max-height:72vh}.player iframe,.player video{position:absolute;inset:0;width:100%;height:100%;border:0}.body{padding:12px}h1{font-size:16px}.meta{color:#888;font-size:12px}.btn{display:inline-flex;margin:4px 4px 0 0;padding:6px 10px;border:1px solid #333;background:#161616;color:#ddd;border-radius:8px}</style></head><body>",
-    "<header><div class=\"nav\"><a class=\"brand\" href=\"/\">DR.<b>PINGUIN</b></a><a href=\"", esc(back), "\">Kembali</a></div></header>",
-    "<div class=\"", playerClass, "\">", player, "</div>",
-    "<div class=\"body\"><h1>", esc(title), "</h1><p class=\"meta\">", esc(cat), " - 18+</p>",
-    "<a class=\"btn\" href=\"https://wa.me/?text=", txt, "\">WhatsApp</a>",
+    "<style>",
+    "*{box-sizing:border-box}html,body{margin:0;background:#050505;color:#eee;font-family:system-ui,-apple-system,sans-serif}",
+    "a{color:#ff9000;text-decoration:none}button{font:inherit}",
+    "header{position:sticky;top:0;z-index:20;background:#000;border-bottom:2px solid #ff9000}",
+    ".nav{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 14px}",
+    ".brand{font-weight:900;letter-spacing:.02em}.brand b{color:#ff9000}",
+    ".back{color:#ff9000;font-size:13px;font-weight:700}",
+    ".stage{background:#000;padding:0}",
+    ".player{position:relative;width:100%;aspect-ratio:16/9;background:#111}",
+    ".player.tall{aspect-ratio:9/16;max-height:78vh;margin:0 auto;width:min(100%,calc(78vh * 9 / 16))}",
+    ".player iframe,.player video{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}",
+    ".body{padding:16px 16px 40px}",
+    "h1{font-size:18px;line-height:1.35;margin:0 0 8px;font-weight:800}",
+    ".meta{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}",
+    ".pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#161616;border:1px solid #2a2a2a;color:#bbb;font-size:11px;font-weight:700}",
+    ".actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}",
+    ".btn{display:flex;align-items:center;justify-content:center;height:44px;border-radius:12px;border:1px solid #2a2a2a;background:#161616;color:#eee;font-size:13px;font-weight:700}",
+    ".btn.primary{background:#ff9000;border-color:#ff9000;color:#111}",
+    "@media(min-width:900px){",
+    ".nav,.body,.stage{width:min(980px,100%);margin:0 auto}",
+    ".stage{padding:18px 0 0}",
+    ".player,.player.tall{width:100%;aspect-ratio:16/9;max-height:none;border-radius:14px;overflow:hidden;border:1px solid #222}",
+    "h1{font-size:24px}.actions{grid-template-columns:repeat(4,1fr)}",
+    "}",
+    "</style></head><body>",
+    "<header><div class=\"nav\"><a class=\"brand\" href=\"/\">DR.<b>PINGUIN</b></a><a class=\"back\" href=\"", esc(back), "\">Kembali</a></div></header>",
+    "<div class=\"stage\"><div class=\"", playerClass, "\">", player, "</div></div>",
+    "<div class=\"body\"><h1>", esc(title), "</h1>",
+    "<p class=\"meta\"><span class=\"pill\">", esc(cat), "</span><span class=\"pill\">18+</span>", date ? "<span class=\"pill\">" + esc(date) + "</span>" : "", "</p>",
+    "<div class=\"actions\">",
+    "<a class=\"btn primary\" href=\"https://wa.me/?text=", txt, "\">WhatsApp</a>",
     "<a class=\"btn\" href=\"https://t.me/share/url?url=", u, "&text=", t, "\">Telegram</a>",
+    "<a class=\"btn\" href=\"https://x.com/intent/post?text=", txt, "\">X</a>",
     "<button class=\"btn\" type=\"button\" id=\"btnCopy\">Salin link</button>",
-    "</div><script>var PAGE=", JSON.stringify(page), ";document.getElementById('btnCopy').onclick=function(){navigator.clipboard.writeText(PAGE);};</script></body></html>"
+    "</div></div>",
+    "<script>var PAGE=", JSON.stringify(page), ";var b=document.getElementById('btnCopy');if(b)b.onclick=function(){navigator.clipboard.writeText(PAGE).then(function(){b.textContent='Tersalin';setTimeout(function(){b.textContent='Salin link';},1200);});};</script>",
+    "</body></html>"
   ].join("");
 }
 async function loadJson(url) {
@@ -126,7 +156,7 @@ module.exports = async function handler(req, res) {
     const origin = "https://" + host;
     const page = origin + "/v/" + encodeURIComponent(id);
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.setHeader("Cache-Control", "public, s-maxage=120, stale-while-revalidate=86400");
+    res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=86400");
     function send(extra) {
       res.statusCode = 200;
       return res.end(pageHtml(Object.assign({ id: id, page: page }, extra)));
