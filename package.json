@@ -2,6 +2,7 @@
   "name": "koleksi-dr-pinguin",
   "version": "1.0.0",
   "private": true,
+  "type": "commonjs",
   "scripts": {
     "build": "echo 'Static site: no build step required'",
     "deploy": "wrangler deploy"
