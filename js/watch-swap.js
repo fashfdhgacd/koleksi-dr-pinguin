@@ -1,14 +1,4 @@
 (function () {
-  var b = document.getElementById("btnShare");
-  if (b) {
-    b.onclick = function () {
-      if (navigator.share) {
-        navigator.share({ title: document.title, url: location.href }).catch(function () {});
-        return;
-      }
-      if (navigator.clipboard) navigator.clipboard.writeText(location.href);
-    };
-  }
   function swap(a) {
     var emb = a.getAttribute("data-embed");
     if (!emb) return;

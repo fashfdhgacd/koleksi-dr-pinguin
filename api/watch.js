@@ -161,7 +161,7 @@ module.exports = async function handler(req, res) {
       "<main class=wrap><div class=layout><div><div class=player>" + player +
       "</div><h1>" + esc(title) + "</h1><div class=acts><button class=p type=button id=btnShare>Bagikan</button><a href=\"" + esc(back) + "\">Kembali</a></div></div>" +
       "<aside class=side><h2>Rekomendasi</h2><div class=sg id=trendingGrid>" + cards + "</div></aside></div></main>" +
-      "<script src=\"/js/poster-map.js?v=hero1\"></script><script src=\"/js/watch-swap.js?v=2\"></script></body></html>";
+      "<script src=\"/js/share-sheet.js?v=1\"></script><script src=\"/js/poster-map.js?v=hero1\"></script><script src=\"/js/watch-swap.js?v=3\"></script></body></html>";
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader("Cache-Control", "public, s-maxage=15, stale-while-revalidate=60");
     res.statusCode = 200;
