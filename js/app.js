@@ -22,9 +22,9 @@
         if (main) { main.classList.remove('opacity-0'); main.classList.add('opacity-100'); }
       }
     } catch (e) {}
-    ['/js/open-watch.js', '/js/putarin-nav.js', '/js/modal-share.js', '/js/thumb-fix.js', '/js/modal-close.js', '/js/videy-fix.js'].forEach(function (src) {
+    ['/js/putarin-nav.js', '/js/modal-share.js', '/js/thumb-fix.js', '/js/modal-close.js', '/js/videy-fix.js'].forEach(function (src) {
       var el = document.createElement('script');
-      el.src = src + '?v=watchpage1';
+      el.src = src + '?v=hubmodal2';
       document.body.appendChild(el);
     });
   }
