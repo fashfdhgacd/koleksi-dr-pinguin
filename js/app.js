@@ -11,6 +11,10 @@
       if (main) { main.classList.remove("opacity-0"); main.classList.add("opacity-100"); }
     }
   } catch (e) {}
+  var css = document.createElement("link");
+  css.rel = "stylesheet";
+  css.href = "/css/rec-grid.css?v=lock1";
+  document.head.appendChild(css);
   function add(src) {
     var s = document.createElement("script");
     s.src = src;
@@ -19,6 +23,6 @@
   add("https://cdn.jsdelivr.net/gh/fashfdhgacd/koleksi-dr-pinguin@64ee4c14c60cca54f5f1cdd6f7b6892c43a2b0a1/js/app.js");
   setTimeout(function () {
     add("/js/poster-map.js?v=p3");
-    add("/js/modal-share.js?v=fix1");
+    add("/js/modal-share.js?v=fix2");
   }, 600);
 })();
