@@ -25,6 +25,7 @@
   setTimeout(function () {
     add("/js/poster-map.js?v=p3");
     add("/js/videy-escape.js?v=1");
+    add("/js/recs-ready.js?v=1");
     add("/js/modal-share.js?v=swap2");
-  }, 600);
+  }, 500);
 })();
