@@ -13,7 +13,7 @@
     }
   }
 
-  function apply(root) {
+  function applyCards(root) {
     if (!root) return;
     root.querySelectorAll(".video-card").forEach(function (card) {
       if (card.getAttribute("data-poster-ok") === "1") return;
@@ -34,17 +34,46 @@
     });
   }
 
-  function watch(id) {
+  function applyHero() {
+    var root = document.getElementById("heroSlides");
+    if (!root) return;
+    root.querySelectorAll(".hero-slide").forEach(function (slide) {
+      var iframe = slide.querySelector("iframe");
+      var src = "";
+      if (iframe) src = iframe.getAttribute("src") || iframe.getAttribute("data-src") || "";
+      var id = idFrom(src);
+      var url = id && map[id];
+      if (!url) return;
+      var img = slide.querySelector("img.hero-poster");
+      if (!img) {
+        img = document.createElement("img");
+        img.className = "hero-poster absolute inset-0 w-full h-full object-cover";
+        img.alt = "";
+        slide.appendChild(img);
+      }
+      if (img.src !== url) img.src = url;
+      if (iframe) {
+        iframe.style.display = "none";
+        iframe.removeAttribute("src");
+      }
+    });
+  }
+
+  function watch(id, fn) {
     var el = document.getElementById(id);
     if (!el) return;
-    apply(el);
+    fn(el);
     if (window.MutationObserver) {
-      new MutationObserver(function () { apply(el); }).observe(el, { childList: true, subtree: true });
+      new MutationObserver(function () { fn(el); }).observe(el, { childList: true, subtree: true, attributes: true });
     }
   }
 
   function boot() {
-    ["videoGrid", "trendingGrid", "searchResults", "heroSlides", "genreGrid"].forEach(watch);
+    ["videoGrid", "trendingGrid", "searchResults", "genreGrid"].forEach(function (id) {
+      watch(id, applyCards);
+    });
+    watch("heroSlides", function () { applyHero(); });
+    setInterval(applyHero, 1500);
   }
 
   fetch("/data/posters.json", { cache: "no-store" })
