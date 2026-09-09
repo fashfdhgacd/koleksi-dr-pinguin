@@ -2,12 +2,15 @@
   if (window.__modalShare) return;
   window.__modalShare = true;
   var putList = [], mumuList = [], vidList = [];
+  function isVidey(v) {
+    return /videy/i.test(String((v && (v.embed || v.direct || v.embedUrl)) || ''));
+  }
   Promise.all([
     fetch('/data/videos.json').then(function (r) { return r.json(); }).catch(function () { return []; }),
     fetch('/data/putarin.json').then(function (r) { return r.json(); }).catch(function () { return []; }),
     fetch('/data/mumu.json').then(function (r) { return r.json(); }).catch(function () { return []; })
   ]).then(function (arr) {
-    vidList = arr[0] || [];
+    vidList = (arr[0] || []).filter(function (v) { return !isVidey(v); });
     putList = arr[1] || [];
     mumuList = arr[2] || [];
   });
@@ -57,6 +60,7 @@
     return String((v && (v.embed || v.direct || v.embedUrl)) || '').replace('/d/', '/e/');
   }
   function previewHtml(v) {
+    if (isVidey(v)) return '<img src="/api/thumb" alt="">';
     var ready = v && (v.poster || v.thumb || v.thumbnail);
     if (ready) return '<img src="' + String(ready).replace(/"/g, '') + '" alt="" loading="lazy">';
     var raw = embedOf(v);
@@ -64,10 +68,6 @@
     if (window.KDP_POSTERS && id && window.KDP_POSTERS[id]) return '<img src="' + String(window.KDP_POSTERS[id]).replace(/"/g, '') + '" alt="" loading="lazy">';
     if (/mumu\.watch/i.test(raw) && id) return '<img src="https://m-cdn.video/hls/' + id + '/thumbnail.jpg" alt="" loading="lazy">';
     if (/putarin|puterin/i.test(raw) && id) return '<img src="/api/poster?id=' + encodeURIComponent(id) + '" alt="" loading="lazy">';
-    if (/\.mp4($|\?)/i.test(raw) || (/videy/i.test(raw) && id)) {
-      var mp4 = /\.mp4($|\?)/i.test(raw) ? raw : ('https://cdn.videy.co/' + id + '.mp4');
-      return '<video src="' + mp4.replace(/"/g, '') + '" muted playsinline preload="metadata"></video>';
-    }
     return '<img src="/api/thumb" alt="">';
   }
   function shuffle(a) {
@@ -84,6 +84,7 @@
     var out = [];
     for (var i = 0; i < pool.length && out.length < n; i++) {
       var v = pool[i];
+      if (isVidey(v)) continue;
       var title = cleanTitle(v.title);
       var sk = seriesKey(title);
       if (!title || (cur && sk === cur) || (sk && used[sk])) continue;
@@ -98,7 +99,7 @@
     return shuffle(pickBucket(putList, title, used, 3).concat(pickBucket(mumuList, title, used, 3), pickBucket(vidList, title, used, 2))).slice(0, 8);
   }
   function playVideo(v) {
-    if (!v) return;
+    if (!v || isVidey(v)) return;
     var raw = embedOf(v);
     var titleEl = document.getElementById('modalTitle');
     var iframe = document.getElementById('modalIframe');
