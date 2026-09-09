@@ -9,8 +9,14 @@ function esc(s) {
   map["'"] = "\x26#39;";
   return String(s || "").replace(/[&<>"']/g, function (ch) { return map[ch]; });
 }
+function rawOf(v) {
+  return String((v && (v.embed || v.direct || v.embedUrl)) || "");
+}
+function isVidey(v) {
+  return /videy/i.test(rawOf(v));
+}
 function keyOf(v) {
-  const u = String((v && (v.embed || v.direct || v.embedUrl)) || "");
+  const u = rawOf(v);
   try {
     const url = new URL(u);
     return String(url.searchParams.get("id") || (url.pathname.split("/").filter(Boolean).pop() || "")).replace(/\.(mp4|mov)$/i, "");
@@ -34,11 +40,11 @@ function shuffle(a) {
 }
 function mediaOf(v) {
   if (v.poster || v.thumb || v.thumbnail) return "<img src=\"" + esc(v.poster || v.thumb || v.thumbnail) + "\" alt=\"\" loading=\"lazy\">";
-  const raw = String(v.embed || v.direct || "");
+  const raw = rawOf(v);
   const id = keyOf(v);
   if (/mumu\.watch/i.test(raw) && id) return "<img src=\"https://m-cdn.video/hls/" + esc(id) + "/thumbnail.jpg\" alt=\"\" loading=\"lazy\">";
   if (/putarin|puterin/i.test(raw) && id) return "<img src=\"/api/poster?id=" + encodeURIComponent(id) + "\" alt=\"\" loading=\"lazy\">";
-  if (/\.mp4($|\?)/i.test(String(v.direct || raw))) return "<img src=\"/api/thumb\" alt=\"\">";
+  if (isVidey(v)) return "";
   if (/indoav/i.test(raw) && id) return "<img src=\"/api/thumb?h=indoav&id=" + encodeURIComponent(id) + "\" alt=\"\" loading=\"lazy\">";
   if (/userbokep/i.test(raw) && id) return "<img src=\"/api/thumb?h=userbokep&id=" + encodeURIComponent(id) + "\" alt=\"\" loading=\"lazy\">";
   return "<img src=\"/api/thumb\" alt=\"\">";
@@ -59,6 +65,7 @@ function pickRelated(lists, currentId, currentTitle, n) {
       const list = buckets[b];
       while (list.length) {
         const v = list.pop();
+        if (isVidey(v)) continue;
         const kid = keyOf(v);
         const title = cleanTitle(v.title);
         const sk = seriesKey(title);
@@ -92,7 +99,12 @@ async function catalogs() {
     loadJson(base + "mumu.json"),
     loadJson(base + "videos.json")
   ]);
-  mem = { t: Date.now(), put: put, mumu: mumu, vid: vid };
+  mem = {
+    t: Date.now(),
+    put: put,
+    mumu: mumu,
+    vid: (vid || []).filter(function (v) { return !isVidey(v); })
+  };
   return mem;
 }
 module.exports = async function handler(req, res) {
@@ -102,23 +114,25 @@ module.exports = async function handler(req, res) {
     const catas = await catalogs();
     const all = catas.put.concat(catas.mumu, catas.vid);
     const video = all.find(function (v) { return keyOf(v).toLowerCase() === id.toLowerCase(); });
-    let title = id, cat = "Video", embed = "https://puterin.biz/e/" + id, back = "/";
+    let title = id, cat = "Video", embed = "", back = "/";
     if (video) {
       title = cleanTitle(video.title);
       cat = video.folder || video.category || "Video";
-      embed = String(video.embed || video.direct || "").replace("/d/", "/e/");
+      embed = rawOf(video).replace("/d/", "/e/");
       if (/mumu/i.test(embed + " " + cat)) back = "/mumu";
       else if (/putarin|puterin/i.test(embed + " " + cat)) back = "/putarin";
+    } else {
+      embed = "https://mumu.watch/e/" + id;
     }
     const related = pickRelated([catas.put, catas.mumu, catas.vid], id, title, 8);
     const cards = related.map(function (v) {
-      return "<a class=\"card\" href=\"/v/" + encodeURIComponent(keyOf(v)) + "\" data-embed=\"" + esc(String(v.embed || v.direct || "").replace("/d/", "/e/")) + "\" data-title=\"" + esc(cleanTitle(v.title)) + "\"><div class=\"ph\">" + mediaOf(v) + "</div><h3>" + esc(cleanTitle(v.title)) + "</h3></a>";
+      return "<a class=\"card\" href=\"/v/" + encodeURIComponent(keyOf(v)) + "\" data-embed=\"" + esc(rawOf(v).replace("/d/", "/e/")) + "\" data-title=\"" + esc(cleanTitle(v.title)) + "\"><div class=\"ph\">" + mediaOf(v) + "</div><h3>" + esc(cleanTitle(v.title)) + "</h3></a>";
     }).join("");
-    const player = /\.mp4($|\?)/i.test(embed)
+    const player = /\.mp4($|\?)/i.test(embed) || /videy/i.test(embed)
       ? "<video controls playsinline preload=\"metadata\" src=\"" + esc(embed) + "\"></video>"
       : "<iframe src=\"" + esc(embed) + "\" allow=\"autoplay;encrypted-media;fullscreen\" allowfullscreen></iframe>";
     const html = "<!DOCTYPE html><html lang=id><head><meta charset=utf-8><meta name=viewport content=\"width=device-width,initial-scale=1\"><title>" +
-      esc(title) + " | Dr. Pinguin</title><link rel=stylesheet href=\"/css/rec-grid.css?v=fast1\"><style>" +
+      esc(title) + " | Dr. Pinguin</title><link rel=stylesheet href=\"/css/rec-grid.css?v=lock1\"><style>" +
       ":root{--bg:#0b0d12;--acc:#ff9000;--line:#232838}*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:#e8ecf4;font-family:system-ui,sans-serif}a{color:inherit;text-decoration:none}" +
       ".wrap{width:min(1180px,calc(100% - 24px));margin:0 auto}header{border-bottom:1px solid var(--line)}.hd{min-height:52px;display:flex;align-items:center}.logo{font-weight:900}.logo b{color:var(--acc)}" +
       "main{padding:16px 0 40px}.layout{display:grid;grid-template-columns:1fr;gap:16px}@media(min-width:960px){.layout{grid-template-columns:minmax(0,1.7fr) 320px}}" +
@@ -130,9 +144,9 @@ module.exports = async function handler(req, res) {
       "<main class=wrap><div class=layout><div><div class=player>" + player +
       "</div><h1>" + esc(title) + "</h1><div class=acts><button class=p type=button id=btnShare>Bagikan</button><a href=\"" + esc(back) + "\">Kembali</a></div></div>" +
       "<aside class=side><h2>Rekomendasi</h2><div class=sg>" + cards + "</div></aside></div></main>" +
-      "<script src=\"/js/watch-swap.js?v=1\"></script></body></html>";
+      "<script src=\"/js/watch-swap.js?v=2\"></script></body></html>";
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+    res.setHeader("Cache-Control", "public, s-maxage=15, stale-while-revalidate=60");
     res.statusCode = 200;
     return res.end(html);
   } catch (e) {
