@@ -1,3 +1,13 @@
+let cache = { t: 0, map: {} };
+async function posters() {
+  if (cache.map && Object.keys(cache.map).length && Date.now() - cache.t < 10 * 60 * 1000) return cache.map;
+  try {
+    const r = await fetch("https://raw.githubusercontent.com/fashfdhgacd/koleksi-dr-pinguin/main/data/posters.json");
+    const d = await r.json();
+    if (d && typeof d === "object") cache = { t: Date.now(), map: d };
+  } catch (_) {}
+  return cache.map || {};
+}
 async function avPoster(host, id) {
   const allow = {
     indoav: "https://tv1.indoav.app/e/",
@@ -10,20 +20,24 @@ async function avPoster(host, id) {
     headers: { "user-agent": "Mozilla/5.0", accept: "text/html" }
   });
   const html = await r.text();
-  const m = html.match(/poster="(https:\/\/[^"\s]+)"/i);
+  const m = html.match(/poster=\"(https:\/\/[^\"\\s]+)\"/i);
   return m && m[1] ? m[1] : "";
 }
-
 module.exports = async function handler(req, res) {
   try {
     const q = (req.query && req.query) || {};
-    if (q.h && q.id) {
-      const img = await avPoster(q.h, q.id);
+    const id = String(q.id || "").replace(/[^A-Za-z0-9_-]/g, "");
+    if (id) {
+      const map = await posters();
+      if (map[id]) {
+        res.writeHead(302, { Location: map[id], "Cache-Control": "public, s-maxage=86400" });
+        return res.end();
+      }
+    }
+    if (q.h && id) {
+      const img = await avPoster(q.h, id);
       if (img) {
-        res.writeHead(302, {
-          Location: img,
-          "Cache-Control": "public, s-maxage=86400"
-        });
+        res.writeHead(302, { Location: img, "Cache-Control": "public, s-maxage=86400" });
         return res.end();
       }
     }
