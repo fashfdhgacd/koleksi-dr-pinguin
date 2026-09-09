@@ -7,12 +7,18 @@ function esc(s) {
   });
 }
 function cleanTitle(s) {
-  return String(s || "Video")
-    .replace(/\(Koleksi[^)]*Pinguin[^)]*\)/ig, "")
-    .replace(/Koleksi Dr\.?\s*Pinguin[^\n]*/ig, "")
-    .replace(/koleksidrpinguin\.com/ig, "")
+  return String(s || "Video").replace(/\(Koleksi[^)]*Pinguin[^)]*\)/ig, "").replace(/koleksidrpinguin\.com/ig, "").replace(/\s+/g, " ").trim() || "Video";
+}
+function seriesOf(s) {
+  const t = cleanTitle(s).toLowerCase()
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/\b(s\d{1,2}\s*e\d{1,3}|episode\s*\d+|eps?\.?\s*\d+|part\s*\d+|20\d{2})\b/g, " ")
+    .replace(/\b[a-z]{2,6}-?\d{2,5}\b/g, " ")
+    .replace(/[^a-z0-9\s]/g, " ")
     .replace(/\s+/g, " ")
-    .trim() || "Video";
+    .trim();
+  const words = t.split(" ").filter(Boolean);
+  return words.length >= 3 ? words.slice(0, 4).join(" ") : (t || cleanTitle(s).toLowerCase().slice(0, 24));
 }
 function keyOf(v) {
   const u = String((v && (v.embed || v.direct || v.embedUrl)) || "");
@@ -42,15 +48,35 @@ function shuffle(a) {
   }
   return x;
 }
+function pickRelated(all, currentId, currentTitle, n) {
+  const seenId = {}; const seenSeries = {}; const seenPoster = {}; const seenTitle = {};
+  const cur = String(currentId || "").toLowerCase();
+  const curS = seriesOf(currentTitle || "");
+  if (cur) seenId[cur] = 1;
+  if (curS) seenSeries[curS] = 1;
+  const out = [];
+  const pool = shuffle(all || []);
+  for (let i = 0; i < pool.length && out.length < n; i++) {
+    const v = pool[i];
+    const id = keyOf(v).toLowerCase();
+    const title = cleanTitle(v.title);
+    const sk = seriesOf(title);
+    const poster = posterOf(v);
+    if (!id || !title || seenId[id] || seenTitle[title.toLowerCase()] || (sk && seenSeries[sk]) || (poster && poster !== "/api/thumb" && seenPoster[poster])) continue;
+    seenId[id] = 1; seenTitle[title.toLowerCase()] = 1;
+    if (sk) seenSeries[sk] = 1;
+    if (poster) seenPoster[poster] = 1;
+    out.push({ id: keyOf(v), title: title, poster: poster });
+  }
+  return out;
+}
 async function loadJson(env, path) {
   try {
     const r = await env.ASSETS.fetch(new Request("https://asset" + path));
     if (!r.ok) return [];
     const d = await r.json();
     return Array.isArray(d) ? d : [];
-  } catch (_) {
-    return [];
-  }
+  } catch (_) { return []; }
 }
 async function posterFromPuterin(id) {
   const r = await fetch("https://puterin.biz/v/" + id, { headers: { "user-agent": "Mozilla/5.0" } });
@@ -78,57 +104,41 @@ function watchHtml(opts) {
       '</div><h3>' + esc(r.title) + '</h3></a>';
   }).join("");
   return `<!DOCTYPE html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} | Dr. Pinguin</title>
-<style>:root{--bg:#0b0d12;--acc:#ff9000;--line:#232838;--dim:#9aa3b5}*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:#e8ecf4;font-family:system-ui,sans-serif}a{color:inherit;text-decoration:none}.wrap{width:min(1180px,calc(100% - 24px));margin:0 auto}header{position:sticky;top:0;background:#0b0d12f2;border-bottom:1px solid var(--line)}.hd{display:flex;align-items:center;gap:10px;min-height:52px}.logo{font-weight:900}.logo b{color:var(--acc)}main{padding:16px 0 40px}.layout{display:grid;grid-template-columns:1fr;gap:16px}@media(min-width:960px){.layout{grid-template-columns:minmax(0,1.7fr) 300px}}.player{position:relative;aspect-ratio:16/9;background:#000;border:1px solid var(--line);border-radius:14px;overflow:hidden}.hold,.player iframe,.player video{position:absolute;inset:0;width:100%;height:100%;border:0}.hold{display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;background:#000 center/cover no-repeat}.btn{width:64px;height:64px;border-radius:99px;background:var(--acc);color:#111;display:grid;place-items:center;font-size:22px}h1{font-size:20px;margin:12px 0 8px}.badges{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}.badge{height:26px;padding:0 10px;border-radius:99px;background:#1a1f2c;font-size:11px;font-weight:700;display:flex;align-items:center}.acts{display:flex;flex-wrap:wrap;gap:8px}.acts a,.acts button{height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:#171b26;color:#fff;font-size:12px;font-weight:800}.acts .p{background:var(--acc);color:#111;border-color:var(--acc)}.side h2{margin:0 0 10px;font-size:14px}.sg{display:grid;grid-template-columns:1fr 1fr;gap:10px}.ph{position:relative;aspect-ratio:16/9;background:#1c1c1c;border-radius:10px;overflow:hidden}.ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.card h3{margin:6px 0 0;font-size:12px;line-height:1.3}#age{position:fixed;inset:0;background:#000;display:none;align-items:center;justify-content:center;z-index:80}#age.on{display:flex}#age .g{width:min(360px,92%);background:#161616;border:1px solid #333;border-radius:14px;padding:22px;text-align:center}#age button{width:100%;height:42px;border:0;border-radius:10px;background:var(--acc);color:#111;font-weight:900;margin-top:12px}</style></head><body>
+<style>:root{--bg:#0b0d12;--acc:#ff9000;--line:#232838}*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:#e8ecf4;font-family:system-ui,sans-serif}a{color:inherit;text-decoration:none}.wrap{width:min(1180px,calc(100% - 24px));margin:0 auto}header{position:sticky;top:0;background:#0b0d12f2;border-bottom:1px solid var(--line)}.hd{display:flex;align-items:center;gap:10px;min-height:52px}.logo{font-weight:900}.logo b{color:var(--acc)}main{padding:16px 0 40px}.layout{display:grid;grid-template-columns:1fr;gap:16px}@media(min-width:960px){.layout{grid-template-columns:minmax(0,1.7fr) 300px}}.player{position:relative;aspect-ratio:16/9;background:#000;border:1px solid var(--line);border-radius:14px;overflow:hidden}.hold,.player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.hold{display:flex;align-items:center;justify-content:center;cursor:pointer;background:#000 center/cover no-repeat}.btn{width:64px;height:64px;border-radius:99px;background:var(--acc);color:#111;display:grid;place-items:center}h1{font-size:20px;margin:12px 0 8px}.badges{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}.badge{height:26px;padding:0 10px;border-radius:99px;background:#1a1f2c;font-size:11px;font-weight:700;display:flex;align-items:center}.acts{display:flex;gap:8px;flex-wrap:wrap}.acts a,.acts button{height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:#171b26;color:#fff;font-size:12px;font-weight:800}.acts .p{background:var(--acc);color:#111;border-color:var(--acc)}.side h2{margin:0 0 10px;font-size:14px}.sg{display:grid;grid-template-columns:1fr 1fr;gap:10px}.ph{position:relative;aspect-ratio:16/9;background:#1c1c1c;border-radius:10px;overflow:hidden}.ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.card h3{margin:6px 0 0;font-size:12px}#age{position:fixed;inset:0;background:#000;display:none;align-items:center;justify-content:center;z-index:80}#age.on{display:flex}#age .g{width:min(360px,92%);background:#161616;border:1px solid #333;border-radius:14px;padding:22px;text-align:center}#age button{width:100%;height:42px;border:0;border-radius:10px;background:var(--acc);color:#111;font-weight:900;margin-top:12px}</style></head><body>
 <div id="age"><div class="g"><img src="/logo.png" width="48" height="48" alt="" style="border-radius:8px"><h2>DR.<span style="color:var(--acc)">PINGUIN</span></h2><p style="color:#9aa3b5">Konten 18+.</p><button id="ageOk" type="button">MASUK</button></div></div>
-<header><div class="wrap"><div class="hd"><a class="logo" href="/">DR.<b>PINGUIN</b></a><nav style="display:flex;gap:10px;font-size:12px;font-weight:800"><a href="/">Terbaru</a><a href="/putarin">JAV</a><a href="/mumu">AI China</a></nav></div></div></header>
+<header><div class="wrap"><div class="hd"><a class="logo" href="/">DR.<b>PINGUIN</b></a></div></div></header>
 <main class="wrap"><div class="layout"><div>
 <div class="player" id="box"><div class="hold" id="hold" data-src="${embed}" style="${poster ? "background-image:url('" + poster + "')" : ""}"><div class="btn">&#9654;</div></div></div>
 <h1>${title}</h1><div class="badges"><span class="badge">${cat}</span><span class="badge">18+</span></div>
 <div class="acts"><button class="p" id="btnShare" type="button">Bagikan</button><a href="${opts.back || "/"}">Kembali</a></div>
 </div><aside class="side"><h2>Rekomendasi</h2><div class="sg">${related}</div></aside></div></main>
-<script>(function(){var KEY='kdp_age_ok';var age=document.getElementById('age');var ok=false;try{var raw=localStorage.getItem(KEY);ok=raw==='1';}catch(e){}if(!ok&&age){age.className='on';document.getElementById('ageOk').onclick=function(){try{localStorage.setItem(KEY,'1')}catch(e){}age.className='';};}var hold=document.getElementById('hold');if(hold)hold.onclick=function(){var src=hold.getAttribute('data-src');if(!src)return;document.getElementById('box').innerHTML='<iframe src="'+src+'" allow="autoplay;encrypted-media;fullscreen" allowfullscreen></iframe>';};var sh=document.getElementById('btnShare');if(sh)sh.onclick=function(){if(navigator.share){navigator.share({title:document.title,url:location.href}).catch(function(){})}else if(navigator.clipboard){navigator.clipboard.writeText(location.href);}};})();</script></body></html>`;
+<script>(function(){var KEY='kdp_age_ok';var age=document.getElementById('age');var ok=false;try{ok=localStorage.getItem(KEY)==='1';}catch(e){}if(!ok&&age){age.className='on';document.getElementById('ageOk').onclick=function(){try{localStorage.setItem(KEY,'1')}catch(e){}age.className='';};}var hold=document.getElementById('hold');if(hold)hold.onclick=function(){var src=hold.getAttribute('data-src');if(!src)return;document.getElementById('box').innerHTML='<iframe src="'+src+'" allow="autoplay;encrypted-media;fullscreen" allowfullscreen></iframe>';};var sh=document.getElementById('btnShare');if(sh)sh.onclick=function(){if(navigator.share){navigator.share({title:document.title,url:location.href}).catch(function(){})}else if(navigator.clipboard){navigator.clipboard.writeText(location.href);}};})();</script></body></html>`;
 }
-
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname.replace(/\/$/, "") || "/";
-
     if (path === "/api/thumb") {
       const host = url.searchParams.get("h") || "";
       const id = (url.searchParams.get("id") || "").replace(/[^A-Za-z0-9_-]/g, "");
-      try {
-        const img = host && id ? await posterFromAv(host, id) : "";
-        if (img) return Response.redirect(img, 302);
-      } catch (e) {}
+      try { const img = host && id ? await posterFromAv(host, id) : ""; if (img) return Response.redirect(img, 302); } catch (e) {}
       return new Response(SVG, { headers: { "content-type": "image/svg+xml; charset=utf-8", "cache-control": "public, max-age=600" } });
     }
-
     if (path === "/api/poster") {
       const id = (url.searchParams.get("id") || "").replace(/[^A-Za-z0-9_-]/g, "");
-      try {
-        const img = id ? await posterFromPuterin(id) : "";
-        if (img) return Response.redirect(img, 302);
-      } catch (e) {}
+      try { const img = id ? await posterFromPuterin(id) : ""; if (img) return Response.redirect(img, 302); } catch (e) {}
       return new Response(SVG, { headers: { "content-type": "image/svg+xml; charset=utf-8" } });
     }
-
     if (path === "/putarin") return env.ASSETS.fetch(new Request(new URL("/putarin.html", url), request));
     if (path === "/mumu") return env.ASSETS.fetch(new Request(new URL("/mumu.html", url), request));
-
     if (path.startsWith("/v/") || path === "/api/watch") {
       const id = path.startsWith("/v/") ? path.split("/")[2] : (url.searchParams.get("id") || "");
       if (!id) return Response.redirect(new URL("/", url), 302);
       const [putList, mumuList, vidList] = await Promise.all([
-        loadJson(env, "/data/putarin.json"),
-        loadJson(env, "/data/mumu.json"),
-        loadJson(env, "/data/videos.json")
+        loadJson(env, "/data/putarin.json"), loadJson(env, "/data/mumu.json"), loadJson(env, "/data/videos.json")
       ]);
       const all = [].concat(putList, mumuList, vidList);
       const video = all.find((v) => keyOf(v).toLowerCase() === id.toLowerCase());
-      const related = shuffle(all).filter((v) => keyOf(v) && keyOf(v) !== id).slice(0, 8).map((v) => ({
-        id: keyOf(v), title: cleanTitle(v.title), poster: posterOf(v)
-      }));
       let title = id, cat = "Video", embed = "https://puterin.biz/e/" + id, back = "/", poster = "/api/poster?id=" + encodeURIComponent(id);
       if (video) {
         title = cleanTitle(video.title);
@@ -138,21 +148,20 @@ export default {
         if (/mumu/i.test(embed + " " + cat)) back = "/mumu";
         else if (/putarin|puterin/i.test(embed + " " + cat)) back = "/putarin";
       }
+      const related = pickRelated(all, id, title, 8);
       return new Response(watchHtml({ title, cat, embed, back, poster, related }), {
         headers: { "content-type": "text/html; charset=utf-8", "cache-control": "private, no-store" }
       });
     }
-
     if (env.ASSETS) {
       const asset = await env.ASSETS.fetch(request);
       if (path.endsWith(".json") && asset.ok) {
         const headers = new Headers(asset.headers);
         headers.set("access-control-allow-origin", "*");
-        headers.set("cache-control", "public, max-age=60");
         return new Response(asset.body, { status: 200, headers });
       }
       return asset;
     }
-    return new Response("ASSETS binding missing", { status: 500 });
+    return new Response("ASSETS missing", { status: 500 });
   }
 };
