@@ -20,6 +20,7 @@
     s.src = src;
     document.body.appendChild(s);
   }
+  add("/js/nav-mumu.js?v=1");
   add("https://cdn.jsdelivr.net/gh/fashfdhgacd/koleksi-dr-pinguin@64ee4c14c60cca54f5f1cdd6f7b6892c43a2b0a1/js/app.js");
   setTimeout(function () {
     add("/js/poster-map.js?v=p3");
