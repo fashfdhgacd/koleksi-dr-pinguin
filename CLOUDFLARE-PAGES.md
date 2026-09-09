@@ -1,32 +1,18 @@
-# Project Cloudflare Pages BARU
+# Deploy otomatis ke Cloudflare
 
-Akun Cloudflare tidak tersambung ke Grok, jadi project-nya kamu yang klik. Repo sudah siap.
+Tiap push ke `main` → GitHub Action `Deploy Cloudflare` → Worker `koleksi-dr-pinguin`.
 
-## Buat project baru (jangan tempel ke project lama)
+## Sekali saja: token
 
-1. Buka https://dash.cloudflare.com → **Workers & Pages**
-2. **Create** → **Pages** → **Connect to Git**
-3. Pilih repo `fashfdhgacd/koleksi-dr-pinguin`
-4. Setelan:
-   - Project name: `koleksi-dr-pinguin-cf`
-   - Production branch: `main`
-   - Framework preset: **None**
-   - Build command: *(kosong)*
-   - Build output directory: `/`
-5. Save and Deploy
+1. Cloudflare dashboard → My Profile → API Tokens → Create Token
+2. Template **Edit Cloudflare Workers**
+3. Copy token
+4. GitHub repo → Settings → Secrets and variables → Actions → New repository secret
+   - `CLOUDFLARE_API_TOKEN` = token tadi
+   - `CLOUDFLARE_ACCOUNT_ID` = `1ef0240f16747fd792f70e13c29790e0`
+5. Actions → Deploy Cloudflare → Run workflow
 
-URL preview pertama biasanya:
-`https://koleksi-dr-pinguin-cf.pages.dev`
+Setelah secret terpasang, push ke `main` otomatis update:
+https://koleksi-dr-pinguin.readmi559.workers.dev
 
-Cek layout dulu di:
-`https://koleksi-dr-pinguin-cf.pages.dev/preview-nonton.html`
-
-## Domain .com
-Jangan pindah nameserver sebelum Pages.dev sudah hijau.
-Custom domains → add `koleksidrpinguin.com` + `www`.
-Vercel project jangan dihapus dulu.
-
-## Catatan
-- Folder `api/` itu format Vercel. Di CF yang jalan folder `functions/`.
-- `/v/id` diarahkan lewat `_redirects` ke `/api/watch`.
-- Bot Telegram biarkan di Vercel/.site dulu.
+Domain `.com` jangan dipindah dulu. Vercel biarkan nyala.
