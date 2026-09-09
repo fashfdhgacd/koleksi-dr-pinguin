@@ -1,5 +1,5 @@
 const CACHE_MS = 10 * 60 * 1000;
-let mem = { t: 0, put: [], mumu: [], vid: [] };
+let mem = { t: 0, put: [], mumu: [], vid: [], posters: {} };
 function esc(s) {
   const map = Object.create(null);
   map["\x26"] = "\x26amp;";
@@ -46,15 +46,13 @@ function shuffle(a) {
   return x;
 }
 function mediaOf(v) {
-  if (v.poster || v.thumb || v.thumbnail) return "<img src=\"" + esc(v.poster || v.thumb || v.thumbnail) + "\" alt=\"\" loading=\"lazy\">";
-  const raw = rawOf(v);
   const id = keyOf(v);
+  const ready = v.poster || v.thumb || v.thumbnail || (mem.posters && mem.posters[id]);
+  if (ready) return "<img src=\"" + esc(ready) + "\" alt=\"\" loading=\"lazy\">";
+  const raw = rawOf(v);
   if (/mumu\.watch/i.test(raw) && id) return "<img src=\"https://m-cdn.video/hls/" + esc(id) + "/thumbnail.jpg\" alt=\"\" loading=\"lazy\">";
   if (/putarin|puterin/i.test(raw) && id) return "<img src=\"/api/poster?id=" + encodeURIComponent(id) + "\" alt=\"\" loading=\"lazy\">";
-  if (isBlocked(v)) return "";
-  if (/indoav/i.test(raw) && id) return "<img src=\"/api/thumb?h=indoav&id=" + encodeURIComponent(id) + "\" alt=\"\" loading=\"lazy\">";
-  if (/userbokep/i.test(raw) && id) return "<img src=\"/api/thumb?h=userbokep&id=" + encodeURIComponent(id) + "\" alt=\"\" loading=\"lazy\">";
-  return "<img src=\"/api/thumb\" alt=\"\">";
+  return "";
 }
 function pickRelated(lists, currentId, currentTitle, n) {
   const usedId = {};
@@ -63,9 +61,9 @@ function pickRelated(lists, currentId, currentTitle, n) {
   const curS = seriesKey(currentTitle || "");
   if (curS) usedSeries[curS] = 1;
   const out = [];
-  const buckets = lists.map(function (list) { return shuffle((list || []).slice(0, 400)); });
+  const buckets = lists.map(function (list) { return shuffle((list || []).slice()); });
   let guard = 0;
-  while (out.length < n && guard < 2000) {
+  while (out.length < n && guard < 4000) {
     guard++;
     let added = false;
     for (let b = 0; b < buckets.length && out.length < n; b++) {
@@ -76,7 +74,9 @@ function pickRelated(lists, currentId, currentTitle, n) {
         const kid = keyOf(v);
         const title = cleanTitle(v.title);
         const sk = seriesKey(title);
-        if (!kid || !title || usedId[kid.toLowerCase()] || (sk && usedSeries[sk])) continue;
+        if (!kid || !title) continue;
+        if (kid.toLowerCase() === String(currentId || "").toLowerCase()) continue;
+        if (usedId[kid.toLowerCase()] || (sk && usedSeries[sk])) continue;
         usedId[kid.toLowerCase()] = 1;
         if (sk) usedSeries[sk] = 1;
         out.push(v);
@@ -96,20 +96,30 @@ async function loadJson(url) {
     return Array.isArray(d) ? d : [];
   } catch (_) { return []; }
 }
+async function loadMap(url) {
+  try {
+    const r = await fetch(url, { cache: "force-cache" });
+    if (!r.ok) return {};
+    const d = await r.json();
+    return d && typeof d === "object" && !Array.isArray(d) ? d : {};
+  } catch (_) { return {}; }
+}
 async function catalogs() {
   if (mem.vid.length && Date.now() - mem.t < CACHE_MS) return mem;
   const owner = process.env.GH_OWNER || "fashfdhgacd";
   const repo = process.env.GH_REPO || "koleksi-dr-pinguin";
   const base = "https://raw.githubusercontent.com/" + owner + "/" + repo + "/main/data/";
-  const [put, mumu, vid] = await Promise.all([
+  const [put, mumu, vid, posters] = await Promise.all([
     loadJson(base + "putarin.json"),
     loadJson(base + "mumu.json"),
-    loadJson(base + "videos.json")
+    loadJson(base + "videos.json"),
+    loadMap(base + "posters.json")
   ]);
   mem = {
     t: Date.now(),
     put: put,
     mumu: mumu,
+    posters: posters || {},
     vid: (vid || []).filter(function (v) { return !/videy/i.test(rawOf(v)); })
   };
   return mem;
@@ -133,7 +143,7 @@ module.exports = async function handler(req, res) {
     }
     const related = pickRelated([catas.put, catas.mumu, catas.vid], id, title, 8);
     const cards = related.map(function (v) {
-      return "<a class=\"card\" href=\"/v/" + encodeURIComponent(keyOf(v)) + "\" data-embed=\"" + esc(rawOf(v).replace("/d/", "/e/")) + "\" data-title=\"" + esc(cleanTitle(v.title)) + "\"><div class=\"ph\">" + mediaOf(v) + "</div><h3>" + esc(cleanTitle(v.title)) + "</h3></a>";
+      return "<a class=\"card video-card\" href=\"/v/" + encodeURIComponent(keyOf(v)) + "\" data-id=\"" + esc(keyOf(v)) + "\" data-embed=\"" + esc(rawOf(v).replace("/d/", "/e/")) + "\" data-title=\"" + esc(cleanTitle(v.title)) + "\"><div class=\"ph\">" + mediaOf(v) + "</div><h3>" + esc(cleanTitle(v.title)) + "</h3></a>";
     }).join("");
     const player = /\.mp4($|\?)/i.test(embed) || /videy/i.test(embed)
       ? "<video controls playsinline preload=\"metadata\" src=\"" + esc(embed) + "\"></video>"
@@ -150,8 +160,8 @@ module.exports = async function handler(req, res) {
       "<header><div class=wrap><div class=hd><a class=logo href=/>DR.<b>PINGUIN</b></a></div></div></header>" +
       "<main class=wrap><div class=layout><div><div class=player>" + player +
       "</div><h1>" + esc(title) + "</h1><div class=acts><button class=p type=button id=btnShare>Bagikan</button><a href=\"" + esc(back) + "\">Kembali</a></div></div>" +
-      "<aside class=side><h2>Rekomendasi</h2><div class=sg>" + cards + "</div></aside></div></main>" +
-      "<script src=\"/js/watch-swap.js?v=2\"></script></body></html>";
+      "<aside class=side><h2>Rekomendasi</h2><div class=sg id=trendingGrid>" + cards + "</div></aside></div></main>" +
+      "<script src=\"/js/poster-map.js?v=hero1\"></script><script src=\"/js/watch-swap.js?v=2\"></script></body></html>";
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader("Cache-Control", "public, s-maxage=15, stale-while-revalidate=60");
     res.statusCode = 200;
