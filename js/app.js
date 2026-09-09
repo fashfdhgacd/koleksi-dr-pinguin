@@ -24,7 +24,7 @@
     } catch (e) {}
     ['/js/putarin-nav.js', '/js/modal-share.js', '/js/thumb-fix.js', '/js/modal-close.js', '/js/videy-fix.js'].forEach(function (src) {
       var el = document.createElement('script');
-      el.src = src + '?v=avthumb2';
+      el.src = src + '?v=hubfix1';
       document.body.appendChild(el);
     });
   }
