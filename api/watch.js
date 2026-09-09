@@ -1,6 +1,5 @@
 const CACHE_MS = 10 * 60 * 1000;
 let mem = { t: 0, put: [], mumu: [], vid: [] };
-
 function esc(s) {
   const map = Object.create(null);
   map["\x26"] = "\x26amp;";
@@ -113,7 +112,7 @@ module.exports = async function handler(req, res) {
     }
     const related = pickRelated([catas.put, catas.mumu, catas.vid], id, title, 8);
     const cards = related.map(function (v) {
-      return "<a class=\"card\" href=\"/v/" + encodeURIComponent(keyOf(v)) + "\"><div class=\"ph\">" + mediaOf(v) + "</div><h3>" + esc(cleanTitle(v.title)) + "</h3></a>";
+      return "<a class=\"card\" href=\"/v/" + encodeURIComponent(keyOf(v)) + "\" data-embed=\"" + esc(String(v.embed || v.direct || "").replace("/d/", "/e/")) + "\" data-title=\"" + esc(cleanTitle(v.title)) + "\"><div class=\"ph\">" + mediaOf(v) + "</div><h3>" + esc(cleanTitle(v.title)) + "</h3></a>";
     }).join("");
     const player = /\.mp4($|\?)/i.test(embed)
       ? "<video controls playsinline preload=\"metadata\" src=\"" + esc(embed) + "\"></video>"
@@ -131,7 +130,7 @@ module.exports = async function handler(req, res) {
       "<main class=wrap><div class=layout><div><div class=player>" + player +
       "</div><h1>" + esc(title) + "</h1><div class=acts><button class=p type=button id=btnShare>Bagikan</button><a href=\"" + esc(back) + "\">Kembali</a></div></div>" +
       "<aside class=side><h2>Rekomendasi</h2><div class=sg>" + cards + "</div></aside></div></main>" +
-      "<script>(function(){var b=document.getElementById('btnShare');if(b)b.onclick=function(){if(navigator.share)navigator.share({title:document.title,url:location.href}).catch(function(){});else if(navigator.clipboard)navigator.clipboard.writeText(location.href);};})();</script></body></html>";
+      "<script src=\"/js/watch-swap.js?v=1\"></script></body></html>";
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
     res.statusCode = 200;
