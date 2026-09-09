@@ -1,20 +1,20 @@
 (function () {
   var l = document.createElement('link');
   l.rel = 'stylesheet';
-  l.href = '/css/rec-grid.css?v=grid1';
+  l.href = '/css/rec-grid.css?v=ui2';
   document.head.appendChild(l);
   function add(src) {
     var el = document.createElement('script');
     el.src = src;
     document.body.appendChild(el);
   }
-  add('/js/related-pick.js?v=grid1');
-  add('/js/modal-share.js?v=grid1');
-  add('/js/rec-boot.js?v=grid1');
-  add('/js/putarin-nav.js?v=grid1');
-  add('/js/thumb-fix.js?v=grid1');
-  add('/js/modal-close.js?v=grid1');
-  add('/js/videy-fix.js?v=grid1');
+  add('/js/related-pick.js?v=ui2');
+  add('/js/modal-share.js?v=ui2');
+  add('/js/rec-boot.js?v=ui2');
+  add('/js/putarin-nav.js?v=ui2');
+  add('/js/thumb-fix.js?v=ui2');
+  add('/js/modal-close.js?v=ui2');
+  add('/js/videy-fix.js?v=ui2');
   var s = document.createElement('script');
   s.src = '/js/gallery-full.js?v=20260909thumb';
   s.onerror = function () {

@@ -4,3 +4,8 @@
 .sg .ph img,.sg .ph video,.sg .ph iframe,.vph img,.vph video,.vph iframe{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border:0;pointer-events:none}
 .sg .card h3,.vcard span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;height:2.6em;line-height:1.3;margin-top:6px;font-size:12px}
 .sg .card p{margin:0;height:1.2em;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:11px}
+.acts,#hubActs{display:flex!important;flex-wrap:wrap!important;gap:8px!important;align-items:center!important;margin:0 0 16px!important}
+.acts a,.acts button,#hubActs a,#hubActs button{box-sizing:border-box!important;height:40px!important;min-width:112px!important;padding:0 16px!important;border-radius:10px!important;border:1px solid #232838!important;background:#171b26!important;color:#fff!important;font-size:13px!important;font-weight:700!important;line-height:1!important;letter-spacing:0!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;white-space:nowrap!important;margin:0!important;appearance:none!important;-webkit-appearance:none!important;vertical-align:middle!important;text-decoration:none!important}
+.acts .p,.acts .pri,#hubActs .pri{background:#ff9000!important;color:#111!important;border-color:#ff9000!important}
+.badges,#hubMeta{display:flex!important;flex-wrap:wrap!important;gap:6px!important;align-items:center!important}
+.badge,#hubMeta span{height:26px!important;padding:0 10px!important;border-radius:999px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;font-size:11px!important;font-weight:700!important;line-height:1!important}
