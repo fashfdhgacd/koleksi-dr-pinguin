@@ -17,13 +17,9 @@
     s.src = src;
     document.body.appendChild(s);
   }
-  add("/js/poster-map.js?v=p1");
+  add("/js/poster-map.js?v=p2");
   add("https://cdn.jsdelivr.net/gh/fashfdhgacd/koleksi-dr-pinguin@64ee4c14c60cca54f5f1cdd6f7b6892c43a2b0a1/js/app.js");
   setTimeout(function () {
-    var css = document.createElement("link");
-    css.rel = "stylesheet";
-    css.href = "/css/rec-grid.css?v=fast2";
-    document.head.appendChild(css);
-    add("/js/modal-share.js?v=fast2");
-  }, 1500);
+    add("/js/modal-share.js?v=fast3");
+  }, 800);
 })();
