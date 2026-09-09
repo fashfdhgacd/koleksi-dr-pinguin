@@ -69,6 +69,8 @@
     return String((v && (v.embed || v.direct || v.embedUrl)) || '').replace('/d/', '/e/');
   }
   function previewHtml(v) {
+    var ready = v && (v.poster || v.thumb || v.thumbnail);
+    if (ready) return '<img src="' + String(ready).replace(/"/g, '') + '" alt="" loading="lazy">';
     var raw = embedOf(v);
     var id = keyFromEmbed(raw);
     if (/indoav|userbokep/i.test(raw)) {
@@ -79,9 +81,6 @@
     }
     if (/putarin|puterin/i.test(raw + ' ' + ((v && (v.source || v.category)) || '')) && id) {
       return '<img src="/api/poster?id=' + encodeURIComponent(id) + '" alt="" loading="lazy">';
-    }
-    if (v && (v.thumb || v.thumbnail || v.poster)) {
-      return '<img src="' + String(v.thumb || v.thumbnail || v.poster).replace(/"/g, '') + '" alt="" loading="lazy">';
     }
     if (/\.mp4($|\?)/i.test(raw) || (/videy/i.test(raw) && id)) {
       var mp4 = /\.mp4($|\?)/i.test(raw) ? raw : ('https://cdn.videy.co/' + id + '.mp4');
