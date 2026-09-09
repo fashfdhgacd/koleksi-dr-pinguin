@@ -1,19 +1,17 @@
 (function () {
   if (window.__modalShare) return;
   window.__modalShare = true;
-  var putList = [], mumuList = [], vidList = [];
+  var mumuList = [], vidList = [];
   var switching = false;
-  function isVidey(v) {
-    return /videy/i.test(String((v && (v.embed || v.direct || v.embedUrl)) || ''));
+  function blocked(v) {
+    return /videy|putarin|puterin/i.test(String((v && (v.embed || v.direct || v.embedUrl)) || ''));
   }
   Promise.all([
     fetch('/data/videos.json').then(function (r) { return r.json(); }).catch(function () { return []; }),
-    fetch('/data/putarin.json').then(function (r) { return r.json(); }).catch(function () { return []; }),
     fetch('/data/mumu.json').then(function (r) { return r.json(); }).catch(function () { return []; })
   ]).then(function (arr) {
-    vidList = (arr[0] || []).filter(function (v) { return !isVidey(v); });
-    putList = arr[1] || [];
-    mumuList = arr[2] || [];
+    vidList = (arr[0] || []).filter(function (v) { return !blocked(v); });
+    mumuList = arr[1] || [];
   });
   if (!document.getElementById('hubModalCss')) {
     var css = document.createElement('style');
@@ -73,7 +71,6 @@
     var id = keyFromEmbed(raw);
     if (window.KDP_POSTERS && id && window.KDP_POSTERS[id]) return '<img src="' + String(window.KDP_POSTERS[id]).replace(/"/g, '') + '" alt="" loading="lazy">';
     if (/mumu\.watch/i.test(raw) && id) return '<img src="https://m-cdn.video/hls/' + id + '/thumbnail.jpg" alt="" loading="lazy">';
-    if (/putarin|puterin/i.test(raw) && id) return '<img src="/api/poster?id=' + encodeURIComponent(id) + '" alt="" loading="lazy">';
     return '<div style="position:absolute;inset:0;background:#1c1c1c;display:grid;place-items:center"><span style="width:36px;height:36px;border-radius:99px;background:#ff9000;color:#111;display:grid;place-items:center">&#9654;</span></div>';
   }
   function showLoad(on) {
@@ -95,7 +92,7 @@
     var out = [];
     for (var i = 0; i < pool.length && out.length < n; i++) {
       var v = pool[i];
-      if (isVidey(v)) continue;
+      if (blocked(v)) continue;
       var id = keyFromEmbed(embedOf(v));
       if (curId && id && id === curId) continue;
       var title = cleanTitle(v.title);
@@ -109,10 +106,10 @@
   function nextVideos() {
     var title = cleanTitle(((document.getElementById('hubTitle') || document.getElementById('modalTitle') || {}).textContent || '').trim());
     var used = {};
-    return shuffle(pickBucket(putList, title, used, 3).concat(pickBucket(mumuList, title, used, 3), pickBucket(vidList, title, used, 2))).slice(0, 8);
+    return shuffle(pickBucket(mumuList, title, used, 4).concat(pickBucket(vidList, title, used, 4))).slice(0, 8);
   }
   function playVideo(v) {
-    if (!v || isVidey(v) || switching) return;
+    if (!v || blocked(v) || switching) return;
     var raw = embedOf(v);
     var iframe = document.getElementById('modalIframe');
     if (!iframe || !raw) return;
