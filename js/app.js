@@ -22,9 +22,13 @@
         if (main) { main.classList.remove('opacity-0'); main.classList.add('opacity-100'); }
       }
     } catch (e) {}
-    ['/js/putarin-nav.js', '/js/modal-share.js', '/js/thumb-fix.js', '/js/modal-close.js', '/js/videy-fix.js'].forEach(function (src) {
+    var scripts = ['/js/putarin-nav.js', '/js/thumb-fix.js', '/js/open-watch.js'];
+    if (window.innerWidth > 1024) {
+      scripts.push('/js/modal-share.js', '/js/modal-close.js', '/js/videy-fix.js');
+    }
+    scripts.forEach(function (src) {
       var el = document.createElement('script');
-      el.src = src + '?v=rollback2';
+      el.src = src + '?v=hpB1';
       document.body.appendChild(el);
     });
   }
