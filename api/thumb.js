@@ -20,7 +20,7 @@ async function avPoster(host, id) {
     headers: { "user-agent": "Mozilla/5.0", accept: "text/html" }
   });
   const html = await r.text();
-  const m = html.match(/poster=\"(https:\/\/[^\"\\s]+)\"/i);
+  const m = html.match(/poster="(https:\/\/[^"\s]+)"/i);
   return m && m[1] ? m[1] : "";
 }
 module.exports = async function handler(req, res) {
