@@ -10,10 +10,10 @@ function isMumuBlob(s) {
 }
 function esc(s) {
   return String(s || "").replace(/[&<>"']/g, function (ch) {
-    if (ch === "&") return "&" + "amp;";
-    if (ch === "<") return "&" + "lt;";
-    if (ch === ">") return "&" + "gt;";
-    if (ch === '"') return "&" + "quot;";
+    if (ch === "&") return "&amp;";
+    if (ch === "<") return "&lt;";
+    if (ch === ">") return "&gt;";
+    if (ch === '"') return "&quot;";
     return "&#39;";
   });
 }
@@ -61,13 +61,15 @@ function mp4Of(v, id) {
   return "";
 }
 function posterOf(v, id) {
+  if (v && (v.poster || v.thumb || v.thumbnail)) return v.poster || v.thumb || v.thumbnail;
   const raw = String((v && (v.embed || v.direct || v.embedUrl)) || "");
   const blob = raw + " " + String((v && (v.source || v.category || v.folder)) || "");
   const code = putarinCode(raw) || id;
-  if (isMumuBlob(blob)) return "https://m-cdn.video/hls/" + code + "/thumbnail.jpg";
-  if (isPutarinBlob(blob)) return "/api/poster?id=" + encodeURIComponent(code);
-  if (v && (v.thumb || v.thumbnail || v.poster)) return v.thumb || v.thumbnail || v.poster;
-  return "";
+  if (isMumuBlob(blob) && code) return "https://m-cdn.video/hls/" + code + "/thumbnail.jpg";
+  if (isPutarinBlob(blob) && code) return "/api/poster?id=" + encodeURIComponent(code);
+  if (/indoav/i.test(raw) && code) return "/api/thumb?h=indoav&id=" + encodeURIComponent(code);
+  if (/userbokep/i.test(raw) && code) return "/api/thumb?h=userbokep&id=" + encodeURIComponent(code);
+  return "/api/thumb";
 }
 function javCodeFrom(title, extra) {
   const s = String(title || "") + " " + String(extra || "");
@@ -99,7 +101,16 @@ function pickBucket(list, currentId, usedSeries, n) {
     if (sk && usedSeries[sk]) continue;
     seenId[id] = 1;
     if (sk) usedSeries[sk] = 1;
-    out.push({ id: id, title: title, cat: c || "Video", poster: posterOf(v, id), code: javCodeFrom(title, c) });
+    const embed = String(v.embed || v.direct || "").replace("/d/", "/e/");
+    out.push({
+      id: id,
+      title: title,
+      cat: c || "Video",
+      poster: posterOf(v, id),
+      mp4: mp4Of(v, id),
+      embed: embed,
+      code: javCodeFrom(title, c)
+    });
   }
   return out;
 }
@@ -107,14 +118,22 @@ function mixRelated(putList, mumuList, vidList, currentId, currentTitle) {
   const used = {};
   const curSeries = seriesKey(currentTitle || "");
   if (curSeries) used[curSeries] = 1;
-  const a = pickBucket(putList, currentId, used, 4);
+  const a = pickBucket(putList, currentId, used, 3);
   const b = pickBucket(mumuList, currentId, used, 2);
-  const c = pickBucket(vidList, currentId, used, 2);
+  const c = pickBucket(vidList, currentId, used, 3);
   let extra = [];
   if (a.length + b.length + c.length < 8) {
     extra = pickBucket([].concat(putList || [], mumuList || [], vidList || []), currentId, used, 8 - (a.length + b.length + c.length));
   }
   return shuffle(a.concat(b, c, extra)).slice(0, 8);
+}
+function relatedMedia(r) {
+  if (r.mp4) return "<video src=\"" + esc(r.mp4) + "\" muted playsinline preload=\"metadata\"></video>";
+  if (r.embed && /indoav|userbokep/i.test(r.embed)) {
+    return "<iframe src=\"" + esc(r.embed) + "\" loading=\"lazy\" tabindex=\"-1\"></iframe>";
+  }
+  const src = r.poster || "/api/thumb";
+  return "<img src=\"" + esc(src) + "\" alt=\"\" loading=\"lazy\" onerror=\"this.onerror=null;this.src='/api/thumb'\">";
 }
 function pageHtml(opts) {
   const title = opts.title;
@@ -124,7 +143,7 @@ function pageHtml(opts) {
   const page = opts.page;
   const mp4 = String(opts.contentUrl || "");
   const date = String(opts.date || "").slice(0, 10);
-  const poster = String(opts.poster || "");
+  const poster = String(opts.poster || "/api/thumb");
   const code = String(opts.code || javCodeFrom(title, cat));
   const related = Array.isArray(opts.related) ? opts.related : [];
   const desc = (title + " - " + cat + " | 18+.").slice(0, 160);
@@ -134,9 +153,8 @@ function pageHtml(opts) {
   if (date) ld.uploadDate = date;
   if (poster) ld.thumbnailUrl = poster;
   const relHtml = related.map(function (r) {
-    var media = r.poster ? "<img src=\"" + esc(r.poster) + "\" alt=\"\" loading=\"lazy\">" : "";
     var badge = r.code ? "<span class=\"code\">" + esc(r.code) + "</span>" : "";
-    return "<a class=\"card\" href=\"/v/" + encodeURIComponent(r.id) + "\"><div class=\"ph\">" + media + badge + "</div><h3>" + esc(r.title) + "</h3><p>" + esc(r.cat || "") + "</p></a>";
+    return "<a class=\"card\" href=\"/v/" + encodeURIComponent(r.id) + "\"><div class=\"ph\">" + relatedMedia(r) + badge + "</div><h3>" + esc(r.title) + "</h3><p>" + esc(r.cat || "") + "</p></a>";
   }).join("");
   return [
     "<!DOCTYPE html><html lang=\"id\"><head><meta charset=\"utf-8\">",
@@ -158,25 +176,25 @@ function pageHtml(opts) {
     ".wrap{width:min(1180px,calc(100% - 24px));margin:0 auto}",
     "header{position:sticky;top:0;z-index:30;background:#0b0d12f2;border-bottom:1px solid var(--line);backdrop-filter:blur(10px)}",
     ".hd{display:flex;align-items:center;gap:12px;min-height:56px}",
-    ".logo{display:flex;align-items:center;gap:8px;font-weight:900}.logo img{width:28px;height:28px;border-radius:6px;object-fit:cover}.logo b{color:var(--acc)}",
-    ".search{flex:1;position:relative;max-width:420px}.search input{width:100%;height:38px;border-radius:999px;border:1px solid var(--line);background:#10131b;color:#fff;padding:0 38px 0 14px}",
+    ".logo{display:flex;align-items:center;gap:8px;font-weight:900;flex:none}.logo img{width:28px;height:28px;border-radius:6px;object-fit:cover}.logo b{color:var(--acc)}",
+    ".search{flex:1;position:relative;min-width:0;max-width:420px}.search input{width:100%;height:38px;border-radius:999px;border:1px solid var(--line);background:#10131b;color:#fff;padding:0 38px 0 14px}",
     ".search button{position:absolute;right:4px;top:4px;width:30px;height:30px;border:0;border-radius:999px;background:transparent;color:var(--dim)}",
-    ".nav{display:flex;gap:8px;overflow:auto;padding:0 0 10px}.nav a{flex:none;height:30px;padding:0 12px;border-radius:999px;background:#171b26;color:#c9d0de;font-size:12px;font-weight:700;display:flex;align-items:center}",
+    ".nav{display:flex;gap:8px;overflow:auto;padding:0 0 10px;-webkit-overflow-scrolling:touch}.nav a{flex:none;height:30px;padding:0 12px;border-radius:999px;background:#171b26;color:#c9d0de;font-size:12px;font-weight:700;display:flex;align-items:center}",
     ".nav a.on,.nav a:hover{background:var(--acc);color:#111}",
     "main{padding:18px 0 40px}",
     ".layout{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}@media(min-width:960px){.layout{grid-template-columns:minmax(0,1.7fr) 320px}}",
     ".player{position:relative;aspect-ratio:16/9;background:#000;border-radius:14px;overflow:hidden;border:1px solid var(--line)}",
     ".player.tall{aspect-ratio:9/16;max-height:72vh;width:min(100%,calc(72vh * 9 / 16));margin:0 auto}",
     ".player iframe,.player video,.hold{position:absolute;inset:0;width:100%;height:100%;border:0}",
-    ".hold{display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000 center/cover no-repeat;cursor:pointer}",
-    ".hold .btn{width:64px;height:64px;border-radius:999px;background:var(--acc);color:#111;display:grid;place-items:center}",
+    ".hold{display:flex;flex-direction:column;align-items:center;justify-content:center;background:#111 center/cover no-repeat;cursor:pointer}",
+    ".hold .btn{width:64px;height:64px;border-radius:999px;background:var(--acc);color:#111;display:grid;place-items:center;font-size:22px}",
     ".hold .hint{margin-top:10px;font-size:12px;color:#fff;text-shadow:0 1px 4px #000}",
     "h1{font-size:22px;line-height:1.25;margin:14px 0 8px}",
     ".badges{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}",
     ".badge{height:26px;padding:0 10px;border-radius:999px;background:#1a1f2c;color:#c5ccda;font-size:11px;font-weight:700;display:flex;align-items:center}",
     ".badge.k{background:var(--acc);color:#111}",
     ".acts{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}",
-    ".acts a,.acts button{height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:#171b26;color:#fff;font-size:12px;font-weight:800}",
+    ".acts a,.acts button{height:38px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:#171b26;color:#fff;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap}",
     ".acts .p{background:var(--acc);color:#111;border-color:var(--acc)}",
     ".box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:0 0 12px}",
     ".box h3{margin:0 0 8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}",
@@ -185,7 +203,7 @@ function pageHtml(opts) {
     ".side h2{margin:0 0 10px;font-size:14px;display:flex;align-items:center;gap:8px}.side h2:before{content:\"\";width:3px;height:14px;background:var(--acc);border-radius:2px}",
     ".sg{display:grid;grid-template-columns:1fr 1fr;gap:10px}",
     ".card{display:block}.ph{position:relative;aspect-ratio:16/9;background:#1c1c1c;border-radius:10px;overflow:hidden}",
-    ".ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}",
+    ".ph img,.ph video,.ph iframe{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border:0;pointer-events:none}",
     ".ph .code{position:absolute;left:6px;top:6px;background:#000c;color:#fff;font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px}",
     ".card h3{margin:6px 0 2px;font-size:12px;line-height:1.3;max-height:2.6em;overflow:hidden}.card p{margin:0;color:var(--dim);font-size:11px}",
     "footer{border-top:1px solid var(--line);padding:18px 0 28px;color:var(--dim);font-size:12px}",
@@ -193,6 +211,7 @@ function pageHtml(opts) {
     "#age{position:fixed;inset:0;z-index:80;background:#000;display:none;align-items:center;justify-content:center}",
     "#age.on{display:flex}#age .g{width:min(360px,92%);background:#161616;border:1px solid #333;border-radius:14px;padding:22px;text-align:center}",
     "#age button{width:100%;height:42px;border:0;border-radius:10px;background:var(--acc);color:#111;font-weight:900;margin-top:12px}",
+    "@media(max-width:640px){h1{font-size:18px}.wrap{width:calc(100% - 16px)}.player{border-radius:10px}.acts a,.acts button{flex:1 1 calc(50% - 8px)}.search input{height:34px;font-size:14px}}",
     "</style></head><body>",
     "<div id=\"age\"><div class=\"g\"><img src=\"/logo.png\" width=\"48\" height=\"48\" alt=\"\" style=\"border-radius:8px\">",
     "<h2 style=\"margin:10px 0 6px\">DR.<span style=\"color:var(--acc)\">PINGUIN</span></h2>",
@@ -204,7 +223,7 @@ function pageHtml(opts) {
     "</div><nav class=\"nav\">",
     "<a href=\"/\">Terbaru</a><a href=\"/putarin\" class=\"", back === "/putarin" ? "on" : "", "\">JAV</a>",
     "<a href=\"/mumu\" class=\"", back === "/mumu" ? "on" : "", "\">AI China</a>",
-    cat ? "<a class=\"on\" href=\"" + esc(back) + "\">" + esc(cat) + "</a>" : "",
+    cat ? "<a class=\"on\" href=\"/\">" + esc(cat) + "</a>" : "",
     "</nav></div></header>",
     "<main class=\"wrap\"><div class=\"layout\"><div>",
     "<div class=\"player", opts.tall ? " tall" : "", "\" id=\"box\">",
@@ -219,7 +238,7 @@ function pageHtml(opts) {
     "<div class=\"acts\"><button class=\"p\" type=\"button\" id=\"btnShare\">Bagikan</button>",
     playSrc ? "<a href=\"" + esc(playSrc) + "\" target=\"_blank\" rel=\"noopener\">Buka player</a>" : "",
     "<a href=\"", esc(back), "\">Kembali</a></div>",
-    cat ? "<div class=\"box\"><h3>Kategori</h3><div class=\"chips\"><a class=\"chip\" href=\"" + esc(back) + "\">" + esc(cat) + "</a></div></div>" : "",
+    cat ? "<div class=\"box\"><h3>Kategori</h3><div class=\"chips\"><a class=\"chip\" href=\"/\">" + esc(cat) + "</a></div></div>" : "",
     "</div><aside class=\"side\">",
     related.length ? "<h2>Rekomendasi</h2><div class=\"sg\">" + relHtml + "</div>" : "",
     "</aside></div></main>",
