@@ -64,16 +64,25 @@
       return last.replace(/\.(mp4|mov)$/i, '');
     } catch (e) { return ''; }
   }
-  function posterOf(v) {
-    var raw = String((v && (v.embed || v.direct || v.embedUrl)) || '');
+  function embedOf(v) {
+    return String((v && (v.embed || v.direct || v.embedUrl)) || '').replace('/d/', '/e/');
+  }
+  function previewHtml(v) {
+    var raw = embedOf(v);
     var id = keyFromEmbed(raw);
-    if (/mumu\.watch/i.test(raw)) return 'https://m-cdn.video/hls/' + id + '/thumbnail.jpg';
-    if (/putarin|puterin/i.test(raw + ' ' + (v.source || '') + ' ' + (v.category || ''))) return '/api/poster?id=' + encodeURIComponent(id);
-    if (/indoav/i.test(raw) && id) return '/api/avposter?h=indoav&id=' + encodeURIComponent(id);
-    if (/userbokep/i.test(raw) && id) return '/api/avposter?h=userbokep&id=' + encodeURIComponent(id);
-    if (v && (v.thumb || v.thumbnail || v.poster)) return v.thumb || v.thumbnail || v.poster;
-    if (/videy/i.test(raw) && id) return 'https://cdn.videy.co/' + id + '.mp4';
-    return '/api/thumb';
+    if (/indoav|userbokep/i.test(raw)) {
+      var host = /userbokep/i.test(raw) ? 'userbokep' : 'indoav';
+      var img = '/api/thumb?h=' + host + '&id=' + encodeURIComponent(id);
+      return '<img src="' + img + '" alt="" loading="lazy" onerror="this.onerror=null;this.insertAdjacentHTML(\'afterend\',\'<iframe src=\\\'' + raw.replace(/'/g, '') + '\' loading=\\'lazy\\' tabindex=\\'-1\\'></iframe>\');this.remove();">';
+    }
+    if (/mumu\.watch/i.test(raw) && id) return '<img src="https://m-cdn.video/hls/' + id + '/thumbnail.jpg" alt="" loading="lazy">';
+    if (/putarin|puterin/i.test(raw + ' ' + ((v && (v.source || v.category)) || '')) && id) return '<img src="/api/poster?id=' + encodeURIComponent(id) + '" alt="" loading="lazy">';
+    if (v && (v.thumb || v.thumbnail || v.poster)) return '<img src="' + (v.thumb || v.thumbnail || v.poster) + '" alt="" loading="lazy">';
+    if (/\.mp4($|\?)/i.test(raw) || (/videy/i.test(raw) && id)) {
+      var mp4 = /\.mp4($|\?)/i.test(raw) ? raw : ('https://cdn.videy.co/' + id + '.mp4');
+      return '<video src="' + mp4 + '" muted playsinline preload="metadata"></video>';
+    }
+    return '<img src="/api/thumb" alt="">';
   }
   function shuffle(arr) {
     var a = arr.slice();
@@ -102,12 +111,6 @@
     var used = {};
     return shuffle(pickBucket(putList, title, used, 3).concat(pickBucket(mumuList, title, used, 3), pickBucket(vidList, title, used, 2))).slice(0, 8);
   }
-  function previewHtml(v) {
-    var th = posterOf(v);
-    if (/\.mp4($|\?)/i.test(th)) return '<video src="' + th + '" muted playsinline preload="metadata"></video>';
-    if (th) return '<img src="' + th + '" alt="" loading="lazy">';
-    return '';
-  }
   function hideOld() {
     var a = document.getElementById('modalShareMobile');
     if (a && a.parentElement) a.parentElement.style.display = 'none';
@@ -118,7 +121,7 @@
   }
   function playVideo(v) {
     if (!v) return;
-    var raw = String(v.embed || v.direct || '').replace('/d/', '/e/');
+    var raw = embedOf(v);
     var titleEl = document.getElementById('modalTitle');
     var metaEl = document.getElementById('modalMeta');
     var iframe = document.getElementById('modalIframe');
