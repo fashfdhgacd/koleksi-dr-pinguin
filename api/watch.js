@@ -1,3 +1,6 @@
+const CACHE_MS = 10 * 60 * 1000;
+let mem = { t: 0, put: [], mumu: [], vid: [] };
+
 function esc(s) {
   const map = Object.create(null);
   map["\x26"] = "\x26amp;";
@@ -36,8 +39,9 @@ function mediaOf(v) {
   const id = keyOf(v);
   if (/mumu\.watch/i.test(raw) && id) return "<img src=\"https://m-cdn.video/hls/" + esc(id) + "/thumbnail.jpg\" alt=\"\" loading=\"lazy\">";
   if (/putarin|puterin/i.test(raw) && id) return "<img src=\"/api/poster?id=" + encodeURIComponent(id) + "\" alt=\"\" loading=\"lazy\">";
-  if (/\.mp4($|\?)/i.test(String(v.direct || raw))) return "<video src=\"" + esc(v.direct || raw) + "\" muted playsinline preload=\"metadata\"></video>";
-  if (/indoav|userbokep/i.test(raw)) return "<iframe src=\"" + esc(raw) + "\" loading=\"lazy\" tabindex=\"-1\"></iframe>";
+  if (/\.mp4($|\?)/i.test(String(v.direct || raw))) return "<img src=\"/api/thumb\" alt=\"\">";
+  if (/indoav/i.test(raw) && id) return "<img src=\"/api/thumb?h=indoav&id=" + encodeURIComponent(id) + "\" alt=\"\" loading=\"lazy\">";
+  if (/userbokep/i.test(raw) && id) return "<img src=\"/api/thumb?h=userbokep&id=" + encodeURIComponent(id) + "\" alt=\"\" loading=\"lazy\">";
   return "<img src=\"/api/thumb\" alt=\"\">";
 }
 function pickRelated(lists, currentId, currentTitle, n) {
@@ -47,9 +51,9 @@ function pickRelated(lists, currentId, currentTitle, n) {
   const curS = seriesKey(currentTitle || "");
   if (curS) usedSeries[curS] = 1;
   const out = [];
-  const buckets = lists.map(function (list) { return shuffle(list || []); });
+  const buckets = lists.map(function (list) { return shuffle((list || []).slice(0, 400)); });
   let guard = 0;
-  while (out.length < n && guard < 4000) {
+  while (out.length < n && guard < 2000) {
     guard++;
     let added = false;
     for (let b = 0; b < buckets.length && out.length < n; b++) {
@@ -73,25 +77,31 @@ function pickRelated(lists, currentId, currentTitle, n) {
 }
 async function loadJson(url) {
   try {
-    const r = await fetch(url);
+    const r = await fetch(url, { cache: "force-cache" });
     if (!r.ok) return [];
     const d = await r.json();
     return Array.isArray(d) ? d : [];
   } catch (_) { return []; }
 }
+async function catalogs() {
+  if (mem.vid.length && Date.now() - mem.t < CACHE_MS) return mem;
+  const owner = process.env.GH_OWNER || "fashfdhgacd";
+  const repo = process.env.GH_REPO || "koleksi-dr-pinguin";
+  const base = "https://raw.githubusercontent.com/" + owner + "/" + repo + "/main/data/";
+  const [put, mumu, vid] = await Promise.all([
+    loadJson(base + "putarin.json"),
+    loadJson(base + "mumu.json"),
+    loadJson(base + "videos.json")
+  ]);
+  mem = { t: Date.now(), put: put, mumu: mumu, vid: vid };
+  return mem;
+}
 module.exports = async function handler(req, res) {
   try {
     const id = String((req.query && (req.query.id || req.query.v)) || "").replace(/^\//, "").trim();
     if (!id) { res.writeHead(302, { Location: "/" }); return res.end(); }
-    const owner = process.env.GH_OWNER || "fashfdhgacd";
-    const repo = process.env.GH_REPO || "koleksi-dr-pinguin";
-    const base = "https://raw.githubusercontent.com/" + owner + "/" + repo + "/main/data/";
-    const [putList, mumuList, vidList] = await Promise.all([
-      loadJson(base + "putarin.json"),
-      loadJson(base + "mumu.json"),
-      loadJson(base + "videos.json")
-    ]);
-    const all = [].concat(putList, mumuList, vidList);
+    const catas = await catalogs();
+    const all = catas.put.concat(catas.mumu, catas.vid);
     const video = all.find(function (v) { return keyOf(v).toLowerCase() === id.toLowerCase(); });
     let title = id, cat = "Video", embed = "https://puterin.biz/e/" + id, back = "/";
     if (video) {
@@ -101,29 +111,29 @@ module.exports = async function handler(req, res) {
       if (/mumu/i.test(embed + " " + cat)) back = "/mumu";
       else if (/putarin|puterin/i.test(embed + " " + cat)) back = "/putarin";
     }
-    const related = pickRelated([putList, mumuList, vidList], id, title, 8);
+    const related = pickRelated([catas.put, catas.mumu, catas.vid], id, title, 8);
     const cards = related.map(function (v) {
       return "<a class=\"card\" href=\"/v/" + encodeURIComponent(keyOf(v)) + "\"><div class=\"ph\">" + mediaOf(v) + "</div><h3>" + esc(cleanTitle(v.title)) + "</h3></a>";
     }).join("");
     const player = /\.mp4($|\?)/i.test(embed)
-      ? "<video controls autoplay playsinline src=\"" + esc(embed) + "\"></video>"
+      ? "<video controls playsinline preload=\"metadata\" src=\"" + esc(embed) + "\"></video>"
       : "<iframe src=\"" + esc(embed) + "\" allow=\"autoplay;encrypted-media;fullscreen\" allowfullscreen></iframe>";
     const html = "<!DOCTYPE html><html lang=id><head><meta charset=utf-8><meta name=viewport content=\"width=device-width,initial-scale=1\"><title>" +
-      esc(title) + " | Dr. Pinguin</title><link rel=stylesheet href=\"/css/rec-grid.css?v=ui4\"><style>" +
+      esc(title) + " | Dr. Pinguin</title><link rel=stylesheet href=\"/css/rec-grid.css?v=fast1\"><style>" +
       ":root{--bg:#0b0d12;--acc:#ff9000;--line:#232838}*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:#e8ecf4;font-family:system-ui,sans-serif}a{color:inherit;text-decoration:none}" +
-      ".wrap{width:min(1180px,calc(100% - 24px));margin:0 auto}header{border-bottom:1px solid var(--line)}.hd{display:flex;align-items:center;gap:10px;min-height:52px}.logo{font-weight:900}.logo b{color:var(--acc)}" +
+      ".wrap{width:min(1180px,calc(100% - 24px));margin:0 auto}header{border-bottom:1px solid var(--line)}.hd{min-height:52px;display:flex;align-items:center}.logo{font-weight:900}.logo b{color:var(--acc)}" +
       "main{padding:16px 0 40px}.layout{display:grid;grid-template-columns:1fr;gap:16px}@media(min-width:960px){.layout{grid-template-columns:minmax(0,1.7fr) 320px}}" +
       ".player{position:relative;aspect-ratio:16/9;background:#000;border:1px solid var(--line);border-radius:14px;overflow:hidden}.player iframe,.player video{position:absolute;inset:0;width:100%;height:100%;border:0}" +
       "h1{font-size:20px;margin:12px 0 8px}.acts{display:flex;gap:8px;flex-wrap:wrap}.acts a,.acts button{height:40px;min-width:112px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:#171b26;color:#fff;font-weight:700;display:inline-flex;align-items:center;justify-content:center}.acts .p{background:var(--acc);color:#111;border-color:var(--acc)}" +
-      ".side h2{margin:0 0 10px;font-size:14px}.sg{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:stretch}.ph{position:relative;aspect-ratio:16/9;background:#1c1c1c;border-radius:10px;overflow:hidden}.ph img,.ph video,.ph iframe{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border:0;pointer-events:none}" +
-      ".card{display:flex;flex-direction:column;min-width:0}.card h3{margin:6px 0 0;font-size:12px;height:2.6em;overflow:hidden}</style></head><body>" +
+      ".side h2{margin:0 0 10px;font-size:14px}.sg{display:grid;grid-template-columns:1fr 1fr;gap:10px}.ph{position:relative;aspect-ratio:16/9;background:#1c1c1c;border-radius:10px;overflow:hidden}.ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}" +
+      ".card h3{margin:6px 0 0;font-size:12px;height:2.6em;overflow:hidden}</style></head><body>" +
       "<header><div class=wrap><div class=hd><a class=logo href=/>DR.<b>PINGUIN</b></a></div></div></header>" +
       "<main class=wrap><div class=layout><div><div class=player>" + player +
       "</div><h1>" + esc(title) + "</h1><div class=acts><button class=p type=button id=btnShare>Bagikan</button><a href=\"" + esc(back) + "\">Kembali</a></div></div>" +
       "<aside class=side><h2>Rekomendasi</h2><div class=sg>" + cards + "</div></aside></div></main>" +
       "<script>(function(){var b=document.getElementById('btnShare');if(b)b.onclick=function(){if(navigator.share)navigator.share({title:document.title,url:location.href}).catch(function(){});else if(navigator.clipboard)navigator.clipboard.writeText(location.href);};})();</script></body></html>";
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
     res.statusCode = 200;
     return res.end(html);
   } catch (e) {
