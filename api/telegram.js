@@ -1,4 +1,4 @@
-const hookPoster = require("../lib/poster-hook");
+const hookPoster = require("./poster-hook");
 function pickEnv(keys) {
   for (const key of keys) {
     const val = process.env[key];
