@@ -69,7 +69,11 @@
     var id = keyFromEmbed(raw);
     if (/mumu\.watch/i.test(raw)) return 'https://m-cdn.video/hls/' + id + '/thumbnail.jpg';
     if (/putarin|puterin/i.test(raw + ' ' + (v.source || '') + ' ' + (v.category || ''))) return '/api/poster?id=' + encodeURIComponent(id);
-    return (v && (v.thumb || v.thumbnail || v.poster)) || '';
+    if (/indoav/i.test(raw) && id) return '/api/avposter?h=indoav&id=' + encodeURIComponent(id);
+    if (/userbokep/i.test(raw) && id) return '/api/avposter?h=userbokep&id=' + encodeURIComponent(id);
+    if (v && (v.thumb || v.thumbnail || v.poster)) return v.thumb || v.thumbnail || v.poster;
+    if (/videy/i.test(raw) && id) return 'https://cdn.videy.co/' + id + '.mp4';
+    return '/api/thumb';
   }
   function shuffle(arr) {
     var a = arr.slice();
@@ -100,9 +104,8 @@
   }
   function previewHtml(v) {
     var th = posterOf(v);
-    if (th) return '<img src="' + th + '" alt="">';
-    var raw = String(v.embed || v.direct || '');
-    if (/\.mp4($|\?)/i.test(raw)) return '<video src="' + raw + '" muted playsinline preload="metadata"></video>';
+    if (/\.mp4($|\?)/i.test(th)) return '<video src="' + th + '" muted playsinline preload="metadata"></video>';
+    if (th) return '<img src="' + th + '" alt="" loading="lazy">';
     return '';
   }
   function hideOld() {
