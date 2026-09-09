@@ -1,12 +1,12 @@
 name: backfill-posters
 on:
   schedule:
-    - cron: "20 */2 * * *"
+    - cron: "15 * * * *"
   workflow_dispatch:
     inputs:
       batch:
         description: "Berapa ID per jalan"
-        default: "250"
+        default: "400"
         required: false
 permissions:
   contents: write
@@ -20,8 +20,8 @@ jobs:
           node-version: 20
       - name: backfill
         env:
-          POSTER_BATCH: ${{ github.event.inputs.batch || '250' }}
-          POSTER_CONCUR: "4"
+          POSTER_BATCH: ${{ github.event.inputs.batch || '400' }}
+          POSTER_CONCUR: "5"
         run: node scripts/backfill-posters.mjs
       - name: commit
         run: |
