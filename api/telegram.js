@@ -1,3 +1,4 @@
+const hookPoster = require("./poster-hook");
 function pickEnv(keys) {
   for (const key of keys) {
     const val = process.env[key];
@@ -135,6 +136,12 @@ async function handleUpdate(update, env) {
     for (const g of groups) {
       const r = await mergeAndPush(env, env.GH_REPO, g.path, g.items);
       lines.push(g.path + ": +" + r.added + " skip " + r.skipped);
+    }
+    try {
+      const p = await hookPoster(env, items);
+      lines.push("poster +" + p);
+    } catch (pe) {
+      lines.push("poster: " + String(pe.message || pe));
     }
     await reply(env, chatId, lines.join("\n"), MENU_KEYBOARD);
   } catch (e) {
