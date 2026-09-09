@@ -2,9 +2,7 @@
   "name": "koleksi-dr-pinguin",
   "version": "1.0.0",
   "private": true,
-  "type": "commonjs",
   "scripts": {
-    "build": "echo skip",
-    "deploy": "wrangler deploy"
+    "build": "node -e \"process.exit(0)\""
   }
 }
