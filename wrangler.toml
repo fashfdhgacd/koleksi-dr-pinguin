@@ -1,4 +1,4 @@
-name = "koleksidrpinguin-com"
+name = "koleksi-dr-pinguin-cf"
 pages_build_output_dir = "."
-compatibility_date = "2026-08-30"
+compatibility_date = "2026-09-09"
 compatibility_flags = ["nodejs_compat"]
