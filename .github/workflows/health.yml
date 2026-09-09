@@ -1,7 +1,7 @@
 name: health
 on:
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "0 0 * * *"
   workflow_dispatch:
   push:
     paths:
@@ -30,4 +30,4 @@ jobs:
         run: |
           existing=$(gh issue list --label health --state open --limit 1 --json number --jq '.[0].number')
           if [ -n "$existing" ]; then echo "issue #$existing already open"; exit 0; fi
-          gh issue create --title "Web production gagal health check" --label health --body "Health check gagal. Cek Actions health terbaru lalu: 1) buka koleksidrpinguin.com 2) cek /js/app.js /data/videos.json /data/posters.json 3) jangan rebase posters.json ke teks rusak."
+          gh issue create --title "Web production gagal health check" --label health --body "Health check pagi gagal. Cek Actions health terbaru lalu: 1) buka koleksidrpinguin.com 2) cek /js/app.js /data/videos.json /data/posters.json 3) jangan rebase posters.json ke teks rusak."
