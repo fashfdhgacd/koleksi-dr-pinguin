@@ -1,7 +1,7 @@
 const SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360"><rect width="640" height="360" fill="#141414"/><circle cx="320" cy="180" r="36" fill="#ff9000"/><polygon points="312,164 344,180 312,196" fill="#111"/></svg>';
 
 function esc(s) {
-  return String(s || "").replace(/[&<>"']/g, (ch) => ({ "&": "&", "<": "<", ">": ">", '"': """, "'": "&#39;" }[ch]));
+  return String(s || "").replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">").replace(/"/g, "&#34;").replace(/'/g, "&#39;");
 }
 function cleanTitle(s) {
   return String(s || "Video").replace(/\(Koleksi[^)]*Pinguin[^)]*\)/ig, "").replace(/koleksidrpinguin\.com/ig, "").replace(/\s+/g, " ").trim() || "Video";
@@ -117,50 +117,29 @@ function watchHtml(opts) {
   const title = esc(opts.title), cat = esc(opts.cat || "Video"), poster = esc(opts.poster || ""), embed = esc(opts.embed || "");
   const related = (opts.related || []).map((r) => {
     const src = esc(r.poster || "");
-    const img = src ? `<img src="${src}" alt="" loading="lazy">` : "";
-    return `<a class="card" href="/v/${encodeURIComponent(r.id)}"><div class="ph">${img}</div><h3>${esc(r.title)}</h3></a>`;
+    const img = src ? "<img src=\"" + src + "\" alt=\"\" loading=\"lazy\">" : "";
+    return "<a class=\"card\" href=\"/v/" + encodeURIComponent(r.id) + "\"><div class=\"ph\">" + img + "</div><h3>" + esc(r.title) + "</h3></a>";
   }).join("");
-  return `<!DOCTYPE html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} | Dr. Pinguin</title>
-<style>:root{--bg:#0b0d12;--acc:#ff9000;--line:#232838}*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:#e8ecf4;font-family:system-ui,sans-serif}a{color:inherit;text-decoration:none}.wrap{width:min(1180px,calc(100% - 24px));margin:0 auto}header{position:sticky;top:0;z-index:20;background:#0b0d12f2;border-bottom:1px solid var(--line)}.hd{display:flex;align-items:center;gap:10px;min-height:52px}.logo{font-weight:900}.logo b{color:var(--acc)}main{padding:16px 0 40px}.layout{display:grid;grid-template-columns:1fr;gap:16px}@media(min-width:960px){.layout{grid-template-columns:minmax(0,1.7fr) 300px}}.player{position:relative;aspect-ratio:16/9;background:#000;border:1px solid var(--line);border-radius:14px;overflow:hidden}.hold,.player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.hold{display:flex;align-items:center;justify-content:center;cursor:pointer;background:#111 center/cover no-repeat}.btn{width:64px;height:64px;border-radius:99px;background:var(--acc);color:#111;display:grid;place-items:center}h1{font-size:20px;margin:12px 0 8px}.badges{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}.badge{height:26px;padding:0 10px;border-radius:99px;background:#1a1f2c;font-size:11px;font-weight:700;display:flex;align-items:center}.acts{display:flex;gap:8px;flex-wrap:wrap}.acts a,.acts button{height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:#171b26;color:#fff;font-size:12px;font-weight:800}.acts .p{background:var(--acc);color:#111;border-color:var(--acc)}.side h2{margin:0 0 10px;font-size:14px}.sg{display:grid;grid-template-columns:1fr 1fr;gap:10px}.ph{position:relative;aspect-ratio:16/9;background:#1c1c1c;border-radius:10px;overflow:hidden}.ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.card h3{margin:6px 0 0;font-size:12px;line-height:1.3}#age{position:fixed;inset:0;background:#000;display:none;align-items:center;justify-content:center;z-index:80}#age.on{display:flex}#age .g{width:min(360px,92%);background:#161616;border:1px solid #333;border-radius:14px;padding:22px;text-align:center}#age button{width:100%;height:42px;border:0;border-radius:10px;background:var(--acc);color:#111;font-weight:900;margin-top:12px}</style></head><body>
-<div id="age"><div class="g"><img src="/logo.png" width="48" height="48" alt="" style="border-radius:8px"><h2>DR.<span style="color:var(--acc)">PINGUIN</span></h2><p style="color:#9aa3b5">Konten 18+.</p><button id="ageOk" type="button">MASUK</button></div></div>
-<header><div class="wrap"><div class="hd"><a class="logo" href="/">DR.<b>PINGUIN</b></a><a href="/putarin.html">JAV</a><a href="/mumu.html">AI China</a></div></div></header>
-<main class="wrap"><div class="layout"><div>
-<div class="player" id="box"><div class="hold" id="hold" data-src="${embed}" style="${poster ? "background-image:url('" + poster + "')" : ""}"><div class="btn">&#9654;</div></div></div>
-<h1>${title}</h1><div class="badges"><span class="badge">${cat}</span><span class="badge">18+</span></div>
-<div class="acts"><button class="p" id="btnShare" type="button">Bagikan</button><a href="${esc(opts.back || "/")}">Kembali</a></div>
-</div><aside class="side"><h2>Rekomendasi</h2><div class="sg">${related}</div></aside></div></main>
-<script>(function(){var KEY='kdp_age_ok';var age=document.getElementById('age');var ok=false;try{ok=localStorage.getItem(KEY)==='1';}catch(e){}if(!ok&&age){age.className='on';document.getElementById('ageOk').onclick=function(){try{localStorage.setItem(KEY,'1')}catch(e){}age.className='';};}var hold=document.getElementById('hold');if(hold)hold.onclick=function(){var src=hold.getAttribute('data-src');if(!src)return;document.getElementById('box').innerHTML='<iframe src="'+src+'" allow="autoplay;encrypted-media;fullscreen" allowfullscreen></iframe>';};var sh=document.getElementById('btnShare');if(sh)sh.onclick=function(){if(navigator.share){navigator.share({title:document.title,url:location.href}).catch(function(){})}else if(navigator.clipboard)navigator.clipboard.writeText(location.href);};})();</script></body></html>`;
+  return "<!DOCTYPE html><html lang=id><head><meta charset=utf-8><meta name=viewport content=\"width=device-width,initial-scale=1\"><title>" + title + " | Dr. Pinguin</title></head><body>" +
+    "<header><a href=/>DR.PINGUIN</a></header>" +
+    "<main><div class=player id=box><div class=hold id=hold data-src=\"" + embed + "\" style=\"" + (poster ? ("background-image:url(" + poster + ")") : "") + "\">play</div></div>" +
+    "<h1>" + title + "</h1><a href=\"" + esc(opts.back || "/") + "\">Kembali</a>" +
+    "<aside><h2>Rekomendasi</h2><div class=sg>" + related + "</div></aside></main>" +
+    "<script>(function(){var h=document.getElementById('hold');if(h)h.onclick=function(){var s=h.getAttribute('data-src');if(s)document.getElementById('box').innerHTML='<iframe src=\"'+s+'\" allow=fullscreen></iframe>';};})();</script></body></html>";
 }
-
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     let path = url.pathname || "/";
     if (path.length > 1 && path.endsWith("/")) path = path.slice(0, -1);
-
     if (path === "/api/thumb") {
-      const host = url.searchParams.get("h") || "";
       const id = (url.searchParams.get("id") || "").replace(/[^A-Za-z0-9_-]/g, "");
       try {
         const posters = await loadMap(env, url.origin, "/data/posters.json");
         if (id && posters[id]) return Response.redirect(posters[id], 302);
-        const img = host && id ? await posterFromAv(host, id) : "";
-        if (img) return Response.redirect(img, 302);
       } catch (e) {}
-      return new Response(SVG, { headers: { "content-type": "image/svg+xml; charset=utf-8", "cache-control": "public, max-age=600" } });
-    }
-    if (path === "/api/poster") {
-      const id = (url.searchParams.get("id") || "").replace(/[^A-Za-z0-9_-]/g, "");
-      try { const img = id ? await posterFromPuterin(id) : ""; if (img) return Response.redirect(img, 302); } catch (e) {}
       return new Response(SVG, { headers: { "content-type": "image/svg+xml; charset=utf-8" } });
     }
-
-    const pretty = { "/putarin": "/putarin.html", "/mumu": "/mumu.html", "/preview-nonton": "/preview-nonton.html" };
-    if (pretty[path]) {
-      const file = await assetFetch(env, url.origin, pretty[path]);
-      if (file && file.ok) return new Response(file.body, { headers: { "content-type": "text/html; charset=utf-8" } });
-    }
-
     if (path.startsWith("/v/") || path === "/api/watch") {
       const id = path.startsWith("/v/") ? path.split("/")[2] : (url.searchParams.get("id") || "");
       if (!id) return Response.redirect(new URL("/", url), 302);
@@ -172,27 +151,19 @@ export default {
       ]);
       const all = [].concat(putList, mumuList, vidList);
       const video = all.find((v) => keyOf(v).toLowerCase() === id.toLowerCase());
-      let title = id, cat = "Video", embed = "https://puterin.biz/e/" + id, back = "/", poster = "/api/poster?id=" + encodeURIComponent(id);
+      let title = id, cat = "Video", embed = "https://puterin.biz/e/" + id, back = "/", poster = "";
       if (video) {
         title = cleanTitle(video.title);
         cat = video.folder || video.category || "Video";
         embed = String(video.embed || video.direct || "").replace("/d/", "/e/");
         poster = posterOf(video, posters);
-        if (/mumu/i.test(embed + " " + cat)) back = "/mumu.html";
-        else if (/putarin|puterin/i.test(embed + " " + cat)) back = "/putarin.html";
       }
       return new Response(watchHtml({ title, cat, embed, back, poster, related: pickRelated(all, id, title, 8, posters) }), {
         headers: { "content-type": "text/html; charset=utf-8", "cache-control": "private, no-store" }
       });
     }
-
     if (!env.ASSETS) return new Response("ASSETS missing", { status: 500 });
     const asset = await assetFetch(env, url.origin, path === "/" ? "/index.html" : path);
-    if (path.endsWith(".json") && asset.ok) {
-      const headers = new Headers(asset.headers);
-      headers.set("access-control-allow-origin", "*");
-      return new Response(asset.body, { status: 200, headers });
-    }
     return asset;
   }
 };
