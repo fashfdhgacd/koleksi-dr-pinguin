@@ -4,12 +4,13 @@
     el.src = src;
     document.body.appendChild(el);
   }
-  add('/js/related-pick.js?v=rand3');
-  add('/js/modal-share.js?v=rand3');
-  add('/js/putarin-nav.js?v=rand3');
-  add('/js/thumb-fix.js?v=rand3');
-  add('/js/modal-close.js?v=rand3');
-  add('/js/videy-fix.js?v=rand3');
+  add('/js/related-pick.js?v=rand4');
+  add('/js/modal-share.js?v=rand4');
+  add('/js/rec-boot.js?v=rand4');
+  add('/js/putarin-nav.js?v=rand4');
+  add('/js/thumb-fix.js?v=rand4');
+  add('/js/modal-close.js?v=rand4');
+  add('/js/videy-fix.js?v=rand4');
   var s = document.createElement('script');
   s.src = '/js/gallery-full.js?v=20260909thumb';
   s.onerror = function () {
