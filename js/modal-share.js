@@ -42,6 +42,7 @@
       '#hubRight .vph{position:relative;aspect-ratio:16/9;background:#1c1c1c;border-radius:10px;overflow:hidden}',
       '#hubRight .vph img,#hubRight .vph video,#hubRight .vph iframe{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border:0;pointer-events:none}',
       '#hubRight .vcard span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:6px;font-size:12px;line-height:1.3}',
+      '#modalShare,#modalOpenExternal{display:none!important}',
       '#videoModal .sm\\:hidden,#modalShareMobile,#modalOpenExternalMobile{display:none!important}',
       '@media(max-width:959px){#videoModal .player-frame{border-radius:0!important;border-left:0!important;border-right:0!important}#hubTitle{font-size:17px}}'
     ].join('');
@@ -71,16 +72,20 @@
     var raw = embedOf(v);
     var id = keyFromEmbed(raw);
     if (/indoav|userbokep/i.test(raw)) {
-      var host = /userbokep/i.test(raw) ? 'userbokep' : 'indoav';
-      var img = '/api/thumb?h=' + host + '&id=' + encodeURIComponent(id);
-      return '<img src="' + img + '" alt="" loading="lazy" onerror="this.onerror=null;this.insertAdjacentHTML(\'afterend\',\'<iframe src=\\\'' + raw.replace(/'/g, '') + '\' loading=\\'lazy\\' tabindex=\\'-1\\'></iframe>\');this.remove();">';
+      return '<iframe src="' + raw.replace(/"/g, '') + '" loading="lazy" tabindex="-1"></iframe>';
     }
-    if (/mumu\.watch/i.test(raw) && id) return '<img src="https://m-cdn.video/hls/' + id + '/thumbnail.jpg" alt="" loading="lazy">';
-    if (/putarin|puterin/i.test(raw + ' ' + ((v && (v.source || v.category)) || '')) && id) return '<img src="/api/poster?id=' + encodeURIComponent(id) + '" alt="" loading="lazy">';
-    if (v && (v.thumb || v.thumbnail || v.poster)) return '<img src="' + (v.thumb || v.thumbnail || v.poster) + '" alt="" loading="lazy">';
+    if (/mumu\.watch/i.test(raw) && id) {
+      return '<img src="https://m-cdn.video/hls/' + id + '/thumbnail.jpg" alt="" loading="lazy">';
+    }
+    if (/putarin|puterin/i.test(raw + ' ' + ((v && (v.source || v.category)) || '')) && id) {
+      return '<img src="/api/poster?id=' + encodeURIComponent(id) + '" alt="" loading="lazy">';
+    }
+    if (v && (v.thumb || v.thumbnail || v.poster)) {
+      return '<img src="' + String(v.thumb || v.thumbnail || v.poster).replace(/"/g, '') + '" alt="" loading="lazy">';
+    }
     if (/\.mp4($|\?)/i.test(raw) || (/videy/i.test(raw) && id)) {
       var mp4 = /\.mp4($|\?)/i.test(raw) ? raw : ('https://cdn.videy.co/' + id + '.mp4');
-      return '<video src="' + mp4 + '" muted playsinline preload="metadata"></video>';
+      return '<video src="' + mp4.replace(/"/g, '') + '" muted playsinline preload="metadata"></video>';
     }
     return '<img src="/api/thumb" alt="">';
   }
@@ -114,10 +119,6 @@
   function hideOld() {
     var a = document.getElementById('modalShareMobile');
     if (a && a.parentElement) a.parentElement.style.display = 'none';
-    var sh = document.getElementById('modalShare');
-    var op = document.getElementById('modalOpenExternal');
-    if (sh) sh.style.display = 'none';
-    if (op) op.style.display = 'none';
   }
   function playVideo(v) {
     if (!v) return;
