@@ -4,6 +4,7 @@
     el.src = src;
     document.body.appendChild(el);
   }
+  add('/js/related-pick.js?v=rand3');
   add('/js/modal-share.js?v=rand3');
   add('/js/putarin-nav.js?v=rand3');
   add('/js/thumb-fix.js?v=rand3');
