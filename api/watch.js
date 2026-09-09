@@ -10,11 +10,7 @@ function isMumuBlob(s) {
 }
 function esc(s) {
   return String(s || "").replace(/[&<>"']/g, function (ch) {
-    if (ch === "&") return "&";
-    if (ch === "<") return "<";
-    if (ch === ">") return ">";
-    if (ch === '"') return """;
-    return "&#39;";
+    return ({ "&": "&" + "amp;", "<": "&" + "lt;", ">": "&" + "gt;", '"': "&" + "quot;", "'": "&#39;" })[ch];
   });
 }
 function cleanTitle(s) {
@@ -140,19 +136,15 @@ function pageHtml(opts) {
   const related = Array.isArray(opts.related) ? opts.related : [];
   const desc = (title + " - " + cat + " | 18+.").slice(0, 160);
   const playSrc = mp4 || embed;
-  const ld = { "@context": "https://schema.org", "@type": "VideoObject", name: title, description: desc, inLanguage: "id", isFamilyFriendly: false, genre: cat, url: page, embedUrl: embed };
-  if (mp4) ld.contentUrl = mp4;
-  if (date) ld.uploadDate = date;
-  if (poster) ld.thumbnailUrl = poster;
-  const relHtml = related.map(function (r) {
-    var badge = r.code ? "<span class=\"code\">" + esc(r.code) + "</span>" : "";
-    return "<a class=\"card\" href=\"/v/" + encodeURIComponent(r.id) + "\"><div class=\"ph\">" + relatedMedia(r) + badge + "</div><h3>" + esc(r.title) + "</h3><p>" + esc(r.cat || "") + "</p></a>";
-  }).join("");
   const playerInner = mp4
     ? "<video controls autoplay playsinline src=\"" + esc(mp4) + "\"></video>"
     : (playSrc
       ? "<iframe src=\"" + esc(playSrc) + "\" allow=\"autoplay;encrypted-media;fullscreen\" allowfullscreen referrerpolicy=\"origin\"></iframe>"
       : "<div class=\"hold\"><div class=\"hint\">Video belum tersedia.</div></div>");
+  const relHtml = related.map(function (r) {
+    var badge = r.code ? "<span class=\"code\">" + esc(r.code) + "</span>" : "";
+    return "<a class=\"card\" href=\"/v/" + encodeURIComponent(r.id) + "\"><div class=\"ph\">" + relatedMedia(r) + badge + "</div><h3>" + esc(r.title) + "</h3><p>" + esc(r.cat || "") + "</p></a>";
+  }).join("");
   return [
     "<!DOCTYPE html><html lang=\"id\"><head><meta charset=\"utf-8\">",
     "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1,viewport-fit=cover\">",
@@ -182,9 +174,6 @@ function pageHtml(opts) {
     ".acts{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}",
     ".acts a,.acts button{box-sizing:border-box;height:40px;min-width:112px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:#171b26;color:#fff;font-size:13px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;margin:0}",
     ".acts .p{background:var(--acc);color:#111;border-color:var(--acc)}",
-    ".box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:0 0 12px}",
-    ".box h3{margin:0 0 8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}",
-    ".chips{display:flex;flex-wrap:wrap;gap:6px}.chip{height:28px;padding:0 10px;border-radius:999px;background:#1a1f2c;font-size:12px;display:flex;align-items:center}",
     ".side h2{margin:0 0 10px;font-size:14px;display:flex;align-items:center;gap:8px}.side h2:before{content:\"\";width:3px;height:14px;background:var(--acc);border-radius:2px}",
     ".sg{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:stretch}",
     ".card{display:flex;flex-direction:column;min-width:0;height:100%}.ph{position:relative;aspect-ratio:16/9;width:100%;background:#1c1c1c;border-radius:10px;overflow:hidden;flex:none}",
@@ -208,7 +197,7 @@ function pageHtml(opts) {
     "</div><aside class=\"side\">",
     related.length ? "<h2>Rekomendasi</h2><div class=\"sg\">" + relHtml + "</div>" : "",
     "</aside></div></main>",
-    "<footer><div class=\"wrap\">&copy; 2026 Dr. Pinguin · 18+</div></footer>",
+    "<footer><div class=\"wrap\">&copy; 2026 Dr. Pinguin</div></footer>",
     "<script>(function(){var sh=document.getElementById('btnShare');if(sh)sh.onclick=function(){if(navigator.share){navigator.share({title:document.title,url:location.href}).catch(function(){})}else if(navigator.clipboard)navigator.clipboard.writeText(location.href);};})();</script>",
     "</body></html>"
   ].join("");
