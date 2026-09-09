@@ -2,8 +2,6 @@ src
 scripts
 wrangler.toml
 *.mjs
-data/videos.json
-data/posters.json
 .git
 .wrangler
 node_modules

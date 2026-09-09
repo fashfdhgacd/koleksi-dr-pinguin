@@ -2,6 +2,7 @@
   var map = {};
   window.KDP_POSTERS = map;
   window.kdpPoster = function (id) { return map[id] || ""; };
+  var GH = "https://raw.githubusercontent.com/fashfdhgacd/koleksi-dr-pinguin/main/data/posters.json";
 
   function idFrom(src) {
     if (!src) return "";
@@ -76,14 +77,21 @@
     setInterval(applyHero, 1500);
   }
 
+  function use(d) {
+    map = d || {};
+    window.KDP_POSTERS = map;
+    window.kdpPoster = function (id) { return map[id] || ""; };
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+    else boot();
+  }
+
   fetch("/data/posters.json", { cache: "no-store" })
-    .then(function (r) { return r.ok ? r.json() : {}; })
-    .then(function (d) {
-      map = d || {};
-      window.KDP_POSTERS = map;
-      window.kdpPoster = function (id) { return map[id] || ""; };
-      if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
-      else boot();
-    })
-    .catch(function () {});
+    .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+    .then(use)
+    .catch(function () {
+      fetch(GH, { cache: "no-store" })
+        .then(function (r) { return r.ok ? r.json() : {}; })
+        .then(use)
+        .catch(function () { use({}); });
+    });
 })();
