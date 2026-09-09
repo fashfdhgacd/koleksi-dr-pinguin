@@ -1,3 +1,7 @@
+src
+scripts
+wrangler.toml
+*.mjs
 data/videos.json
 data/posters.json
 .git
