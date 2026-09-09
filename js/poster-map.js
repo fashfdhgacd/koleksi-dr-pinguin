@@ -34,12 +34,17 @@
     });
   }
 
-  function boot() {
-    apply(document.getElementById("videoGrid") || document);
-    var grid = document.getElementById("videoGrid");
-    if (grid && window.MutationObserver) {
-      new MutationObserver(function () { apply(grid); }).observe(grid, { childList: true, subtree: true });
+  function watch(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    apply(el);
+    if (window.MutationObserver) {
+      new MutationObserver(function () { apply(el); }).observe(el, { childList: true, subtree: true });
     }
+  }
+
+  function boot() {
+    ["videoGrid", "trendingGrid", "searchResults", "heroSlides", "genreGrid"].forEach(watch);
   }
 
   fetch("/data/posters.json", { cache: "no-store" })
