@@ -24,6 +24,6 @@
   add("https://cdn.jsdelivr.net/gh/fashfdhgacd/koleksi-dr-pinguin@64ee4c14c60cca54f5f1cdd6f7b6892c43a2b0a1/js/app.js");
   setTimeout(function () {
     add("/js/poster-map.js?v=p3");
-    add("/js/modal-share.js?v=novidey1");
+    add("/js/modal-share.js?v=swap2");
   }, 600);
 })();
