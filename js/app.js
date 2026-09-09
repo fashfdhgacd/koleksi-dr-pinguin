@@ -14,5 +14,6 @@
     add("/js/poster-map.js?v=p3");
     add("/js/modal-share.js?v=noput1");
     add("/js/recs-ready.js?v=series1");
+    add("/js/gallery-fallback.js?v=1");
   }, 600);
 })();
