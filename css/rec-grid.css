@@ -1,0 +1,6 @@
+.sg,.vgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:stretch}
+.sg .card,.vcard{display:flex;flex-direction:column;min-width:0;height:100%;text-align:left}
+.sg .ph,.vph{position:relative;aspect-ratio:16/9;width:100%;flex:none;background:#1c1c1c;border-radius:10px;overflow:hidden}
+.sg .ph img,.sg .ph video,.sg .ph iframe,.vph img,.vph video,.vph iframe{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border:0;pointer-events:none}
+.sg .card h3,.vcard span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;height:2.6em;line-height:1.3;margin-top:6px;font-size:12px}
+.sg .card p{margin:0;height:1.2em;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:11px}
