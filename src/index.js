@@ -1,7 +1,7 @@
 const SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360"><rect width="640" height="360" fill="#141414"/><circle cx="320" cy="180" r="36" fill="#ff9000"/><polygon points="312,164 344,180 312,196" fill="#111"/></svg>';
 
 function esc(s) {
-  return String(s || "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+  return String(s || "").replace(/[&<>"']/g, (ch) => ({ "&": "&", "<": "<", ">": ">", '"': """, "'": "&#39;" }[ch]));
 }
 function cleanTitle(s) {
   return String(s || "Video").replace(/\(Koleksi[^)]*Pinguin[^)]*\)/ig, "").replace(/koleksidrpinguin\.com/ig, "").replace(/\s+/g, " ").trim() || "Video";
@@ -20,15 +20,27 @@ function keyOf(v) {
     return String(u.split("/").pop() || "").replace(/\.(mp4|mov)$/i, "");
   }
 }
-function posterOf(v) {
+function rawOf(v) {
+  return String((v && (v.embed || v.direct || v.embedUrl)) || "");
+}
+function isBlocked(v) {
+  const raw = rawOf(v) + " " + String((v && (v.source || v.category || v.folder || v.title)) || "");
+  if (/videy/i.test(raw)) return true;
+  if (/putarin|puterin/i.test(raw)) {
+    const folder = String((v && v.folder) || "").toLowerCase();
+    const title = String((v && v.title) || "");
+    if (folder === "series" || /s\d{1,2}\s*e\d{1,3}/i.test(title) || /episode\s*\d+/i.test(title)) return true;
+  }
+  return false;
+}
+function posterOf(v, posters) {
   if (v && (v.poster || v.thumb || v.thumbnail)) return v.poster || v.thumb || v.thumbnail;
-  const raw = String((v && (v.embed || v.direct)) || "");
+  const raw = rawOf(v);
   const id = keyOf(v);
+  if (posters && id && posters[id]) return posters[id];
   if (/mumu\.watch/i.test(raw) && id) return "https://m-cdn.video/hls/" + id + "/thumbnail.jpg";
   if (/putarin|puterin/i.test(raw + " " + ((v && (v.source || v.category)) || "")) && id) return "/api/poster?id=" + encodeURIComponent(id);
-  if (/indoav/i.test(raw) && id) return "/api/thumb?h=indoav&id=" + encodeURIComponent(id);
-  if (/userbokep/i.test(raw) && id) return "/api/thumb?h=userbokep&id=" + encodeURIComponent(id);
-  return "/api/thumb";
+  return "";
 }
 function shuffle(a) {
   const x = a.slice();
@@ -38,8 +50,8 @@ function shuffle(a) {
   }
   return x;
 }
-function pickRelated(all, currentId, currentTitle, n) {
-  const seenId = {}, seenSeries = {}, seenPoster = {}, seenTitle = {};
+function pickRelated(all, currentId, currentTitle, n, posters) {
+  const seenId = {}, seenSeries = {}, seenTitle = {};
   const cur = String(currentId || "").toLowerCase();
   const curS = seriesOf(currentTitle || "");
   if (cur) seenId[cur] = 1;
@@ -48,15 +60,14 @@ function pickRelated(all, currentId, currentTitle, n) {
   const pool = shuffle(all || []);
   for (let i = 0; i < pool.length && out.length < n; i++) {
     const v = pool[i];
+    if (isBlocked(v)) continue;
     const id = keyOf(v).toLowerCase();
     const title = cleanTitle(v.title);
     const sk = seriesOf(title);
-    const poster = posterOf(v);
-    if (!id || !title || seenId[id] || seenTitle[title.toLowerCase()] || (sk && seenSeries[sk]) || (poster && poster !== "/api/thumb" && seenPoster[poster])) continue;
+    if (!id || !title || seenId[id] || seenTitle[title.toLowerCase()] || (sk && seenSeries[sk])) continue;
     seenId[id] = 1; seenTitle[title.toLowerCase()] = 1;
     if (sk) seenSeries[sk] = 1;
-    if (poster) seenPoster[poster] = 1;
-    out.push({ id: keyOf(v), title, poster });
+    out.push({ id: keyOf(v), title, poster: posterOf(v, posters) });
   }
   return out;
 }
@@ -67,6 +78,14 @@ async function loadJson(env, origin, path) {
     const d = await r.json();
     return Array.isArray(d) ? d : [];
   } catch (_) { return []; }
+}
+async function loadMap(env, origin, path) {
+  try {
+    const r = await assetFetch(env, origin, path);
+    if (!r.ok) return {};
+    const d = await r.json();
+    return d && typeof d === "object" && !Array.isArray(d) ? d : {};
+  } catch (_) { return {}; }
 }
 async function assetFetch(env, origin, path) {
   let next = new URL(path, origin);
@@ -97,8 +116,9 @@ async function posterFromAv(host, id) {
 function watchHtml(opts) {
   const title = esc(opts.title), cat = esc(opts.cat || "Video"), poster = esc(opts.poster || ""), embed = esc(opts.embed || "");
   const related = (opts.related || []).map((r) => {
-    const src = esc(r.poster || "/api/thumb");
-    return `<a class="card" href="/v/${encodeURIComponent(r.id)}"><div class="ph"><img src="${src}" alt="" loading="lazy" onerror="this.onerror=null;this.src='/api/thumb'"></div><h3>${esc(r.title)}</h3></a>`;
+    const src = esc(r.poster || "");
+    const img = src ? `<img src="${src}" alt="" loading="lazy">` : "";
+    return `<a class="card" href="/v/${encodeURIComponent(r.id)}"><div class="ph">${img}</div><h3>${esc(r.title)}</h3></a>`;
   }).join("");
   return `<!DOCTYPE html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} | Dr. Pinguin</title>
 <style>:root{--bg:#0b0d12;--acc:#ff9000;--line:#232838}*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:#e8ecf4;font-family:system-ui,sans-serif}a{color:inherit;text-decoration:none}.wrap{width:min(1180px,calc(100% - 24px));margin:0 auto}header{position:sticky;top:0;z-index:20;background:#0b0d12f2;border-bottom:1px solid var(--line)}.hd{display:flex;align-items:center;gap:10px;min-height:52px}.logo{font-weight:900}.logo b{color:var(--acc)}main{padding:16px 0 40px}.layout{display:grid;grid-template-columns:1fr;gap:16px}@media(min-width:960px){.layout{grid-template-columns:minmax(0,1.7fr) 300px}}.player{position:relative;aspect-ratio:16/9;background:#000;border:1px solid var(--line);border-radius:14px;overflow:hidden}.hold,.player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.hold{display:flex;align-items:center;justify-content:center;cursor:pointer;background:#111 center/cover no-repeat}.btn{width:64px;height:64px;border-radius:99px;background:var(--acc);color:#111;display:grid;place-items:center}h1{font-size:20px;margin:12px 0 8px}.badges{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}.badge{height:26px;padding:0 10px;border-radius:99px;background:#1a1f2c;font-size:11px;font-weight:700;display:flex;align-items:center}.acts{display:flex;gap:8px;flex-wrap:wrap}.acts a,.acts button{height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:#171b26;color:#fff;font-size:12px;font-weight:800}.acts .p{background:var(--acc);color:#111;border-color:var(--acc)}.side h2{margin:0 0 10px;font-size:14px}.sg{display:grid;grid-template-columns:1fr 1fr;gap:10px}.ph{position:relative;aspect-ratio:16/9;background:#1c1c1c;border-radius:10px;overflow:hidden}.ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.card h3{margin:6px 0 0;font-size:12px;line-height:1.3}#age{position:fixed;inset:0;background:#000;display:none;align-items:center;justify-content:center;z-index:80}#age.on{display:flex}#age .g{width:min(360px,92%);background:#161616;border:1px solid #333;border-radius:14px;padding:22px;text-align:center}#age button{width:100%;height:42px;border:0;border-radius:10px;background:var(--acc);color:#111;font-weight:900;margin-top:12px}</style></head><body>
@@ -121,7 +141,12 @@ export default {
     if (path === "/api/thumb") {
       const host = url.searchParams.get("h") || "";
       const id = (url.searchParams.get("id") || "").replace(/[^A-Za-z0-9_-]/g, "");
-      try { const img = host && id ? await posterFromAv(host, id) : ""; if (img) return Response.redirect(img, 302); } catch (e) {}
+      try {
+        const posters = await loadMap(env, url.origin, "/data/posters.json");
+        if (id && posters[id]) return Response.redirect(posters[id], 302);
+        const img = host && id ? await posterFromAv(host, id) : "";
+        if (img) return Response.redirect(img, 302);
+      } catch (e) {}
       return new Response(SVG, { headers: { "content-type": "image/svg+xml; charset=utf-8", "cache-control": "public, max-age=600" } });
     }
     if (path === "/api/poster") {
@@ -139,10 +164,11 @@ export default {
     if (path.startsWith("/v/") || path === "/api/watch") {
       const id = path.startsWith("/v/") ? path.split("/")[2] : (url.searchParams.get("id") || "");
       if (!id) return Response.redirect(new URL("/", url), 302);
-      const [putList, mumuList, vidList] = await Promise.all([
+      const [putList, mumuList, vidList, posters] = await Promise.all([
         loadJson(env, url.origin, "/data/putarin.json"),
         loadJson(env, url.origin, "/data/mumu.json"),
-        loadJson(env, url.origin, "/data/videos.json")
+        loadJson(env, url.origin, "/data/videos.json"),
+        loadMap(env, url.origin, "/data/posters.json")
       ]);
       const all = [].concat(putList, mumuList, vidList);
       const video = all.find((v) => keyOf(v).toLowerCase() === id.toLowerCase());
@@ -151,11 +177,11 @@ export default {
         title = cleanTitle(video.title);
         cat = video.folder || video.category || "Video";
         embed = String(video.embed || video.direct || "").replace("/d/", "/e/");
-        poster = posterOf(video);
+        poster = posterOf(video, posters);
         if (/mumu/i.test(embed + " " + cat)) back = "/mumu.html";
         else if (/putarin|puterin/i.test(embed + " " + cat)) back = "/putarin.html";
       }
-      return new Response(watchHtml({ title, cat, embed, back, poster, related: pickRelated(all, id, title, 8) }), {
+      return new Response(watchHtml({ title, cat, embed, back, poster, related: pickRelated(all, id, title, 8, posters) }), {
         headers: { "content-type": "text/html; charset=utf-8", "cache-control": "private, no-store" }
       });
     }
