@@ -16,5 +16,6 @@
     add("/js/videy-escape.js?v=1");
     add("/js/recs-ready.js?v=1");
     add("/js/modal-share.js?v=swap2");
+    add("/js/watch-hash.js?v=1");
   }, 500);
 })();
