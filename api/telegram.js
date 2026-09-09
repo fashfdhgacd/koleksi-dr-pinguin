@@ -176,7 +176,7 @@ async function handleShare(env, chatId, opt) {
   const take = pool.slice(0, n);
   const host = String(env.PUBLIC_HOST || "https://koleksidrpinguin.com").replace(/\/$/, "");
   const lines = take.map(function (x) { return "\u25b6 " + x.title + "\n" + host + "/v/" + x.key; });
-  await reply(env, chatId, catLabel + " \u00b7 " + take.length + " link\n\n" + lines.join("\n\n"), MENU_KEYBOARD);
+  await reply(env, chatId, lines.join("\n\n"), MENU_KEYBOARD);
 }
 function parseNamedLinks(text) {
   const lines = String(text).split(/\r?\n/); const items = []; let pending = "";
