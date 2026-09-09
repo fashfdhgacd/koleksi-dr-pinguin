@@ -5,6 +5,7 @@
     document.body.appendChild(s);
   }
   add("/js/kdp-overlay.js?v=2");
+  add("/js/share-sheet.js?v=1");
   var css = document.createElement("link");
   css.rel = "stylesheet";
   css.href = "/css/rec-grid.css?v=lock1";
