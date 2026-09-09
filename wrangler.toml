@@ -7,8 +7,8 @@ account_id = "1ef0240f16747fd792f70e13c29790e0"
 [assets]
 directory = "."
 binding = "ASSETS"
-html_handling = "auto-trailing-slash"
-not_found_handling = "404-page"
+html_handling = "none"
+not_found_handling = "none"
 run_worker_first = true
 
 [observability]
