@@ -12,8 +12,8 @@ function esc(s) {
 function rawOf(v) {
   return String((v && (v.embed || v.direct || v.embedUrl)) || "");
 }
-function isVidey(v) {
-  return /videy/i.test(rawOf(v));
+function isBlocked(v) {
+  return /videy|putarin|puterin/i.test(rawOf(v));
 }
 function keyOf(v) {
   const u = rawOf(v);
@@ -43,8 +43,7 @@ function mediaOf(v) {
   const raw = rawOf(v);
   const id = keyOf(v);
   if (/mumu\.watch/i.test(raw) && id) return "<img src=\"https://m-cdn.video/hls/" + esc(id) + "/thumbnail.jpg\" alt=\"\" loading=\"lazy\">";
-  if (/putarin|puterin/i.test(raw) && id) return "<img src=\"/api/poster?id=" + encodeURIComponent(id) + "\" alt=\"\" loading=\"lazy\">";
-  if (isVidey(v)) return "";
+  if (isBlocked(v)) return "";
   if (/indoav/i.test(raw) && id) return "<img src=\"/api/thumb?h=indoav&id=" + encodeURIComponent(id) + "\" alt=\"\" loading=\"lazy\">";
   if (/userbokep/i.test(raw) && id) return "<img src=\"/api/thumb?h=userbokep&id=" + encodeURIComponent(id) + "\" alt=\"\" loading=\"lazy\">";
   return "<img src=\"/api/thumb\" alt=\"\">";
@@ -65,7 +64,7 @@ function pickRelated(lists, currentId, currentTitle, n) {
       const list = buckets[b];
       while (list.length) {
         const v = list.pop();
-        if (isVidey(v)) continue;
+        if (isBlocked(v)) continue;
         const kid = keyOf(v);
         const title = cleanTitle(v.title);
         const sk = seriesKey(title);
@@ -103,7 +102,7 @@ async function catalogs() {
     t: Date.now(),
     put: put,
     mumu: mumu,
-    vid: (vid || []).filter(function (v) { return !isVidey(v); })
+    vid: (vid || []).filter(function (v) { return !isBlocked(v); })
   };
   return mem;
 }
@@ -124,7 +123,7 @@ module.exports = async function handler(req, res) {
     } else {
       embed = "https://mumu.watch/e/" + id;
     }
-    const related = pickRelated([catas.put, catas.mumu, catas.vid], id, title, 8);
+    const related = pickRelated([catas.mumu, catas.vid], id, title, 8);
     const cards = related.map(function (v) {
       return "<a class=\"card\" href=\"/v/" + encodeURIComponent(keyOf(v)) + "\" data-embed=\"" + esc(rawOf(v).replace("/d/", "/e/")) + "\" data-title=\"" + esc(cleanTitle(v.title)) + "\"><div class=\"ph\">" + mediaOf(v) + "</div><h3>" + esc(cleanTitle(v.title)) + "</h3></a>";
     }).join("");
