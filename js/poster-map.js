@@ -14,24 +14,54 @@
     }
   }
 
+  function hostOf(src) {
+    var s = String(src || "").toLowerCase();
+    if (s.indexOf("userbokep") >= 0) return "userbokep";
+    if (s.indexOf("indoav") >= 0) return "indoav";
+    return "";
+  }
+
+  function posterFor(id, src) {
+    if (id && map[id]) return map[id];
+    var h = hostOf(src);
+    if (h && id) return "/api/thumb?h=" + h + "&id=" + encodeURIComponent(id);
+    return "";
+  }
+
+  function paint(imgOrBox, url) {
+    if (!url) return;
+    if (imgOrBox.tagName === "IMG") {
+      if (imgOrBox.getAttribute("src") !== url) imgOrBox.src = url;
+      return;
+    }
+    var img = document.createElement("img");
+    img.src = url;
+    img.alt = "";
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.className = "absolute inset-0 w-full h-full object-cover bg-black pointer-events-none";
+    if (imgOrBox.parentNode) imgOrBox.parentNode.replaceChild(img, imgOrBox);
+  }
+
   function applyCards(root) {
     if (!root) return;
-    root.querySelectorAll(".video-card").forEach(function (card) {
-      if (card.getAttribute("data-poster-ok") === "1") return;
-      var media = card.querySelector("iframe, video");
+    root.querySelectorAll(".video-card, article, a.card").forEach(function (card) {
+      var media = card.querySelector("iframe, video, img");
       var src = "";
       if (media) src = media.getAttribute("src") || media.getAttribute("data-src") || "";
       var id = idFrom(src) || String(card.getAttribute("data-id") || "");
-      var url = map[id];
+      if (!id) id = idFrom(card.getAttribute("data-embed") || card.getAttribute("href") || "");
+      var url = posterFor(id, src || card.getAttribute("data-embed") || "");
       if (!url) return;
-      var img = document.createElement("img");
-      img.src = url;
-      img.alt = "";
-      img.loading = "lazy";
-      img.decoding = "async";
-      img.className = "absolute inset-0 w-full h-full object-cover bg-black pointer-events-none";
-      if (media && media.parentNode) media.parentNode.replaceChild(img, media);
-      card.setAttribute("data-poster-ok", "1");
+      if (media && media.tagName === "IMG") {
+        paint(media, url);
+        card.setAttribute("data-poster-ok", "1");
+        return;
+      }
+      if (media && (media.tagName === "IFRAME" || media.tagName === "VIDEO")) {
+        paint(media, url);
+        card.setAttribute("data-poster-ok", "1");
+      }
     });
   }
 
@@ -40,10 +70,9 @@
     if (!root) return;
     root.querySelectorAll(".hero-slide").forEach(function (slide) {
       var iframe = slide.querySelector("iframe");
-      var src = "";
-      if (iframe) src = iframe.getAttribute("src") || iframe.getAttribute("data-src") || "";
+      var src = iframe ? (iframe.getAttribute("src") || iframe.getAttribute("data-src") || "") : "";
       var id = idFrom(src);
-      var url = id && map[id];
+      var url = posterFor(id, src);
       if (!url) return;
       var img = slide.querySelector("img.hero-poster");
       if (!img) {
@@ -74,7 +103,7 @@
       watch(id, applyCards);
     });
     watch("heroSlides", function () { applyHero(); });
-    setInterval(applyHero, 1500);
+    setInterval(applyHero, 2000);
   }
 
   function use(d) {
@@ -85,13 +114,24 @@
     else boot();
   }
 
-  fetch("/data/posters.json", { cache: "no-store" })
-    .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
-    .then(use)
-    .catch(function () {
-      fetch(GH, { cache: "no-store" })
-        .then(function (r) { return r.ok ? r.json() : {}; })
-        .then(use)
-        .catch(function () { use({}); });
-    });
+  function merge(a, b) {
+    var o = {};
+    Object.keys(a || {}).forEach(function (k) { o[k] = a[k]; });
+    Object.keys(b || {}).forEach(function (k) { o[k] = b[k]; });
+    return o;
+  }
+
+  Promise.all([
+    fetch("/data/posters.json", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; }),
+    fetch("/data/latest-posters.json", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; })
+  ]).then(function (arr) {
+    var main = arr[0] && !Array.isArray(arr[0]) ? arr[0] : {};
+    var extra = arr[1] && !Array.isArray(arr[1]) ? arr[1] : {};
+    if (!Object.keys(main).length) {
+      return fetch(GH, { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (g) {
+        use(merge(g, extra));
+      });
+    }
+    use(merge(main, extra));
+  }).catch(function () { use({}); });
 })();
