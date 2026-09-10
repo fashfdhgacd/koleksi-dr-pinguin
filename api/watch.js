@@ -141,6 +141,20 @@ module.exports = async function handler(req, res) {
     } else {
       embed = "https://mumu.watch/e/" + id;
     }
+    const origin = "https://koleksidrpinguin.com";
+    const page = origin + "/v/" + encodeURIComponent(id);
+    const thumb = (video && (video.poster || video.thumb || video.thumbnail)) || (catas.posters && catas.posters[id]) || (origin + "/logo.png");
+    const ld = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "VideoObject",
+      name: title,
+      description: title,
+      thumbnailUrl: thumb,
+      uploadDate: String((video && video.date) || "2026-06-01").slice(0, 10),
+      embedUrl: embed,
+      url: page,
+      isFamilyFriendly: false
+    }).replace(/</g, "\\u003c");
     const related = pickRelated([catas.put, catas.mumu, catas.vid], id, title, 8);
     const cards = related.map(function (v) {
       return "<a class=\"card video-card\" href=\"/v/" + encodeURIComponent(keyOf(v)) + "\" data-id=\"" + esc(keyOf(v)) + "\" data-embed=\"" + esc(rawOf(v).replace("/d/", "/e/")) + "\" data-title=\"" + esc(cleanTitle(v.title)) + "\"><div class=\"ph\">" + mediaOf(v) + "</div><h3>" + esc(cleanTitle(v.title)) + "</h3></a>";
@@ -148,8 +162,17 @@ module.exports = async function handler(req, res) {
     const player = /\.mp4($|\?)/i.test(embed) || /videy/i.test(embed)
       ? "<video controls playsinline preload=\"metadata\" src=\"" + esc(embed) + "\"></video>"
       : "<iframe src=\"" + esc(embed) + "\" allow=\"autoplay;encrypted-media;fullscreen\" allowfullscreen></iframe>";
-    const html = "<!DOCTYPE html><html lang=id><head><meta charset=utf-8><meta name=viewport content=\"width=device-width,initial-scale=1\"><title>" +
-      esc(title) + " | Dr. Pinguin</title><link rel=stylesheet href=\"/css/rec-grid.css?v=lock1\"><style>" +
+    const html = "<!DOCTYPE html><html lang=id><head><meta charset=utf-8><meta name=viewport content=\"width=device-width,initial-scale=1\">" +
+      "<link rel=canonical href=\"" + esc(page) + "\">" +
+      "<meta name=robots content=\"index,follow,max-video-preview:120\">" +
+      "<meta property=og:type content=\"video.other\">" +
+      "<meta property=og:title content=\"" + esc(title) + "\">" +
+      "<meta property=og:url content=\"" + esc(page) + "\">" +
+      "<meta property=og:image content=\"" + esc(thumb) + "\">" +
+      "<meta property=og:video content=\"" + esc(embed) + "\">" +
+      "<title>" + esc(title) + " | Dr. Pinguin</title>" +
+      "<script type=\"application/ld+json\">" + ld + "</script>" +
+      "<link rel=stylesheet href=\"/css/rec-grid.css?v=lock1\"><style>" +
       ":root{--bg:#0b0d12;--acc:#ff9000;--line:#232838}*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:#e8ecf4;font-family:system-ui,sans-serif}a{color:inherit;text-decoration:none}" +
       ".wrap{width:min(1180px,calc(100% - 24px));margin:0 auto}header{border-bottom:1px solid var(--line)}.hd{min-height:52px;display:flex;align-items:center}.logo{font-weight:900}.logo b{color:var(--acc)}" +
       "main{padding:16px 0 40px}.layout{display:grid;grid-template-columns:1fr;gap:16px}@media(min-width:960px){.layout{grid-template-columns:minmax(0,1.7fr) 320px}}" +
