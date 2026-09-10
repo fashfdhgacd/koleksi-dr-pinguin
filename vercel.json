@@ -9,6 +9,8 @@
     { "source": "/mumu/", "destination": "/mumu.html" },
     { "source": "/campur", "destination": "/mumu.html" },
     { "source": "/campur/", "destination": "/mumu.html" },
+    { "source": "/mix", "destination": "/mumu.html" },
+    { "source": "/mix/", "destination": "/mumu.html" },
     { "source": "/v/:id", "destination": "/api/watch?id=:id" },
     { "source": "/v/:id/", "destination": "/api/watch?id=:id" },
     { "source": "/sitemap-v.xml", "destination": "/api/sitemap-v" }
