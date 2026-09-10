@@ -1,2 +1,3 @@
 #videoGrid iframe,#trendingGrid iframe,#searchResults iframe,#hubRight iframe{display:none!important}
-#videoGrid .video-card .relative,#trendingGrid .video-card .relative{background:#111}
+#videoGrid .video-card .relative,#trendingGrid .video-card .relative,.sg .ph,#hubRight .vph{background:#141414!important;overflow:hidden}
+img.kdp-cover{background:#141414}
