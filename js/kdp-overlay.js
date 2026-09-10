@@ -3,7 +3,7 @@
   window.__kdpOverlay = true;
   var KEY = "kdp_age_ok";
   var DAY = 30 * 24 * 60 * 60 * 1000;
-  var catalogs = { vid: [], put: [], mumu: [], ready: false };
+  var catalogs = { vid: [], put: [], mix: [], ready: false };
   function pass() {
     try {
       localStorage.setItem(KEY, String(Date.now() + DAY));
@@ -30,17 +30,6 @@
   document.addEventListener("click", function (e) {
     if (e.target.closest && e.target.closest("#btnEnter")) pass();
   }, true);
-  function addMumuNav() {
-    document.querySelectorAll('a[href="/putarin"]').forEach(function (a) {
-      if (a.parentNode.querySelector('a[href="/mumu"]')) return;
-      var n = a.cloneNode(true);
-      n.setAttribute("href", "/mumu");
-      n.textContent = "AI China";
-      a.parentNode.insertBefore(n, a.nextSibling);
-    });
-  }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", addMumuNav);
-  else addMumuNav();
   function keyFrom(u) {
     if (!u || u === "about:blank") return "";
     try {
@@ -55,7 +44,7 @@
   }
   function isVidey(u) { return /videy/i.test(String(u || "")); }
   function findById(id) {
-    var all = catalogs.put.concat(catalogs.mumu, catalogs.vid);
+    var all = catalogs.put.concat(catalogs.mix, catalogs.vid);
     id = String(id || "").toLowerCase();
     for (var i = 0; i < all.length; i++) {
       if (keyFrom(embedOf(all[i])).toLowerCase() === id) return all[i];
@@ -116,11 +105,11 @@
   }
   Promise.all([
     fetch("/data/putarin.json").then(function (r) { return r.json(); }).catch(function () { return []; }),
-    fetch("/data/mumu.json").then(function (r) { return r.json(); }).catch(function () { return []; }),
+    fetch("/data/campur.json").then(function (r) { return r.json(); }).catch(function () { return []; }),
     fetch("/data/videos.json").then(function (r) { return r.json(); }).catch(function () { return []; })
   ]).then(function (arr) {
     catalogs.put = arr[0] || [];
-    catalogs.mumu = arr[1] || [];
+    catalogs.mix = arr[1] || [];
     catalogs.vid = arr[2] || [];
     catalogs.ready = true;
     restore();
@@ -132,15 +121,4 @@
       history.replaceState(null, "", "/");
     }
   }, true);
-  var lastHash = "";
-  setInterval(function () {
-    var modal = document.getElementById("videoModal");
-    if (!modal || modal.classList.contains("hidden")) return;
-    var iframe = document.getElementById("modalIframe");
-    var native = document.getElementById("modalNativeVideo");
-    var id = keyFrom(native && native.style.display !== "none" && native.src) || keyFrom(iframe && iframe.src);
-    if (!id || id === lastHash) return;
-    lastHash = id;
-    history.replaceState(null, "", "/#v=" + encodeURIComponent(id));
-  }, 1200);
 })();
