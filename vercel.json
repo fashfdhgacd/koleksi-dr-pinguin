@@ -7,6 +7,8 @@
     { "source": "/putarin/", "destination": "/putarin.html" },
     { "source": "/mumu", "destination": "/mumu.html" },
     { "source": "/mumu/", "destination": "/mumu.html" },
+    { "source": "/campur", "destination": "/mumu.html" },
+    { "source": "/campur/", "destination": "/mumu.html" },
     { "source": "/v/:id", "destination": "/api/watch?id=:id" },
     { "source": "/v/:id/", "destination": "/api/watch?id=:id" },
     { "source": "/sitemap-v.xml", "destination": "/api/sitemap-v" }
@@ -15,7 +17,7 @@
     {
       "source": "/data/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=300" },
+        { "key": "Cache-Control", "value": "public, max-age=60" },
         { "key": "Access-Control-Allow-Origin", "value": "*" }
       ]
     }
