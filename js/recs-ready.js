@@ -3,7 +3,7 @@
   function esc(s) { return String(s || "").replace(/[&<>"]/g, ""); }
   function rawOf(v) { return String((v && (v.embed || v.direct || v.embedUrl)) || ""); }
   function titleOf(v) {
-    return String((v && v.title) || "Video").replace(/\(Koleksi[^)]*Pinguin[^)]*\)/ig, "").replace(/koleksidrpinguin\.com/ig, "").replace(/\s+/g, " ").trim();
+    return String((v && v.title) || "Video").replace(/\(Koleksi[^)]*Pinguin[^)]*\)/ig, "").replace(/koleksidrpinguin\.com/ig, "").replace(/[-\s]+$/g, "").replace(/\s+/g, " ").trim();
   }
   function keyOf(v) {
     var u = rawOf(v);
@@ -30,13 +30,11 @@
   function poster(v) {
     var id = keyOf(v);
     var raw = rawOf(v);
-    if (v.poster || v.thumb) return '<img src="' + esc(v.poster || v.thumb) + '" alt="" loading="lazy">';
-    if (window.KDP_POSTERS && window.KDP_POSTERS[id]) return '<img src="' + esc(window.KDP_POSTERS[id]) + '" alt="" loading="lazy">';
     if (/putarin|puterin/i.test(raw) && id) return '<img src="/api/poster?id=' + encodeURIComponent(id) + '" alt="" loading="lazy">';
     if (/userbokep/i.test(raw) && id) return '<img src="/api/thumb?h=userbokep&id=' + encodeURIComponent(id) + '" alt="" loading="lazy">';
     if (/indoav/i.test(raw) && id) return '<img src="/api/thumb?h=indoav&id=' + encodeURIComponent(id) + '" alt="" loading="lazy">';
     if (/lulu/i.test(raw) && id) return '<img src="https://img.lulustream.com/' + esc(id) + '.jpg" alt="" loading="lazy">';
-    return "";
+    return '<img src="/logo.png" alt="" loading="lazy">';
   }
   function shuffle(a) {
     var x = a.slice();
@@ -87,9 +85,7 @@
   function fill() {
     var modal = document.getElementById("videoModal");
     var hr = document.getElementById("hubRight");
-    if (!modal || !hr) return;
-    if (modal.classList.contains("hidden")) return;
-    if (!pool.length) return;
+    if (!modal || !hr || modal.classList.contains("hidden") || !pool.length) return;
     var cur = currentMeta();
     var items = pick(cur.id, cur.title, 8);
     if (!items.length) return;
@@ -107,19 +103,17 @@
         var mt = document.getElementById("modalTitle");
         if (ht) ht.textContent = t;
         if (mt) mt.textContent = t;
-        setTimeout(fill, 50);
+        setTimeout(fill, 30);
       };
     });
   }
-  window.__fillRecs = fill;
   Promise.all([
     fetch("/data/videos.json").then(function (r) { return r.json(); }).catch(function () { return []; }),
     fetch("/data/putarin.json").then(function (r) { return r.json(); }).catch(function () { return []; }),
     fetch("/data/campur.json").then(function (r) { return r.json(); }).catch(function () { return []; })
   ]).then(function (arr) {
     pool = [].concat(arr[0] || [], arr[1] || [], arr[2] || []).filter(function (v) { return rawOf(v) && !blocked(v); });
-    window.__recsPool = pool;
     fill();
-    setInterval(fill, 2500);
+    setInterval(fill, 4000);
   });
 })();
