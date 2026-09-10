@@ -1,81 +1,125 @@
 (function () {
-  var put = [], mumu = [];
+  var pool = [];
   function esc(s) { return String(s || "").replace(/[&<>"]/g, ""); }
+  function rawOf(v) { return String((v && (v.embed || v.direct || v.embedUrl)) || ""); }
   function titleOf(v) {
-    return String((v && v.title) || "Video").replace(/\(Koleksi[^)]*Pinguin[^)]*\)/ig, "").replace(/\s+/g, " ").trim();
+    return String((v && v.title) || "Video").replace(/\(Koleksi[^)]*Pinguin[^)]*\)/ig, "").replace(/koleksidrpinguin\.com/ig, "").replace(/\s+/g, " ").trim();
   }
-  function embedOf(v) {
-    return String((v && (v.embed || v.direct || v.embedUrl)) || "").replace("/d/", "/e/");
+  function keyOf(v) {
+    var u = rawOf(v);
+    try {
+      var url = new URL(u, location.href);
+      return String(url.searchParams.get("id") || (url.pathname.split("/").filter(Boolean).pop() || "")).replace(/\.(mp4|mov|html)$/i, "");
+    } catch (_) {
+      return String(u.split("/").pop() || "").replace(/\.(mp4|mov|html)$/i, "");
+    }
   }
-  function isPutarinSeries(v) {
-    var raw = embedOf(v) + " " + String((v && (v.source || v.category || v.folder)) || "");
-    if (!/putarin|puterin/i.test(raw)) return false;
-    var folder = String((v && v.folder) || "").toLowerCase();
-    var title = String((v && v.title) || "");
-    return folder === "series" || /s\d{1,2}\s*e\d{1,3}/i.test(title) || /episode\s*\d+/i.test(title);
+  function seriesKey(s) {
+    return titleOf({ title: s }).toLowerCase().replace(/s\d{1,2}\s*e\d{1,3}/ig, " ").replace(/episode\s*\d+/ig, " ").replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim().split(" ").slice(0, 4).join(" ");
   }
   function blocked(v) {
-    return /videy/i.test(embedOf(v)) || isPutarinSeries(v);
+    var raw = rawOf(v);
+    if (/videy|mumu\.watch|mumustream/i.test(raw)) return true;
+    if (/putarin|puterin/i.test(raw)) {
+      var folder = String((v && v.folder) || "").toLowerCase();
+      var title = String((v && v.title) || "");
+      if (folder === "series" || /s\d{1,2}\s*e\d{1,3}/i.test(title) || /episode\s*\d+/i.test(title)) return true;
+    }
+    return false;
   }
-  function preview(v) {
-    var raw = embedOf(v);
-    var id = "";
-    try {
-      var u = new URL(raw, location.href);
-      id = String(u.searchParams.get("id") || (u.pathname.split("/").filter(Boolean).pop() || ""));
-    } catch (_) {}
-    if (/mumu\.watch/i.test(raw) && id) return "<img src=\"https://m-cdn.video/hls/" + id + "/thumbnail.jpg\" alt=\"\" loading=\"lazy\">";
-    if (/putarin|puterin/i.test(raw) && id && v && v.poster) return "<img src=\"" + String(v.poster).replace(/"/g, "") + "\" alt=\"\" loading=\"lazy\">";
-    if (/putarin|puterin/i.test(raw) && id) return "<img src=\"/api/poster?id=" + encodeURIComponent(id) + "\" alt=\"\" loading=\"lazy\">";
+  function poster(v) {
+    var id = keyOf(v);
+    var raw = rawOf(v);
+    if (v.poster || v.thumb) return '<img src="' + esc(v.poster || v.thumb) + '" alt="" loading="lazy">';
+    if (window.KDP_POSTERS && window.KDP_POSTERS[id]) return '<img src="' + esc(window.KDP_POSTERS[id]) + '" alt="" loading="lazy">';
+    if (/putarin|puterin/i.test(raw) && id) return '<img src="/api/poster?id=' + encodeURIComponent(id) + '" alt="" loading="lazy">';
+    if (/userbokep/i.test(raw) && id) return '<img src="/api/thumb?h=userbokep&id=' + encodeURIComponent(id) + '" alt="" loading="lazy">';
+    if (/indoav/i.test(raw) && id) return '<img src="/api/thumb?h=indoav&id=' + encodeURIComponent(id) + '" alt="" loading="lazy">';
+    if (/lulu/i.test(raw) && id) return '<img src="https://img.lulustream.com/' + esc(id) + '.jpg" alt="" loading="lazy">';
     return "";
   }
-  function pick(list, n) {
-    var a = (list || []).filter(function (v) { return !blocked(v); });
-    for (var i = a.length - 1; i > 0; i--) {
+  function shuffle(a) {
+    var x = a.slice();
+    for (var i = x.length - 1; i > 0; i--) {
       var j = Math.floor(Math.random() * (i + 1));
-      var t = a[i]; a[i] = a[j]; a[j] = t;
+      var t = x[i]; x[i] = x[j]; x[j] = t;
     }
-    return a.slice(0, n);
+    return x;
+  }
+  function pick(currentId, currentTitle, n) {
+    n = n || 8;
+    var used = {};
+    var usedS = {};
+    var cur = String(currentId || "").toLowerCase();
+    var cs = seriesKey(currentTitle || "");
+    if (cur) used[cur] = 1;
+    if (cs) usedS[cs] = 1;
+    var out = [];
+    var bag = shuffle(pool);
+    for (var i = 0; i < bag.length && out.length < n; i++) {
+      var v = bag[i];
+      if (blocked(v)) continue;
+      var id = keyOf(v);
+      var t = titleOf(v);
+      if (!id || !t) continue;
+      var sk = seriesKey(t);
+      if (used[id.toLowerCase()] || (sk && usedS[sk])) continue;
+      used[id.toLowerCase()] = 1;
+      if (sk) usedS[sk] = 1;
+      out.push(v);
+    }
+    return out;
+  }
+  window.__pickRecs = pick;
+  function currentMeta() {
+    var id = "";
+    var title = ((document.getElementById("hubTitle") || {}).textContent) || ((document.getElementById("modalTitle") || {}).textContent) || "";
+    var iframe = document.getElementById("modalIframe");
+    var src = iframe && (iframe.getAttribute("src") || "");
+    if (src) {
+      try {
+        var u = new URL(src, location.href);
+        id = String(u.searchParams.get("id") || (u.pathname.split("/").filter(Boolean).pop() || ""));
+      } catch (_) {}
+    }
+    return { id: id, title: title };
   }
   function fill() {
     var modal = document.getElementById("videoModal");
     var hr = document.getElementById("hubRight");
-    if (!modal || modal.classList.contains("hidden") || !hr) return;
-    if (hr.querySelectorAll(".vcard").length >= 6) return;
-    var items = pick(put, 4).concat(pick(mumu, 4)).slice(0, 8);
+    if (!modal || !hr) return;
+    if (modal.classList.contains("hidden")) return;
+    if (!pool.length) return;
+    var cur = currentMeta();
+    var items = pick(cur.id, cur.title, 8);
     if (!items.length) return;
     hr.innerHTML = "<h2>Rekomendasi</h2><div class=\"vgrid\">" + items.map(function (v, i) {
-      return "<button type=\"button\" class=\"vcard\" data-i=\"" + i + "\"><div class=\"vph\">" + preview(v) + "</div><span>" + esc(titleOf(v)) + "</span></button>";
+      return "<button type=\"button\" class=\"vcard\" data-i=\"" + i + "\"><div class=\"vph\">" + poster(v) + "</div><span>" + esc(titleOf(v)) + "</span></button>";
     }).join("") + "</div>";
     hr.querySelectorAll(".vcard").forEach(function (btn) {
       btn.onclick = function () {
         var v = items[parseInt(btn.getAttribute("data-i"), 10)];
-        var native = document.getElementById("modalNativeVideo");
+        if (!v) return;
         var iframe = document.getElementById("modalIframe");
-        if (native) {
-          try { native.pause(); } catch (_) {}
-          native.removeAttribute("src");
-          native.style.display = "none";
-        }
-        if (iframe) {
-          iframe.style.display = "";
-          iframe.src = embedOf(v);
-        }
+        if (iframe) iframe.src = rawOf(v).replace("/d/", "/e/");
+        var t = titleOf(v);
         var ht = document.getElementById("hubTitle");
         var mt = document.getElementById("modalTitle");
-        var t = titleOf(v);
         if (ht) ht.textContent = t;
         if (mt) mt.textContent = t;
+        setTimeout(fill, 50);
       };
     });
   }
+  window.__fillRecs = fill;
   Promise.all([
+    fetch("/data/videos.json").then(function (r) { return r.json(); }).catch(function () { return []; }),
     fetch("/data/putarin.json").then(function (r) { return r.json(); }).catch(function () { return []; }),
-    fetch("/data/mumu.json").then(function (r) { return r.json(); }).catch(function () { return []; })
+    fetch("/data/campur.json").then(function (r) { return r.json(); }).catch(function () { return []; })
   ]).then(function (arr) {
-    put = arr[0] || [];
-    mumu = arr[1] || [];
+    pool = [].concat(arr[0] || [], arr[1] || [], arr[2] || []).filter(function (v) { return rawOf(v) && !blocked(v); });
+    window.__recsPool = pool;
     fill();
-    setInterval(fill, 1000);
+    setInterval(fill, 2500);
   });
 })();
