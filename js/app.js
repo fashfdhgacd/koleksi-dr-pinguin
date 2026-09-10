@@ -16,7 +16,7 @@
     add("/js/poster-map.js?v=hero3");
     add("/js/force-posters.js?v=3");
     add("/js/modal-share.js?v=noput1");
-    add("/js/recs-ready.js?v=mix3");
+    add("/js/recs-ready.js?v=mix4");
     add("/js/gallery-fallback.js?v=1");
   }, 400);
 })();

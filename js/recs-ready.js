@@ -1,5 +1,6 @@
 (function () {
   var pool = [];
+  var lastKey = "";
   function esc(s) { return String(s || "").replace(/[&<>"]/g, ""); }
   function rawOf(v) { return String((v && (v.embed || v.direct || v.embedUrl)) || ""); }
   function titleOf(v) {
@@ -68,7 +69,6 @@
     }
     return out;
   }
-  window.__pickRecs = pick;
   function currentMeta() {
     var id = "";
     var title = ((document.getElementById("hubTitle") || {}).textContent) || ((document.getElementById("modalTitle") || {}).textContent) || "";
@@ -82,11 +82,14 @@
     }
     return { id: id, title: title };
   }
-  function fill() {
+  function fill(force) {
     var modal = document.getElementById("videoModal");
     var hr = document.getElementById("hubRight");
     if (!modal || !hr || modal.classList.contains("hidden") || !pool.length) return;
     var cur = currentMeta();
+    var key = String(cur.id || cur.title || "");
+    if (!force && key && key === lastKey && hr.querySelectorAll(".vcard").length >= 6) return;
+    lastKey = key;
     var items = pick(cur.id, cur.title, 8);
     if (!items.length) return;
     hr.innerHTML = "<h2>Rekomendasi</h2><div class=\"vgrid\">" + items.map(function (v, i) {
@@ -103,7 +106,8 @@
         var mt = document.getElementById("modalTitle");
         if (ht) ht.textContent = t;
         if (mt) mt.textContent = t;
-        setTimeout(fill, 30);
+        lastKey = "";
+        fill(true);
       };
     });
   }
@@ -113,7 +117,10 @@
     fetch("/data/campur.json").then(function (r) { return r.json(); }).catch(function () { return []; })
   ]).then(function (arr) {
     pool = [].concat(arr[0] || [], arr[1] || [], arr[2] || []).filter(function (v) { return rawOf(v) && !blocked(v); });
-    fill();
-    setInterval(fill, 4000);
+    var modal = document.getElementById("videoModal");
+    if (modal && window.MutationObserver) {
+      new MutationObserver(function () { fill(false); }).observe(modal, { attributes: true, attributeFilter: ["class"] });
+    }
+    fill(false);
   });
 })();
