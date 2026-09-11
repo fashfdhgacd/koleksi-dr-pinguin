@@ -28,11 +28,9 @@
   function posterOf(v) {
     var id = codeOf(v);
     var raw = String((v && (v.embed || v.direct || v.source)) || "");
-    if (/lulu/i.test(raw) && id) return "/p/" + encodeURIComponent(id) + ".jpg";
     if (v && (v.poster || v.thumb) && !/img\.lulustream\.com\/[A-Za-z0-9]+\.jpg/.test(String(v.poster || v.thumb || ""))) return v.poster || v.thumb;
-    if (/putarin|puterin/i.test(raw) && id) return "/api/poster?id=" + encodeURIComponent(id);
-    if (/userbokep/i.test(raw) && id) return "/api/thumb?h=userbokep&id=" + encodeURIComponent(id);
-    if (/indoav/i.test(raw) && id) return "/api/thumb?h=indoav&id=" + encodeURIComponent(id);
+    if (/mumu\.watch|m-cdn\.video/i.test(raw) && id) return "https://m-cdn.video/hls/" + id + "/thumbnail.jpg";
+    if (/lulu/i.test(raw) && id) return "/p/" + encodeURIComponent(id) + ".jpg";
     return "";
   }
   function isEp(t) {
@@ -106,6 +104,7 @@
       '</div><div class="mt-2.5 px-0.5"><h3 class="text-sm font-medium leading-snug line-clamp-2">' + esc(name) + '</h3></div></article>';
   }
   function openModal(v) {
+    if (window.kdpPlay) { window.kdpPlay(v); return; }
     var modal = document.getElementById("videoModal");
     var frame = document.getElementById("modalIframe");
     var title = document.getElementById("modalTitle");
@@ -115,7 +114,8 @@
     if (title) title.textContent = titleOf(v);
     if (meta) meta.textContent = kindOf(v);
     if (ext) ext.href = embedOf(v);
-    frame.src = embedOf(v);
+    frame.src = "about:blank";
+    setTimeout(function () { frame.src = embedOf(v); }, 30);
     modal.classList.remove("hidden");
     document.body.style.overflow = "hidden";
     window.__kdpCurrent = { id: codeOf(v), title: titleOf(v), embed: embedOf(v) };
