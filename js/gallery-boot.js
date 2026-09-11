@@ -2,13 +2,15 @@
   var cfg = window.KDP_GALLERY || { file: "/data/campur.json", label: "Mix" };
   var PER = 12;
   var catNow = "all";
+  var seriesNow = "";
+  var ORDER = ["JAV", "Series", "Film", "AI", "Anime", "Lulu", "Streamtape", "Lainnya"];
   function codeOf(v) {
     var u = String((v && (v.embed || v.direct)) || "");
     var m = u.match(/[?&]id=([A-Za-z0-9_-]+)/) || u.match(/\/(?:e|v|d|watch)\/([A-Za-z0-9_-]+)/);
     return m ? m[1] : "";
   }
   function titleOf(v) {
-    var t = String((v && v.title) || "").replace(/[<>]/g, "").replace(/_/g, " ").trim();
+    var t = String((v && v.title) || "").replace(/^[\uD83C\uDFAC\s]+/, "").replace(/[<>]/g, "").replace(/_/g, " ").trim();
     if (!t) return (cfg.label || "Video") + " " + codeOf(v);
     return t;
   }
@@ -32,33 +34,44 @@
     if (/indoav/i.test(raw) && id) return "/api/thumb?h=indoav&id=" + encodeURIComponent(id);
     return "";
   }
+  function isEp(t) {
+    return /s\d{1,2}\s*e\d{1,3}|episode\s*\d+|eps\.?\s*\d+/i.test(String(t || ""));
+  }
+  function seriesName(v) {
+    var t = titleOf(v);
+    t = t.replace(/s\d{1,2}\s*e\d{1,3}.*$/i, "").replace(/episode\s*\d+.*$/i, "").replace(/\s+[\u2013\-]\s+.*$/, "");
+    return t.replace(/\s+/g, " ").trim() || "Series";
+  }
   function kindOf(v) {
     var raw = String((v && (v.embed || v.direct || v.source)) || "");
-    var t = String((v && v.title) || "").toLowerCase();
-    if (/lulu/i.test(raw)) return "Lulu";
-    if (/streamtape|strcloud/i.test(raw)) return "Streamtape";
-    if (/s\d{1,2}\s*e\d{1,3}|episode\s*\d+|eps\.?\s*\d+/i.test(t)) return "Series";
+    var t = titleOf(v).toLowerCase();
+    if (/lulu/i.test(raw) && cfg.label === "Mix") return "Lulu";
+    if (/streamtape|strcloud/i.test(raw) && cfg.label === "Mix") return "Streamtape";
+    if (isEp(titleOf(v))) return "Series";
     if (/\bjav\b|tokyo[- ]?hot|caribbean|1pondo|heyzo|prestige|start-|meyd-|ssis-|pred-|mide-|ipx-|ipzz-|fc2|uncensored|japan/i.test(t + " " + raw)) return "JAV";
-    if (/\bai\b|ai-|stable diffusion|generated/i.test(t)) return "AI";
-    if (/anime|hentai|doraemon|naruto|one piece/i.test(t)) return "Anime";
+    if (/\bai\b|ai-|stable diffusion/i.test(t)) return "AI";
+    if (/anime|hentai|doraemon|naruto|one piece|slime|jojo/i.test(t)) return "Anime";
     if (/\(20\d\d\)|film|movie/i.test(t)) return "Film";
-    return (v && v.category && v.category !== "Putarin" && v.category !== "Campur") ? v.category : "Lainnya";
+    return "Lainnya";
   }
   function esc(s) { return String(s || "").replace(/[&<>"]/g, ""); }
   function pageNow() {
     var n = parseInt((location.hash.match(/p(\d+)/) || [])[1] || "1", 10);
     return n > 0 ? n : 1;
   }
-  function setPage(p) {
-    var h = "#p" + p;
-    if (catNow && catNow !== "all") h += "&c=" + encodeURIComponent(catNow);
-    location.hash = h;
-  }
   function readHash() {
-    var c = (location.hash.match(/c=([^&]+)/) || [])[1];
-    if (c) catNow = decodeURIComponent(c);
+    var c = (location.hash.match(/[?&#]c=([^&]*)/) || location.hash.match(/c=([^&]+)/) || [])[1];
+    var s = (location.hash.match(/s=([^&]+)/) || [])[1];
+    catNow = c ? decodeURIComponent(c) : "all";
+    seriesNow = s ? decodeURIComponent(s) : "";
   }
-  function cardHTML(v) {
+  function href(p, cat, ser) {
+    var h = "#p" + p;
+    if (cat && cat !== "all") h += "&c=" + encodeURIComponent(cat);
+    if (ser) h += "&s=" + encodeURIComponent(ser);
+    return h;
+  }
+  function cardHTML(v, badge) {
     var id = codeOf(v);
     var poster = posterOf(v);
     var media = poster
@@ -67,10 +80,24 @@
     return '<article class="video-card group cursor-pointer" data-id="' + id + '">' +
       '<div class="relative aspect-video rounded overflow-hidden bg-black border border-neutral-800">' +
       media +
-      '<span class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/70 text-[10px] font-medium z-10">' + esc(kindOf(v)) + '</span>' +
+      '<span class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/70 text-[10px] font-medium z-10">' + esc(badge || kindOf(v)) + '</span>' +
       '<button type="button" class="card-share absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-black/70 text-white text-xs">↗</button>' +
       '<div class="absolute inset-0 flex items-center justify-center pointer-events-none"><span class="w-9 h-9 rounded-full flex items-center justify-center text-black font-bold" style="background:#ff9000">▶</span></div>' +
       '</div><div class="mt-2.5 px-0.5"><h3 class="text-sm font-medium leading-snug line-clamp-2">' + esc(titleOf(v)) + '</h3></div></article>';
+  }
+  function seriesCard(name, list) {
+    var v = list[0] || {};
+    var poster = posterOf(v);
+    var media = poster
+      ? '<img src="' + esc(poster) + '" alt="" loading="lazy" class="absolute inset-0 w-full h-full object-cover bg-black">'
+      : '<div class="absolute inset-0 bg-neutral-900"></div>';
+    return '<article class="video-card group cursor-pointer" data-series="' + esc(name) + '">' +
+      '<div class="relative aspect-video rounded overflow-hidden bg-black border border-neutral-800">' +
+      media +
+      '<span class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/70 text-[10px] font-medium z-10">Series</span>' +
+      '<span class="absolute bottom-2 right-2 px-2 py-0.5 rounded-md text-[10px] font-black" style="background:#ff9000;color:#000">' + list.length + ' eps</span>' +
+      '<div class="absolute inset-0 flex items-center justify-center pointer-events-none"><span class="w-9 h-9 rounded-full flex items-center justify-center text-black font-bold" style="background:#ff9000">▶</span></div>' +
+      '</div><div class="mt-2.5 px-0.5"><h3 class="text-sm font-medium leading-snug line-clamp-2">' + esc(name) + '</h3></div></article>';
   }
   function openModal(v) {
     var modal = document.getElementById("videoModal");
@@ -109,6 +136,15 @@
       '</div></div>';
     document.body.insertBefore(nav, document.body.firstChild);
   }
+  function groupSeries(items) {
+    var map = {};
+    items.forEach(function (v) {
+      var n = seriesName(v);
+      if (!map[n]) map[n] = [];
+      map[n].push(v);
+    });
+    return map;
+  }
   function chips(items) {
     var wrap = document.getElementById("categoryPills");
     if (!wrap) {
@@ -123,17 +159,25 @@
       var k = kindOf(v);
       counts[k] = (counts[k] || 0) + 1;
     });
-    var keys = Object.keys(counts).filter(function (k) { return k !== "all" && counts[k]; });
-    keys.sort(function (a, b) { return counts[b] - counts[a]; });
-    var html = '<button type="button" data-cat="all" class="chip px-3 py-1 rounded-full text-[11px] font-bold border ' + (catNow === "all" ? "bg-ph text-black border-ph" : "border-neutral-700") + '">Semua ' + counts.all + '</button>';
-    keys.forEach(function (k) {
-      html += '<button type="button" data-cat="' + esc(k) + '" class="chip px-3 py-1 rounded-full text-[11px] font-bold border whitespace-nowrap ' + (catNow === k ? "bg-ph text-black border-ph" : "border-neutral-700") + '">' + esc(k) + " " + counts[k] + '</button>';
+    var keys = ORDER.filter(function (k) { return counts[k]; });
+    Object.keys(counts).forEach(function (k) {
+      if (k !== "all" && keys.indexOf(k) < 0 && counts[k]) keys.push(k);
     });
+    if (keys.length === 1 && keys[0] === cfg.label) keys = [];
+    if (cfg.label === "Mix" && keys.length === 1) keys = [];
+    var html = '<button type="button" data-cat="all" class="chip px-3 py-1 rounded-full text-[11px] font-bold border ' + (catNow === "all" ? "bg-ph text-black border-ph" : "border-neutral-700") + '">Semua</button>';
+    keys.forEach(function (k) {
+      html += '<button type="button" data-cat="' + esc(k) + '" class="chip px-3 py-1 rounded-full text-[11px] font-bold border whitespace-nowrap ' + (catNow === k ? "bg-ph text-black border-ph" : "border-neutral-700") + '">' + esc(k) + '</button>';
+    });
+    if (catNow === "Series" && seriesNow) {
+      html = '<button type="button" data-cat="Series" data-back="1" class="chip px-3 py-1 rounded-full text-[11px] font-bold border border-neutral-700">← Series</button>' +
+        '<span class="chip px-3 py-1 rounded-full text-[11px] font-bold bg-ph text-black">' + esc(seriesNow) + '</span>';
+    }
     wrap.innerHTML = html;
     wrap.querySelectorAll("[data-cat]").forEach(function (b) {
       b.onclick = function () {
-        catNow = b.getAttribute("data-cat") || "all";
-        location.hash = "#p1&c=" + encodeURIComponent(catNow);
+        var c = b.getAttribute("data-cat") || "all";
+        location.hash = href(1, c, "");
       };
     });
   }
@@ -150,21 +194,40 @@
     var count = document.getElementById("videoCount");
     var pager = document.getElementById("pagination");
     if (!grid) return;
+    var mode = "videos";
+    var groups = {};
+    if (catNow === "Series" && !seriesNow) {
+      groups = groupSeries(items);
+      mode = "series";
+    } else if (catNow === "Series" && seriesNow) {
+      items = items.filter(function (v) { return seriesName(v) === seriesNow; });
+    }
+    if (mode === "series") {
+      var names = Object.keys(groups).sort(function (a, b) { return groups[b].length - groups[a].length; });
+      if (count) count.textContent = names.length + " series";
+      grid.innerHTML = names.map(function (n) { return seriesCard(n, groups[n]); }).join("");
+      if (pager) pager.innerHTML = "";
+      grid.querySelectorAll("[data-series]").forEach(function (card) {
+        card.onclick = function () {
+          location.hash = href(1, "Series", card.getAttribute("data-series") || "");
+        };
+      });
+      return;
+    }
     var pages = Math.max(1, Math.ceil(items.length / PER) || 1);
     var p = Math.min(pageNow(), pages);
     var slice = items.slice((p - 1) * PER, p * PER);
-    if (count) count.textContent = items.length + " video" + (catNow !== "all" ? " · " + catNow : "");
-    grid.innerHTML = slice.map(cardHTML).join("") || '<p class="text-neutral-500">Tidak ada video di kategori ini.</p>';
+    if (count) count.textContent = items.length + " video" + (seriesNow ? " · " + seriesNow : "");
+    grid.innerHTML = slice.map(function (v) { return cardHTML(v, seriesNow ? "E" : ""); }).join("") || '<p class="text-neutral-500">Tidak ada video.</p>';
     if (pager) {
       var html = "";
-      function href(n) { return "#p" + n + (catNow !== "all" ? "&c=" + encodeURIComponent(catNow) : ""); }
-      if (p > 1) html += '<a class="min-w-[40px] h-10 px-3 border border-neutral-700 rounded flex items-center justify-center" href="' + href(p - 1) + '">Prev</a>';
+      if (p > 1) html += '<a class="min-w-[40px] h-10 px-3 border border-neutral-700 rounded flex items-center justify-center" href="' + href(p - 1, catNow, seriesNow) + '">Prev</a>';
       for (var i = 1; i <= pages; i++) {
         html += i === p
           ? '<span class="min-w-[40px] h-10 px-3 bg-ph text-black font-black rounded flex items-center justify-center">' + i + '</span>'
-          : '<a class="min-w-[40px] h-10 px-3 border border-neutral-700 rounded flex items-center justify-center" href="' + href(i) + '">' + i + '</a>';
+          : '<a class="min-w-[40px] h-10 px-3 border border-neutral-700 rounded flex items-center justify-center" href="' + href(i, catNow, seriesNow) + '">' + i + '</a>';
       }
-      if (p < pages) html += '<a class="min-w-[40px] h-10 px-3 border border-neutral-700 rounded flex items-center justify-center" href="' + href(p + 1) + '">Next</a>';
+      if (p < pages) html += '<a class="min-w-[40px] h-10 px-3 border border-neutral-700 rounded flex items-center justify-center" href="' + href(p + 1, catNow, seriesNow) + '">Next</a>';
       pager.innerHTML = html;
     }
     grid.querySelectorAll(".video-card").forEach(function (card, idx) {
