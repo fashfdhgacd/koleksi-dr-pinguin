@@ -2,6 +2,7 @@
   if (window.__modalShare) return;
   window.__modalShare = true;
   var mixList = [], vidList = [], putList = [];
+  var loaded = false;
   var switching = false;
   var recLock = [];
   var fromRec = false;
@@ -15,15 +16,20 @@
     }
     return false;
   }
-  Promise.all([
-    fetch('/data/videos.json').then(function (r) { return r.json(); }).catch(function () { return []; }),
-    fetch('/data/putarin.json').then(function (r) { return r.json(); }).catch(function () { return []; }),
-    fetch('/data/campur.json').then(function (r) { return r.json(); }).catch(function () { return []; })
-  ]).then(function (arr) {
-    vidList = (arr[0] || []).filter(function (v) { return !blocked(v); });
-    putList = (arr[1] || []).filter(function (v) { return !blocked(v); });
-    mixList = (arr[2] || []).filter(function (v) { return !blocked(v); });
-  });
+  function loadLists(cb) {
+    if (loaded) { if (cb) cb(); return; }
+    loaded = true;
+    Promise.all([
+      fetch('/data/videos.json').then(function (r) { return r.json(); }).catch(function () { return []; }),
+      fetch('/data/putarin.json').then(function (r) { return r.json(); }).catch(function () { return []; }),
+      fetch('/data/campur.json').then(function (r) { return r.json(); }).catch(function () { return []; })
+    ]).then(function (arr) {
+      vidList = (arr[0] || []).filter(function (v) { return !blocked(v); });
+      putList = (arr[1] || []).filter(function (v) { return !blocked(v); });
+      mixList = (arr[2] || []).filter(function (v) { return !blocked(v); });
+      if (cb) cb();
+    });
+  }
   if (!document.getElementById('hubModalCss')) {
     var css = document.createElement('style');
     css.id = 'hubModalCss';
@@ -44,19 +50,20 @@
       '#hubMeta{display:flex;flex-wrap:wrap;gap:6px}',
       '#hubMeta span{height:26px;padding:0 10px;border-radius:999px;background:#1a1f2c;font-size:11px;font-weight:700;display:inline-flex;align-items:center}',
       '#hubActs{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}',
-      '#hubActs button{height:36px;padding:0 14px;border-radius:10px;border:1px solid #232838;background:#ff9000;color:#111;font-weight:800}',
+      '#hubActs a,#hubActs button{height:36px;padding:0 14px;border-radius:10px;border:1px solid #232838;background:#ff9000;color:#111;font-weight:800;display:inline-flex;align-items:center;text-decoration:none}',
+      '#hubActs a.ghost,#hubActs button.ghost{background:#1a1f2c;color:#fff}',
       '#hubRight h2{margin:0 0 10px;font-size:14px;font-weight:800}',
       '#hubRight .vgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}',
       '#hubRight .vcard{display:block;background:0;border:0;padding:0;color:#fff;text-align:left;cursor:pointer;width:100%}',
-      '#hubRight .vph{position:relative;aspect-ratio:16/9;background:#1c1c1c;border-radius:10px;overflow:hidden}',
+      '#hubRight .vph{position:relative;aspect-ratio:16/9;background:linear-gradient(180deg,#2a1a0a,#111);border-radius:10px;overflow:hidden}',
       '#hubRight .vph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border:0;pointer-events:none}',
       '#hubRight .vcard span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:6px;font-size:12px}',
-      '#modalShare,#modalOpenExternal,#modalShareMobile,#modalOpenExternalMobile{display:none!important}'
+      '#modalShare{display:none!important}'
     ].join('');
     document.head.appendChild(css);
   }
   function cleanTitle(s) {
-    return String(s || 'Video').replace(/\(Koleksi[^)]*Pinguin[^)]*\)/ig, '').replace(/koleksidrpinguin\.com/ig, '').replace(/^[\u00a0-\u00ff\u2000-\u206f\u2190-\u21ff\u2600-\u27bf\ud800-\udfff]+/g, '').replace(/\s+/g, ' ').trim();
+    return String(s || 'Video').replace(/\(Koleksi[^)]*Pinguin[^)]*\)/ig, '').replace(/koleksidrpinguin\.com/ig, '').replace(/\s+/g, ' ').trim();
   }
   function seriesKey(s) {
     return cleanTitle(s).replace(/s\d{1,2}\s*e\d{1,3}/ig, '').replace(/episode\s*\d+/ig, '').replace(/part\s*\d+/ig, '').replace(/\s+/g, ' ').trim().toLowerCase();
@@ -72,18 +79,19 @@
     return String((v && (v.embed || v.direct || v.embedUrl)) || '').replace('/d/', '/e/');
   }
   function currentId() {
+    var cur = window.__kdpCurrent || {};
+    if (cur.id) return String(cur.id);
     var iframe = document.getElementById('modalIframe');
     return keyFromEmbed(iframe && iframe.src);
   }
   function previewHtml(v) {
     var raw = embedOf(v);
     var id = keyFromEmbed(raw);
-    if (/putarin|puterin/i.test(raw) && id) return '<img src="/api/poster?id=' + encodeURIComponent(id) + '" alt="" loading="lazy">';
-    if (/userbokep/i.test(raw) && id) return '<img src="/api/thumb?h=userbokep&id=' + encodeURIComponent(id) + '" alt="" loading="lazy">';
-    if (/indoav/i.test(raw) && id) return '<img src="/api/thumb?h=indoav&id=' + encodeURIComponent(id) + '" alt="" loading="lazy">';
-    if (/lulu/i.test(raw) && id) return '<img src="/p/' + encodeURIComponent(id) + '.jpg" alt="" loading="lazy">';
-    if (v && (v.poster || v.thumb)) return '<img src="' + String(v.poster || v.thumb).replace(/"/g, '') + '" alt="" loading="lazy">';
-    return '<div style="position:absolute;inset:0;background:#1c1c1c"></div>';
+    var mapped = (window.KDP_POSTERS && id && window.KDP_POSTERS[id]) || '';
+    var src = mapped || String((v && (v.poster || v.thumb)) || '');
+    if (/mumu\.watch|m-cdn\.video/i.test(raw) && id) src = 'https://m-cdn.video/hls/' + id + '/thumbnail.jpg';
+    if (src) return '<img src="' + src.replace(/"/g, '') + '" alt="" loading="lazy">';
+    return '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#ff9000;font-size:18px;font-weight:900">▶</div>';
   }
   function showLoad(on) {
     var el = document.getElementById('hubLoad');
@@ -129,22 +137,17 @@
   function playVideo(v) {
     fromRec = true;
     if (!v || blocked(v) || switching) return;
-    var raw = embedOf(v);
-    var iframe = document.getElementById('modalIframe');
-    if (!iframe || !raw) return;
-    if (keyFromEmbed(iframe.src) === keyFromEmbed(raw)) return;
     switching = true;
     showLoad(true);
-    var titleEl = document.getElementById('modalTitle');
-    var ht = document.getElementById('hubTitle');
-    var hm = document.getElementById('hubMeta');
-    var t = cleanTitle(v.title || '');
-    if (titleEl) titleEl.textContent = t;
-    if (ht) ht.textContent = t;
-    if (hm) hm.innerHTML = '<span>' + (v.folder || v.category || 'Video') + '</span><span>18+</span>';
-    iframe.onload = function () { showLoad(false); switching = false; };
-    iframe.src = raw;
-    setTimeout(function () { showLoad(false); switching = false; draw(); }, 400);
+    if (window.kdpPlay) window.kdpPlay(v);
+    else {
+      var iframe = document.getElementById('modalIframe');
+      if (iframe) {
+        iframe.src = 'about:blank';
+        setTimeout(function () { iframe.src = embedOf(v); }, 30);
+      }
+    }
+    setTimeout(function () { showLoad(false); switching = false; draw(); }, 350);
   }
   function ensureLayout() {
     var shell = document.querySelector('#videoModal .player-shell');
@@ -189,10 +192,13 @@
     var hm = document.getElementById('hubMeta');
     var ha = document.getElementById('hubActs');
     var hr = document.getElementById('hubRight');
+    var cur = window.__kdpCurrent || {};
+    var src = cur.embed || ((document.getElementById('modalOpenExternal') || {}).href) || '#';
     if (ht) ht.textContent = title;
     if (hm) hm.innerHTML = '<span>' + cat + '</span><span>18+</span>';
     if (ha) {
-      ha.innerHTML = '<button type="button" class="pri" id="hubShare">Bagikan</button>';
+      ha.innerHTML = '<button type="button" class="pri" id="hubShare">Bagikan</button>' +
+        '<a class="ghost" id="hubSource" href="' + String(src).replace(/"/g, '') + '" target="_blank" rel="noopener">Putar di sumber</a>';
       var b = document.getElementById('hubShare');
       if (b) b.onclick = function () {
         var sheet = document.getElementById('shareSheet');
@@ -217,8 +223,10 @@
     modal.__hubObs = true;
     new MutationObserver(function () {
       if (modal.classList.contains('hidden')) { fromRec = false; return; }
-      if (!fromRec) recLock = [];
-      setTimeout(draw, 40);
+      loadLists(function () {
+        if (!fromRec) recLock = [];
+        setTimeout(draw, 40);
+      });
     }).observe(modal, { attributes: true, attributeFilter: ['class'] });
   }
   hook();
