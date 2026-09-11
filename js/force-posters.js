@@ -15,6 +15,7 @@
   }
   function hostOf(src) {
     var s = String(src || "").toLowerCase();
+    if (s.indexOf("videy") >= 0) return "videy";
     if (s.indexOf("userbokep") >= 0) return "userbokep";
     if (s.indexOf("indoav") >= 0) return "indoav";
     if (s.indexOf("putarin") >= 0 || s.indexOf("puterin") >= 0) return "putarin";
@@ -25,7 +26,10 @@
     var media = card.querySelector("iframe, video");
     var raw = "";
     if (media) raw = media.getAttribute("src") || media.getAttribute("data-src") || "";
-    raw = raw || card.getAttribute("data-embed") || "";
+    raw = raw || card.getAttribute("data-embed") || card.getAttribute("data-src") || "";
+    var h = hostOf(raw);
+    if (h === "videy") return;
+    if (media && media.tagName === "VIDEO" && /videy/i.test(media.getAttribute("src") || "")) return;
     var id = idFrom(raw);
     if (!id || /^\d+$/.test(id)) return;
     var img = box.querySelector("img.kdp-cover");
@@ -40,13 +44,13 @@
     if (img.getAttribute("data-ok") === "1") return;
     img.setAttribute("data-ok", "1");
     if (media) media.style.display = "none";
-    var h = hostOf(raw);
     var tries = [];
     if (h === "putarin") tries.push("/api/poster?id=" + encodeURIComponent(id));
     if (h === "indoav" || h === "userbokep") {
       tries.push("/api/thumb?h=" + h + "&id=" + encodeURIComponent(id));
       tries.push("/api/repair-poster?h=" + h + "&id=" + encodeURIComponent(id));
     }
+    if (!tries.length) return;
     tries.push(PLACEHOLDER);
     var i = 0;
     img.onerror = function () {
