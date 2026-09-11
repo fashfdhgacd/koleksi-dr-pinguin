@@ -26,7 +26,9 @@
     var id = codeOf(v);
     var raw = String((v && (v.embed || v.direct)) || "");
     if (/lulu/i.test(raw)) return "https://img.lulustream.com/" + id + ".jpg";
-    if (/videy/i.test(raw)) return "";
+    if (/putarin|puterin/i.test(raw) && id) return "/api/poster?id=" + encodeURIComponent(id);
+    if (/userbokep/i.test(raw) && id) return "/api/thumb?h=userbokep&id=" + encodeURIComponent(id);
+    if (/indoav/i.test(raw) && id) return "/api/thumb?h=indoav&id=" + encodeURIComponent(id);
     return "";
   }
   function esc(s) { return String(s || "").replace(/[&<>"]/g, ""); }
@@ -53,12 +55,15 @@
     var frame = document.getElementById("modalIframe");
     var title = document.getElementById("modalTitle");
     var meta = document.getElementById("modalMeta");
+    var ext = document.getElementById("modalOpenExternal");
     if (!modal || !frame) return;
     if (title) title.textContent = titleOf(v);
     if (meta) meta.textContent = v.source || cfg.label || "";
+    if (ext) ext.href = embedOf(v);
     frame.src = embedOf(v);
     modal.classList.remove("hidden");
     document.body.style.overflow = "hidden";
+    window.__kdpCurrent = { id: codeOf(v), title: titleOf(v), embed: embedOf(v) };
   }
   function closeModal() {
     var modal = document.getElementById("videoModal");
@@ -93,12 +98,11 @@
       card.addEventListener("click", function (e) {
         if (e.target.closest(".card-share")) {
           e.stopPropagation();
-          var url = "https://koleksidrpinguin.com/v/" + encodeURIComponent(codeOf(v));
-          if (navigator.clipboard) navigator.clipboard.writeText(url);
-          var sheet = document.getElementById("shareSheet");
           var prev = document.getElementById("shareTitlePreview");
           if (prev) prev.textContent = titleOf(v);
+          var sheet = document.getElementById("shareSheet");
           if (sheet) sheet.classList.remove("hidden");
+          window.__kdpCurrent = { id: codeOf(v), title: titleOf(v), embed: embedOf(v) };
           return;
         }
         openModal(v);
@@ -115,6 +119,12 @@
     if (e.target.id === "shareClose" || e.target.id === "shareBackdrop") {
       var sheet = document.getElementById("shareSheet");
       if (sheet) sheet.classList.add("hidden");
+    }
+    if (e.target.id === "modalShare") {
+      var sheet = document.getElementById("shareSheet");
+      var prev = document.getElementById("shareTitlePreview");
+      if (prev && window.__kdpCurrent) prev.textContent = window.__kdpCurrent.title || "";
+      if (sheet) sheet.classList.remove("hidden");
     }
   });
 })();
