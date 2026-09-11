@@ -4,6 +4,9 @@
   var PLACEHOLDER =
     "data:image/svg+xml," +
     encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><rect width="640" height="360" fill="#141414"/><circle cx="320" cy="168" r="34" fill="#ff9000"/><polygon points="310,152 342,168 310,184" fill="#111"/></svg>');
+  function allowed() {
+    return !window.KDP || window.KDP.can("posters", "force-posters");
+  }
   function idFrom(src) {
     if (!src) return "";
     try {
@@ -22,6 +25,7 @@
     return "";
   }
   function swap(card) {
+    if (!allowed()) return;
     if (card.closest && card.closest("#hubRight")) return;
     var box = card.querySelector(".relative, .ph, .aspect-video") || card;
     var media = card.querySelector("iframe, video");
@@ -60,9 +64,10 @@
     img.src = tries[i++];
   }
   function run() {
+    if (!allowed()) return;
     document.querySelectorAll("#videoGrid .video-card, #trendingGrid .video-card, #searchResults .video-card, .sg .card").forEach(swap);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run);
   else run();
-  setInterval(run, 1200);
+  setInterval(run, 2500);
 })();
