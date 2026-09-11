@@ -30,7 +30,7 @@
     try { sessionStorage.setItem("kdp_page", String(n)); } catch (_) {}
     var h = "#p" + n;
     if (cat && cat !== "all") h += "&c=" + encodeURIComponent(cat);
-    if (location.hash !== h) history.replaceState(null, "", "/" + h);
+    if (location.pathname === "/" && location.hash !== h) history.replaceState(null, "", "/" + h);
   }
   function filtered() {
     if (!cat || cat === "all") return list;
@@ -105,6 +105,12 @@
   }
   function heroAndTrend() {
     var hero = list[0];
+    var slides = document.getElementById("heroSlides");
+    if (hero && slides) {
+      slides.innerHTML = '<div class="hg-ph" style="position:absolute;inset:0;border-radius:0;border:0"><span class="hg-play">▶</span></div>';
+      slides.onclick = function () { if (window.kdpPlay) window.kdpPlay(hero); };
+      slides.style.cursor = "pointer";
+    }
     if (hero) {
       var ht = document.getElementById("heroTitle");
       var hm = document.getElementById("heroMeta");
@@ -140,10 +146,4 @@
       var g = document.getElementById("videoGrid");
       if (g) g.innerHTML = "<p>Gagal memuat daftar video.</p>";
     });
-  window.addEventListener("hashchange", function () {
-    if (/^#v=/.test(location.hash)) return;
-    var c = (location.hash.match(/[?&#]c=([^&]+)/) || [])[1];
-    cat = c ? decodeURIComponent(c) : cat;
-    draw();
-  });
 })();
