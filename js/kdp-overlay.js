@@ -3,7 +3,6 @@
   window.__kdpOverlay = true;
   var KEY = "kdp_age_ok";
   var DAY = 30 * 24 * 60 * 60 * 1000;
-  var catalogs = { vid: [], put: [], mix: [], ready: false };
   function pass() {
     try {
       localStorage.setItem(KEY, String(Date.now() + DAY));
@@ -43,14 +42,6 @@
     return String((v && (v.embed || v.direct || v.embedUrl)) || "").replace("/d/", "/e/");
   }
   function isVidey(u) { return /videy/i.test(String(u || "")); }
-  function findById(id) {
-    var all = catalogs.put.concat(catalogs.mix, catalogs.vid);
-    id = String(id || "").toLowerCase();
-    for (var i = 0; i < all.length; i++) {
-      if (keyFrom(embedOf(all[i])).toLowerCase() === id) return all[i];
-    }
-    return null;
-  }
   function hideNative() {
     var native = document.getElementById("modalNativeVideo");
     if (!native) return;
@@ -64,15 +55,23 @@
     var iframe = document.getElementById("modalIframe");
     if (!modal || !iframe) return;
     var raw = embedOf(v);
+    if (!raw) return;
     modal.classList.remove("hidden");
     document.body.style.overflow = "hidden";
     var t = String(v.title || "").replace(/\(Koleksi[^)]*Pinguin[^)]*\)/ig, "").replace(/\s+/g, " ").trim();
+    var id = keyFrom(raw) || String(v.id || "");
     var mt = document.getElementById("modalTitle");
     var mm = document.getElementById("modalMeta");
     var ht = document.getElementById("hubTitle");
+    var ext = document.getElementById("modalOpenExternal");
     if (mt) mt.textContent = t;
     if (mm) mm.textContent = v.folder || v.category || "Video";
     if (ht) ht.textContent = t;
+    if (ext) {
+      ext.href = raw;
+      ext.textContent = "Putar di sumber";
+      ext.classList.remove("hidden");
+    }
     if (isVidey(raw)) {
       var native = document.getElementById("modalNativeVideo");
       var wrap = iframe.parentElement;
@@ -96,42 +95,17 @@
       iframe.src = "about:blank";
       setTimeout(function () { iframe.src = raw; }, 30);
     }
-    var id = keyFrom(raw);
-    window.__kdpCurrent = { id: id, title: t, embed: raw };
+    window.__kdpCurrent = { id: id, title: t, embed: raw, category: v.folder || v.category || "Video" };
+    if (window.kdpSaveWatch) window.kdpSaveWatch(window.__kdpCurrent);
     if (id) history.replaceState(null, "", "/#v=" + encodeURIComponent(id));
   };
-  function restore() {
-    var m = location.hash.match(/^#v=([^&]+)/);
-    if (!m || !catalogs.ready) return;
-    var v = findById(decodeURIComponent(m[1]));
-    if (v) window.kdpPlay(v);
-  }
-  Promise.all([
-    fetch("/data/putarin.json").then(function (r) { return r.json(); }).catch(function () { return []; }),
-    fetch("/data/campur.json").then(function (r) { return r.json(); }).catch(function () { return []; })
-  ]).then(function (arr) {
-    catalogs.put = arr[0] || [];
-    catalogs.mix = arr[1] || [];
-    catalogs.vid = window.videoList || window.videos || window._gallery || [];
-    catalogs.ready = true;
-    restore();
-  });
   document.addEventListener("click", function (e) {
-    var rec = e.target.closest && e.target.closest("#hubRight .vcard, #modalNextCard .video-card, .rec-card, [data-rec-id]");
-    if (rec) {
-      var id = rec.getAttribute("data-id") || rec.getAttribute("data-rec-id") || "";
-      var v = findById(id);
-      if (v) {
-        e.preventDefault();
-        e.stopPropagation();
-        window.kdpPlay(v);
-      }
-    }
-    if (e.target.closest && e.target.closest("#modalClose")) {
+    if (e.target.closest && e.target.closest("#modalClose, #modalBackdrop")) {
       hideNative();
       var iframe = document.getElementById("modalIframe");
       if (iframe) iframe.src = "about:blank";
-      history.replaceState(null, "", "/");
+      var modal = document.getElementById("videoModal");
+      if (modal) modal.classList.add("hidden");
       document.body.style.overflow = "";
     }
   }, true);
