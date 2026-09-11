@@ -161,9 +161,12 @@ module.exports = async function handler(req, res) {
     const cards = related.map(function (v) {
       return "<a class=\"card video-card\" href=\"/v/" + encodeURIComponent(keyOf(v)) + "\" data-id=\"" + esc(keyOf(v)) + "\" data-embed=\"" + esc(rawOf(v).replace("/d/", "/e/")) + "\" data-title=\"" + esc(cleanTitle(v.title)) + "\"><div class=\"ph\">" + mediaOf(v) + "</div><h3>" + esc(cleanTitle(v.title)) + "</h3></a>";
     }).join("");
+    const posterSrc = /indoav/i.test(embed)
+      ? ("/api/thumb?h=indoav&id=" + encodeURIComponent(id))
+      : (/userbokep/i.test(embed) ? ("/api/thumb?h=userbokep&id=" + encodeURIComponent(id)) : thumb);
     const player = /\.mp4($|\?)/i.test(embed) || /videy/i.test(embed)
-      ? "<video controls playsinline preload=\"metadata\" src=\"" + esc(embed) + "\"></video>"
-      : "<iframe src=\"" + esc(embed) + "\" allow=\"autoplay;encrypted-media;fullscreen\" allowfullscreen></iframe>";
+      ? "<video controls playsinline preload=\"metadata\" poster=\"" + esc(posterSrc) + "\" src=\"" + esc(embed) + "\"></video>"
+      : "<img class=cover src=\"" + esc(posterSrc) + "\" alt=\"\"><iframe src=\"" + esc(embed) + "\" referrerpolicy=\"origin\" allow=\"autoplay;encrypted-media;fullscreen\" allowfullscreen></iframe>";
     const html = "<!DOCTYPE html><html lang=id><head><meta charset=utf-8><meta name=viewport content=\"width=device-width,initial-scale=1\">" +
       "<link rel=canonical href=\"" + esc(page) + "\">" +
       "<meta name=robots content=\"index,follow,max-video-preview:120\">" +
@@ -178,7 +181,7 @@ module.exports = async function handler(req, res) {
       ":root{--bg:#0b0d12;--acc:#ff9000;--line:#232838}*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:#e8ecf4;font-family:system-ui,sans-serif}a{color:inherit;text-decoration:none}" +
       ".wrap{width:min(1180px,calc(100% - 24px));margin:0 auto}header{border-bottom:1px solid var(--line)}.hd{min-height:52px;display:flex;align-items:center}.logo{font-weight:900}.logo b{color:var(--acc)}" +
       "main{padding:16px 0 40px}.layout{display:grid;grid-template-columns:1fr;gap:16px}@media(min-width:960px){.layout{grid-template-columns:minmax(0,1.7fr) 320px}}" +
-      ".player{position:relative;aspect-ratio:16/9;background:#000;border:1px solid var(--line);border-radius:14px;overflow:hidden}.player iframe,.player video{position:absolute;inset:0;width:100%;height:100%;border:0}" +
+      ".player{position:relative;aspect-ratio:16/9;background:#000;border:1px solid var(--line);border-radius:14px;overflow:hidden}.player iframe,.player video,.player .cover{position:absolute;inset:0;width:100%;height:100%;border:0;object-fit:cover}" +
       "h1{font-size:20px;margin:12px 0 8px}.acts{display:flex;gap:8px;flex-wrap:wrap}.acts a,.acts button{height:40px;min-width:112px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:#171b26;color:#fff;font-weight:700;display:inline-flex;align-items:center;justify-content:center}.acts .p{background:var(--acc);color:#111;border-color:var(--acc)}" +
       ".side h2{margin:0 0 10px;font-size:14px}.sg{display:grid;grid-template-columns:1fr 1fr;gap:10px}.ph{position:relative;aspect-ratio:16/9;background:#1c1c1c;border-radius:10px;overflow:hidden}.ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}" +
       ".card h3{margin:6px 0 0;font-size:12px;height:2.6em;overflow:hidden}</style></head><body>" +
