@@ -4,6 +4,7 @@
     s.src = src;
     document.body.appendChild(s);
   }
+  add("/js/kdp-bus.js?v=1");
   add("/js/kdp-overlay.js?v=3");
   add("/js/nav-fix.js?v=2");
   add("/js/share-sheet.js?v=1");
