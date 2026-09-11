@@ -1,7 +1,8 @@
 {
   "framework": null,
-  "buildCommand": "",
-  "installCommand": "",
+  "buildCommand": "node -e \"process.exit(0)\"",
+  "installCommand": "echo skip",
+  "outputDirectory": ".",
   "rewrites": [
     { "source": "/putarin", "destination": "/putarin.html" },
     { "source": "/putarin/", "destination": "/putarin.html" },

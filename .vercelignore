@@ -1,8 +1,13 @@
 src
 scripts
 wrangler.toml
+functions
+middleware.js
+pnpm-lock.yaml
 *.mjs
 .git
 .wrangler
 node_modules
 *.zip
+CLOUDFLARE-PAGES.md
+backup
