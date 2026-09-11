@@ -5,21 +5,19 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mix | Dr. Pinguin</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script>tailwind.config={theme:{extend:{colors:{ph:{DEFAULT:'#ff9000'}}}}}</script>
 <style>
-body{background:#050505;color:#fff}
-.video-card .ph{background:#111}
+body{margin:0;background:#050505;color:#fff;font-family:system-ui,sans-serif}
 </style>
 </head>
-<body class="antialiased">
-<nav class="sticky top-0 z-50 h-12 bg-black flex items-center border-b-2 border-ph">
+<body>
+<nav class="sticky top-0 z-50 h-12 bg-black flex items-center" style="border-bottom:2px solid #ff9000">
   <div class="w-full max-w-[1500px] mx-auto px-3 flex items-center justify-between">
-    <a href="/" class="font-black tracking-tight"><span class="text-white">DR.</span><span class="text-ph">PINGUIN</span></a>
-    <a href="/" class="text-[11px] font-black uppercase border border-neutral-700 rounded-full px-3 py-1">Kembali</a>
+    <a href="/" class="font-black tracking-tight text-white no-underline">DR.<span style="color:#ff9000">PINGUIN</span></a>
+    <a href="/" class="text-[11px] font-black uppercase border border-neutral-700 rounded-full px-3 py-1 text-white no-underline">Kembali</a>
   </div>
 </nav>
 <main class="max-w-[1500px] mx-auto px-3 py-5">
-  <h1 class="text-sm font-black uppercase tracking-widest mb-1">Video <span class="text-ph">Mix</span></h1>
+  <h1 class="text-sm font-black uppercase tracking-widest mb-1">Video <span style="color:#ff9000">Mix</span></h1>
   <p id="count" class="text-[11px] text-neutral-500 mb-4">Memuat...</p>
   <div id="videoGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"></div>
   <div id="pager" class="flex flex-wrap justify-center gap-1.5 mt-6"></div>
@@ -45,25 +43,15 @@ body{background:#050505;color:#fff}
     if (/lulu/i.test(raw+' '+(v.source||''))) return 'https://lulustream.com/e/' + id;
     return raw;
   }
-  function posterOf(v){
-    var id = codeOf(v);
-    var raw = String(v.embed || v.direct || '');
-    if (v.poster || v.thumb) return v.poster || v.thumb;
-    if (/lulu/i.test(raw+' '+(v.source||''))) return 'https://img.lulustream.com/' + id + '.jpg';
-    if (/streamtape|strcloud/i.test(raw+' '+(v.source||''))) return '/api/tape-thumb?id=' + encodeURIComponent(id);
-    return '';
-  }
   function pageNow(){ var n = parseInt((location.hash.match(/p(\d+)/)||[])[1]||'1',10); return n>0?n:1; }
   function esc(s){ return String(s||'').replace(/[&<>"]/g,''); }
   function card(v){
-    var id = codeOf(v), src = embedOf(v), poster = posterOf(v), title = titleOf(v);
-    var img = poster ? '<img src="'+esc(poster)+'" alt="" loading="lazy" class="absolute inset-0 w-full h-full object-cover bg-black">' : '';
+    var id = codeOf(v), src = embedOf(v), title = titleOf(v);
     return '<article class="video-card group cursor-pointer" data-id="'+id+'" data-src="'+esc(src)+'" data-title="'+esc(title)+'">'
-      + '<div class="relative aspect-video rounded overflow-hidden bg-black border border-neutral-800 ph">'
-      + img
-      + '<span class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/70 text-[10px] font-medium z-10">'+(esc(v.source||'Mix'))+'</span>'
+      + '<div class="relative aspect-video rounded overflow-hidden bg-black border border-neutral-800">'
+      + '<iframe src="'+esc(src)+'" referrerpolicy="origin" class="absolute inset-0 w-full h-full pointer-events-none" loading="lazy" allow="encrypted-media; picture-in-picture" allowfullscreen frameborder="0"></iframe>'
+      + '<span class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/70 text-[10px] font-medium z-10">'+esc(v.source||'Mix')+'</span>'
       + '<button type="button" class="share absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-black/70 text-white text-xs">↗</button>'
-      + '<div class="absolute inset-0 flex items-center justify-center pointer-events-none"><span class="w-9 h-9 rounded-full flex items-center justify-center text-black font-bold" style="background:#ff9000">▶</span></div>'
       + '</div><h3 class="mt-2.5 text-sm font-medium leading-snug line-clamp-2">'+esc(title)+'</h3></article>';
   }
   fetch('/data/campur.json?t='+Date.now()).then(function(r){return r.json()}).then(function(items){
@@ -74,30 +62,30 @@ body{background:#050505;color:#fff}
     var pages = Math.max(1, Math.ceil(items.length/PER)||1);
     var p = Math.min(pageNow(), pages);
     var slice = items.slice((p-1)*PER, p*PER);
-    document.getElementById('count').textContent = items.length + ' video · halaman ' + p + '/' + pages;
+    document.getElementById('count').textContent = items.length + ' video \u00b7 halaman ' + p + '/' + pages;
     document.getElementById('videoGrid').innerHTML = slice.map(card).join('') || '<p class="text-neutral-500">Belum ada video Mix.</p>';
     var html='';
-    if (p>1) html += '<a class="min-w-[40px] h-10 px-3 border border-neutral-700 rounded flex items-center justify-center" href="#p'+(p-1)+'">Prev</a>';
-    for (var i=1;i<=pages;i++) html += i===p ? '<span class="min-w-[40px] h-10 px-3 bg-ph text-black font-black rounded flex items-center justify-center">'+i+'</span>' : '<a class="min-w-[40px] h-10 px-3 border border-neutral-700 rounded flex items-center justify-center" href="#p'+i+'">'+i+'</a>';
-    if (p<pages) html += '<a class="min-w-[40px] h-10 px-3 border border-neutral-700 rounded flex items-center justify-center" href="#p'+(p+1)+'">Next</a>';
+    if (p>1) html += '<a class="min-w-[40px] h-10 px-3 border border-neutral-700 rounded flex items-center justify-center text-white no-underline" href="#p'+(p-1)+'">Prev</a>';
+    for (var i=1;i<=pages;i++) html += i===p ? '<span class="min-w-[40px] h-10 px-3 font-black rounded flex items-center justify-center" style="background:#ff9000;color:#000">'+i+'</span>' : '<a class="min-w-[40px] h-10 px-3 border border-neutral-700 rounded flex items-center justify-center text-white no-underline" href="#p'+i+'">'+i+'</a>';
+    if (p<pages) html += '<a class="min-w-[40px] h-10 px-3 border border-neutral-700 rounded flex items-center justify-center text-white no-underline" href="#p'+(p+1)+'">Next</a>';
     document.getElementById('pager').innerHTML = html;
     document.querySelectorAll('.video-card').forEach(function(c){
       c.onclick = function(e){
-        if (e.target.closest('.share')) { e.stopPropagation(); share(c.getAttribute('data-title'), c.getAttribute('data-id')); return; }
+        if (e.target.closest('.share')) {
+          e.stopPropagation();
+          var url = 'https://koleksidrpinguin.com/v/' + encodeURIComponent(c.getAttribute('data-id')||'');
+          if (navigator.clipboard) navigator.clipboard.writeText(url);
+          return;
+        }
         openOv(c.getAttribute('data-title'), c.getAttribute('data-src'));
       };
     });
     window.scrollTo(0,0);
   }
-  function share(title,id){
-    var url='https://koleksidrpinguin.com/v/'+encodeURIComponent(id||'');
-    if (navigator.clipboard) navigator.clipboard.writeText(url);
-    alert('Link disalin');
-  }
   var ov=document.getElementById('ov');
   function openOv(title,src){
     ov.classList.remove('hidden'); ov.classList.add('flex');
-    ov.innerHTML='<div class="w-full max-w-4xl bg-neutral-900 rounded-xl overflow-hidden border border-neutral-700"><div class="flex justify-between items-center px-3 py-2 border-b border-neutral-800"><b class="text-sm">'+title+'</b><button id="ovx" class="px-3 py-1 bg-ph text-black font-black rounded">Tutup</button></div><div class="relative aspect-video bg-black"><iframe class="absolute inset-0 w-full h-full" src="'+src+'" allow="autoplay;fullscreen;encrypted-media" allowfullscreen></iframe></div></div>';
+    ov.innerHTML='<div class="w-full max-w-4xl bg-neutral-900 rounded-xl overflow-hidden border border-neutral-700"><div class="flex justify-between items-center px-3 py-2 border-b border-neutral-800"><b class="text-sm">'+esc(title)+'</b><button id="ovx" class="px-3 py-1 font-black rounded" style="background:#ff9000;color:#000">Tutup</button></div><div class="relative aspect-video bg-black"><iframe class="absolute inset-0 w-full h-full" src="'+src+'" allow="autoplay;fullscreen;encrypted-media" allowfullscreen></iframe></div></div>';
     document.getElementById('ovx').onclick=closeOv;
   }
   function closeOv(){ ov.classList.add('hidden'); ov.classList.remove('flex'); ov.innerHTML=''; }
