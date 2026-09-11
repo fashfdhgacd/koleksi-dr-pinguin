@@ -16,22 +16,43 @@ async function loadMaps() {
   cache = { t: Date.now(), map: map };
   return map;
 }
+async function luluFromApi(id) {
+  const key = String(process.env.LULUSTREAM_KEY || process.env.LULU_KEY || "").trim();
+  if (!key || !id) return "";
+  try {
+    const r = await fetch("https://lulustream.com/api/file/info?key=" + encodeURIComponent(key) + "&file_code=" + encodeURIComponent(id));
+    const j = await r.json();
+    const row = j && Array.isArray(j.result) ? j.result[0] : null;
+    const img = row && (row.player_img || row.thumbnail || "");
+    return String(img || "").replace(/^http:\/\//, "https://");
+  } catch (_) {
+    return "";
+  }
+}
 async function scrape(host, id) {
   const allow = {
     indoav: "https://tv1.indoav.app/e/",
-    userbokep: "https://tv1.userbokep.com/e/"
+    userbokep: "https://tv1.userbokep.com/e/",
+    lulu: "https://luluvdo.com/e/",
+    luluvdo: "https://luluvdo.com/e/",
+    lulustream: "https://luluvdo.com/e/"
   };
   const base = allow[String(host || "").toLowerCase()];
   if (!base || !id) return "";
   const r = await fetch(base + id, { headers: { "user-agent": "Mozilla/5.0", accept: "text/html" } });
   if (!r.ok) return "";
   const html = await r.text();
-  const m = html.match(/poster="(https:\/\/[^"\s]+)"/i);
-  return m ? m[1] : "";
+  const m = html.match(/https:\/\/img\.lulucdn\.com\/[A-Za-z0-9_-]+\.(?:jpg|jpeg|png|webp)/i) || html.match(/poster="(https:\/\/[^"\s]+)"/i) || html.match(/og:image[^>]+content="(https:\/\/[^"]+)"/i);
+  if (!m) return "";
+  return m[1] || m[0];
 }
-async function sendImage(res, url) {
+async function sendImage(res, url, referer) {
   const r = await fetch(url, {
-    headers: { "user-agent": "Mozilla/5.0", accept: "image/avif,image/webp,image/*,*/*;q=0.8" },
+    headers: {
+      "user-agent": "Mozilla/5.0",
+      accept: "image/avif,image/webp,image/*,*/*;q=0.8",
+      referer: referer || "https://luluvdo.com/"
+    },
     redirect: "follow"
   });
   if (!r.ok) return false;
@@ -54,9 +75,21 @@ module.exports = async function handler(req, res) {
       const mapped = map[id];
       if (mapped && await sendImage(res, mapped)) return;
     }
+    if ((host === "lulu" || host === "luluvdo" || host === "lulustream") && id) {
+      const apiImg = await luluFromApi(id);
+      if (apiImg && await sendImage(res, apiImg, "https://luluvdo.com/")) return;
+      const guessed = [
+        "https://img.lulucdn.com/" + id + "_xt.jpg",
+        "https://img.lulucdn.com/" + id + ".jpg",
+        "https://img.lulustream.com/" + id + ".jpg"
+      ];
+      for (const u of guessed) {
+        if (await sendImage(res, u, "https://luluvdo.com/")) return;
+      }
+    }
     if (host && id) {
       const scraped = await scrape(host, id);
-      if (scraped && await sendImage(res, scraped)) return;
+      if (scraped && await sendImage(res, scraped, host.indexOf("lulu") >= 0 ? "https://luluvdo.com/" : "")) return;
     }
   } catch (_) {}
   const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><rect width="640" height="360" fill="#141414"/><circle cx="320" cy="180" r="34" fill="#ff9000"/><polygon points="310,164 342,180 310,196" fill="#111"/></svg>';
