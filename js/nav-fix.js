@@ -1,12 +1,19 @@
 (function () {
   function clean() {
     document.querySelectorAll("a").forEach(function (a) {
+      var href = String(a.getAttribute("href") || "");
       var t = String(a.textContent || "").replace(/\s+/g, " ").trim();
-      if (/AI China/i.test(t) || a.getAttribute("href") === "/mumu") a.remove();
-      var href = a.getAttribute("href") || "";
-      if (href === "/campur" || href === "/mix" || /^(mix|campur)$/i.test(t)) {
-        a.setAttribute("href", "/campur");
-        a.textContent = "Pilihan Dr Harimau \uD83D\uDD1E 18+";
+      if (href === "/mumu" || /AI China/i.test(t)) {
+        a.remove();
+        return;
+      }
+      if (href === "/putarin" || href === "/putarin/" || /^JAV/i.test(t)) {
+        a.setAttribute("href", "/?cat=jav");
+        a.textContent = "JAV";
+      }
+      if (href === "/campur" || href === "/campur/" || href === "/mix" || href === "/mix/" || /Pilihan Dr|Harimau|campur|mix/i.test(t)) {
+        a.setAttribute("href", "/#genre");
+        a.textContent = "Kategori";
       }
     });
   }
