@@ -16,22 +16,11 @@
       category: v.category || v.folder || "Video"
     });
   };
-  function idFromLocation() {
-    var q = new URLSearchParams(location.search).get("v");
-    if (q) return q;
-    var m = location.hash.match(/(?:^|#|&)v=([^&]+)/);
-    return m ? decodeURIComponent(m[1]) : "";
+  var q = new URLSearchParams(location.search).get("v");
+  var m = location.hash.match(/(?:^|#|&)v=([^&]+)/);
+  var id = q || (m ? decodeURIComponent(m[1]) : "");
+  if (id && location.pathname === "/") {
+    location.replace("/v/" + encodeURIComponent(id));
+    return;
   }
-  function restore() {
-    var id = idFromLocation();
-    var saved = read();
-    if (!id && !(saved && saved.embed)) return;
-    if (saved && id && saved.id && String(saved.id) !== String(id)) {
-      saved = { id: id, title: id, embed: "", category: "Video" };
-    }
-    if (!saved || !saved.embed) return;
-    if (window.kdpPlay) window.kdpPlay(saved);
-  }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { setTimeout(restore, 600); });
-  else setTimeout(restore, 600);
 })();

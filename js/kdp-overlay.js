@@ -49,56 +49,40 @@
     native.removeAttribute("src");
     native.style.display = "none";
   }
+  function killGridEmbeds() {
+    document.querySelectorAll("#videoGrid iframe, #trendingGrid iframe, #heroSlides iframe, #searchResults iframe").forEach(function (f) {
+      f.remove();
+    });
+  }
   window.kdpPlay = function playEntry(v) {
     if (!v) return;
+    var raw = embedOf(v);
+    if (!raw) return;
+    var id = keyFrom(raw) || String(v.id || "");
+    if (id) {
+      location.href = "/v/" + encodeURIComponent(id);
+      return;
+    }
     var modal = document.getElementById("videoModal");
     var iframe = document.getElementById("modalIframe");
     if (!modal || !iframe) return;
-    var raw = embedOf(v);
-    if (!raw) return;
     modal.classList.remove("hidden");
     document.body.style.overflow = "hidden";
     var t = String(v.title || "").replace(/\(Koleksi[^)]*Pinguin[^)]*\)/ig, "").replace(/\s+/g, " ").trim();
-    var id = keyFrom(raw) || String(v.id || "");
     var mt = document.getElementById("modalTitle");
     var mm = document.getElementById("modalMeta");
-    var ht = document.getElementById("hubTitle");
     var ext = document.getElementById("modalOpenExternal");
     if (mt) mt.textContent = t;
     if (mm) mm.textContent = v.folder || v.category || "Video";
-    if (ht) ht.textContent = t;
-    if (ext) {
-      ext.href = raw;
-      ext.textContent = "Putar di sumber";
-      ext.classList.remove("hidden");
-    }
-    if (isVidey(raw)) {
-      var native = document.getElementById("modalNativeVideo");
-      var wrap = iframe.parentElement;
-      if (!native && wrap) {
-        native = document.createElement("video");
-        native.id = "modalNativeVideo";
-        native.controls = true;
-        native.playsInline = true;
-        native.className = "player-iframe";
-        wrap.appendChild(native);
-      }
-      iframe.style.display = "none";
-      iframe.src = "about:blank";
-      if (native) {
-        native.style.display = "block";
-        native.src = raw;
-      }
-    } else {
-      hideNative();
-      iframe.style.display = "";
-      iframe.src = "about:blank";
-      setTimeout(function () { iframe.src = raw; }, 30);
-    }
-    window.__kdpCurrent = { id: id, title: t, embed: raw, category: v.folder || v.category || "Video" };
+    if (ext) { ext.href = raw; ext.textContent = "Putar di sumber"; ext.classList.remove("hidden"); }
+    hideNative();
+    iframe.src = "about:blank";
+    setTimeout(function () { iframe.src = raw; }, 30);
+    window.__kdpCurrent = { id: id, title: t, embed: raw };
     if (window.kdpSaveWatch) window.kdpSaveWatch(window.__kdpCurrent);
-    if (id) history.replaceState(null, "", "/#v=" + encodeURIComponent(id));
   };
+  killGridEmbeds();
+  setInterval(killGridEmbeds, 1500);
   document.addEventListener("click", function (e) {
     if (e.target.closest && e.target.closest("#modalClose, #modalBackdrop")) {
       hideNative();
