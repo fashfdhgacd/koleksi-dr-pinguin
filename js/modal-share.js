@@ -1,17 +1,26 @@
 (function () {
   if (window.__modalShare) return;
   window.__modalShare = true;
-  var mumuList = [], vidList = [];
+  var mixList = [], vidList = [], putList = [];
   var switching = false;
   function blocked(v) {
-    return /videy|putarin|puterin/i.test(String((v && (v.embed || v.direct || v.embedUrl)) || ''));
+    var raw = String((v && (v.embed || v.direct || v.embedUrl)) || '');
+    if (/videy|mumu\.watch|mumustream/i.test(raw)) return true;
+    if (/putarin|puterin/i.test(raw)) {
+      var folder = String((v && v.folder) || (v && v.category) || '').toLowerCase();
+      var title = String((v && v.title) || '');
+      if (folder === 'series' || /s\d{1,2}\s*e\d{1,3}/i.test(title) || /episode\s*\d+/i.test(title)) return true;
+    }
+    return false;
   }
   Promise.all([
     fetch('/data/videos.json').then(function (r) { return r.json(); }).catch(function () { return []; }),
-    fetch('/data/mumu.json').then(function (r) { return r.json(); }).catch(function () { return []; })
+    fetch('/data/putarin.json').then(function (r) { return r.json(); }).catch(function () { return []; }),
+    fetch('/data/campur.json').then(function (r) { return r.json(); }).catch(function () { return []; })
   ]).then(function (arr) {
     vidList = (arr[0] || []).filter(function (v) { return !blocked(v); });
-    mumuList = arr[1] || [];
+    putList = (arr[1] || []).filter(function (v) { return !blocked(v); });
+    mixList = (arr[2] || []).filter(function (v) { return !blocked(v); });
   });
   if (!document.getElementById('hubModalCss')) {
     var css = document.createElement('style');
@@ -65,13 +74,14 @@
     return keyFromEmbed(iframe && iframe.src);
   }
   function previewHtml(v) {
-    var ready = v && (v.poster || v.thumb || v.thumbnail);
-    if (ready) return '<img src="' + String(ready).replace(/"/g, '') + '" alt="" loading="lazy">';
     var raw = embedOf(v);
     var id = keyFromEmbed(raw);
-    if (window.KDP_POSTERS && id && window.KDP_POSTERS[id]) return '<img src="' + String(window.KDP_POSTERS[id]).replace(/"/g, '') + '" alt="" loading="lazy">';
-    if (/mumu\.watch/i.test(raw) && id) return '<img src="https://m-cdn.video/hls/' + id + '/thumbnail.jpg" alt="" loading="lazy">';
-    return '<div style="position:absolute;inset:0;background:#1c1c1c;display:grid;place-items:center"><span style="width:36px;height:36px;border-radius:99px;background:#ff9000;color:#111;display:grid;place-items:center">&#9654;</span></div>';
+    if (/putarin|puterin/i.test(raw) && id) return '<img src="/api/poster?id=' + encodeURIComponent(id) + '" alt="" loading="lazy">';
+    if (/userbokep/i.test(raw) && id) return '<img src="/api/thumb?h=userbokep&id=' + encodeURIComponent(id) + '" alt="" loading="lazy">';
+    if (/indoav/i.test(raw) && id) return '<img src="/api/thumb?h=indoav&id=' + encodeURIComponent(id) + '" alt="" loading="lazy">';
+    if (/lulu/i.test(raw) && id) return '<img src="https://img.lulustream.com/' + id + '.jpg" alt="" loading="lazy">';
+    if (v && (v.poster || v.thumb)) return '<img src="' + String(v.poster || v.thumb).replace(/"/g, '') + '" alt="" loading="lazy">';
+    return '<div style="position:absolute;inset:0;background:#1c1c1c"></div>';
   }
   function showLoad(on) {
     var el = document.getElementById('hubLoad');
@@ -106,7 +116,7 @@
   function nextVideos() {
     var title = cleanTitle(((document.getElementById('hubTitle') || document.getElementById('modalTitle') || {}).textContent || '').trim());
     var used = {};
-    return shuffle(pickBucket(mumuList, title, used, 4).concat(pickBucket(vidList, title, used, 4))).slice(0, 8);
+    return shuffle(pickBucket(vidList, title, used, 3).concat(pickBucket(putList, title, used, 3), pickBucket(mixList, title, used, 2))).slice(0, 8);
   }
   function playVideo(v) {
     if (!v || blocked(v) || switching) return;
@@ -123,12 +133,9 @@
     if (titleEl) titleEl.textContent = t;
     if (ht) ht.textContent = t;
     if (hm) hm.innerHTML = '<span>' + (v.folder || v.category || 'Video') + '</span><span>18+</span>';
-    iframe.onload = function () {
-      showLoad(false);
-      switching = false;
-    };
+    iframe.onload = function () { showLoad(false); switching = false; };
     iframe.src = raw;
-    setTimeout(function () { showLoad(false); switching = false; }, 2500);
+    setTimeout(function () { showLoad(false); switching = false; draw(); }, 800);
   }
   function ensureLayout() {
     var shell = document.querySelector('#videoModal .player-shell');
@@ -179,8 +186,8 @@
       ha.innerHTML = '<button type="button" class="pri" id="hubShare">Bagikan</button>';
       var b = document.getElementById('hubShare');
       if (b) b.onclick = function () {
-        if (navigator.share) navigator.share({ title: title, url: location.href }).catch(function () {});
-        else if (navigator.clipboard) navigator.clipboard.writeText(location.href);
+        var sheet = document.getElementById('shareSheet');
+        if (sheet) { sheet.classList.remove('hidden'); sheet.setAttribute('aria-hidden', 'false'); }
       };
     }
     var items = nextVideos();
