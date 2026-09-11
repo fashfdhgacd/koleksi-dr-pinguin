@@ -58,13 +58,14 @@
     native.removeAttribute("src");
     native.style.display = "none";
   }
-  function playEntry(v) {
+  window.kdpPlay = function playEntry(v) {
     if (!v) return;
     var modal = document.getElementById("videoModal");
     var iframe = document.getElementById("modalIframe");
     if (!modal || !iframe) return;
     var raw = embedOf(v);
     modal.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
     var t = String(v.title || "").replace(/\(Koleksi[^)]*Pinguin[^)]*\)/ig, "").replace(/\s+/g, " ").trim();
     var mt = document.getElementById("modalTitle");
     var mm = document.getElementById("modalMeta");
@@ -92,33 +93,46 @@
     } else {
       hideNative();
       iframe.style.display = "";
-      iframe.src = raw;
+      iframe.src = "about:blank";
+      setTimeout(function () { iframe.src = raw; }, 30);
     }
     var id = keyFrom(raw);
+    window.__kdpCurrent = { id: id, title: t, embed: raw };
     if (id) history.replaceState(null, "", "/#v=" + encodeURIComponent(id));
-  }
+  };
   function restore() {
     var m = location.hash.match(/^#v=([^&]+)/);
     if (!m || !catalogs.ready) return;
     var v = findById(decodeURIComponent(m[1]));
-    if (v) playEntry(v);
+    if (v) window.kdpPlay(v);
   }
   Promise.all([
     fetch("/data/putarin.json").then(function (r) { return r.json(); }).catch(function () { return []; }),
-    fetch("/data/campur.json").then(function (r) { return r.json(); }).catch(function () { return []; }),
-    fetch("/data/videos.json").then(function (r) { return r.json(); }).catch(function () { return []; })
+    fetch("/data/campur.json").then(function (r) { return r.json(); }).catch(function () { return []; })
   ]).then(function (arr) {
     catalogs.put = arr[0] || [];
     catalogs.mix = arr[1] || [];
-    catalogs.vid = arr[2] || [];
+    catalogs.vid = window.videoList || window.videos || window._gallery || [];
     catalogs.ready = true;
     restore();
   });
   document.addEventListener("click", function (e) {
-    if (e.target.closest && e.target.closest("#hubRight .vcard")) hideNative();
+    var rec = e.target.closest && e.target.closest("#hubRight .vcard, #modalNextCard .video-card, .rec-card, [data-rec-id]");
+    if (rec) {
+      var id = rec.getAttribute("data-id") || rec.getAttribute("data-rec-id") || "";
+      var v = findById(id);
+      if (v) {
+        e.preventDefault();
+        e.stopPropagation();
+        window.kdpPlay(v);
+      }
+    }
     if (e.target.closest && e.target.closest("#modalClose")) {
       hideNative();
+      var iframe = document.getElementById("modalIframe");
+      if (iframe) iframe.src = "about:blank";
       history.replaceState(null, "", "/");
+      document.body.style.overflow = "";
     }
   }, true);
 })();

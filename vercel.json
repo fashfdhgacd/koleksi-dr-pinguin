@@ -2,6 +2,14 @@
   "framework": null,
   "buildCommand": "",
   "installCommand": "",
+  "redirects": [
+    {
+      "source": "/",
+      "has": [{ "type": "query", "key": "v", "value": "(?<vid>[^&]+)" }],
+      "destination": "/v/:vid",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     { "source": "/putarin", "destination": "/putarin.html" },
     { "source": "/putarin/", "destination": "/putarin.html" },
@@ -21,7 +29,7 @@
     {
       "source": "/data/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=60" },
+        { "key": "Cache-Control", "value": "public, max-age=3600" },
         { "key": "Access-Control-Allow-Origin", "value": "*" }
       ]
     }
