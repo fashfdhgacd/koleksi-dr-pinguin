@@ -3,6 +3,8 @@
   window.__modalShare = true;
   var mixList = [], vidList = [], putList = [];
   var switching = false;
+  var recLock = [];
+  var fromRec = false;
   function blocked(v) {
     var raw = String((v && (v.embed || v.direct || v.embedUrl)) || '');
     if (/videy|mumu\.watch|mumustream/i.test(raw)) return true;
@@ -113,32 +115,19 @@
     }
     return out;
   }
-  function lockKey() { return 'kdp_rec_lock_v1'; }
-  function dumpV(v) {
-    return { title: v.title, embed: v.embed || v.direct, direct: v.direct || v.embed, poster: v.poster || '', thumb: v.thumb || '', category: v.category || '', folder: v.folder || '' };
-  }
-  function loadLock() {
-    try {
-      var x = JSON.parse(sessionStorage.getItem(lockKey()) || '[]');
-      return Array.isArray(x) ? x : [];
-    } catch (e) { return []; }
-  }
-  function saveLock(items) {
-    try { sessionStorage.setItem(lockKey(), JSON.stringify(items.map(dumpV))); } catch (e) {}
-  }
   function nextVideos() {
     var cur = currentId();
-    var locked = loadLock();
-    if (locked.length >= 8) {
-      return locked.filter(function (v) { return keyFromEmbed(embedOf(v)) !== cur; }).slice(0, 8);
+    if (recLock.length >= 8) {
+      return recLock.filter(function (v) { return keyFromEmbed(embedOf(v)) !== cur; }).slice(0, 8);
     }
     var title = cleanTitle(((document.getElementById('hubTitle') || document.getElementById('modalTitle') || {}).textContent || '').trim());
     var used = {};
     var items = shuffle(pickBucket(vidList, title, used, 4).concat(pickBucket(putList, title, used, 4), pickBucket(mixList, title, used, 4))).slice(0, 12);
-    if (items.length) saveLock(items);
+    if (items.length) recLock = items;
     return items.filter(function (v) { return keyFromEmbed(embedOf(v)) !== cur; }).slice(0, 8);
   }
   function playVideo(v) {
+    fromRec = true;
     if (!v || blocked(v) || switching) return;
     var raw = embedOf(v);
     var iframe = document.getElementById('modalIframe');
@@ -227,10 +216,19 @@
     if (!modal || modal.__hubObs) return;
     modal.__hubObs = true;
     new MutationObserver(function () {
-      if (!modal.classList.contains('hidden')) setTimeout(draw, 40);
+      if (modal.classList.contains('hidden')) { fromRec = false; return; }
+      if (!fromRec) recLock = [];
+      setTimeout(draw, 40);
     }).observe(modal, { attributes: true, attributeFilter: ['class'] });
   }
   hook();
   setTimeout(hook, 400);
   setTimeout(hook, 1500);
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('.vcard')) { fromRec = true; return; }
+    if (e.target.closest('.video-card, #videoGrid article, #trendingGrid article, #heroPlay')) {
+      fromRec = false;
+      recLock = [];
+    }
+  }, true);
 })();
