@@ -15,70 +15,69 @@
   function titleOf(v) {
     return String((v && v.title) || "Video").replace(/\(Koleksi[^)]*Pinguin[^)]*\)/ig, "").replace(/_/g, " ").replace(/\s+/g, " ").trim();
   }
-  function kindOf(v) {
-    return String((v && (v.category || v.folder)) || "Umum");
+  function inferCat(v) {
+    var raw = embedOf(v);
+    var t = titleOf(v);
+    var c = String((v && (v.category || v.folder)) || "").trim();
+    if (c && !/^(putarin|campur|mix|pilihan|lainnya|umum)$/i.test(c)) return c;
+    if (/hentai/i.test(t + " " + c)) return "Hentai ENG";
+    if (/\bai\b|ai\s*\d/i.test(t)) return "AI";
+    if (/anime/i.test(t)) return "Anime";
+    if (/\b(film|movie)\b|\(20\d\d\)/i.test(t)) return "Film";
+    if (/s\d{1,2}\s*e\d{1,3}|episode\s*\d+/i.test(t)) return "Series";
+    if (/lulu/i.test(raw)) return "Lulu";
+    if (/streamtape|strcloud/i.test(raw)) return "Streamtape";
+    if (/putarin|puterin|\bjav\b|[a-z]{2,6}-\d{3}/i.test(raw + " " + t)) return "JAV";
+    return c || "Umum";
   }
-  function hostOk(v) {
-    var u = embedOf(v).toLowerCase();
-    return /indoav|userbokep/.test(u);
+  function posterOf(v) {
+    var id = codeOf(v);
+    var raw = embedOf(v);
+    if (/indoav/i.test(raw) && id) return "/api/thumb?h=indoav&id=" + encodeURIComponent(id);
+    if (/userbokep/i.test(raw) && id) return "/api/thumb?h=userbokep&id=" + encodeURIComponent(id);
+    if (/putarin|puterin/i.test(raw) && id) return "/api/poster?id=" + encodeURIComponent(id);
+    if (/lulu/i.test(raw) && id) return "/p/" + encodeURIComponent(id) + ".jpg";
+    if (/streamtape|strcloud/i.test(raw) && id) return "/api/thumb?h=streamtape&id=" + encodeURIComponent(id);
+    return "/api/thumb?h=x&id=" + encodeURIComponent(id);
   }
   function pageNow() {
-    var n = parseInt((location.hash.match(/p(\d+)/) || [])[1] || sessionStorage.getItem("kdp_page") || "1", 10);
+    var n = parseInt((location.search.match(/[?&]page=(\d+)/) || location.hash.match(/p(\d+)/) || [])[1] || "1", 10);
     return n > 0 ? n : 1;
-  }
-  function setPage(n) {
-    try { sessionStorage.setItem("kdp_page", String(n)); } catch (_) {}
-    var h = "#p" + n;
-    if (cat && cat !== "all") h += "&c=" + encodeURIComponent(cat);
-    if (location.pathname === "/" && location.hash !== h) history.replaceState(null, "", "/" + h);
   }
   function filtered() {
     if (!cat || cat === "all") return list;
-    return list.filter(function (v) { return kindOf(v) === cat; });
+    var want = String(cat).toLowerCase();
+    return list.filter(function (v) {
+      var k = inferCat(v).toLowerCase();
+      if (want === "jav") return k === "jav" || /putarin|puterin/i.test(embedOf(v));
+      return k === want || k.replace(/\s+/g, "-") === want;
+    });
   }
   function cardHTML(v) {
     var id = codeOf(v);
-    return '<article class="video-card hg-card" data-id="' + id + '">' +
-      '<div class="hg-ph"><span class="hg-play">▶</span></div>' +
-      '<h3 class="hg-title">' + titleOf(v).replace(/[<>]/g, "") + '</h3></article>';
-  }
-  function bindCards(root, items) {
-    if (!root) return;
-    root.querySelectorAll(".video-card").forEach(function (card, i) {
-      card.onclick = function () {
-        var v = items[i];
-        if (!v) return;
-        if (window.kdpPlay) window.kdpPlay(v);
-      };
-    });
+    var t = titleOf(v);
+    var c = inferCat(v);
+    return '<a class="card video-card" href="/v/' + encodeURIComponent(id) + '">' +
+      '<div class="thumb hg-ph"><img src="' + posterOf(v) + '" alt="' + t.replace(/"/g, "") + ' 18+" loading="lazy" width="640" height="360" onerror="this.onerror=null;this.src=\'/og-card.svg\'">' +
+      '<span class="badge cat">' + c + "</span></div><h3>" + t.replace(/[<>]/g, "") + "</h3></a>";
   }
   function draw() {
     var items = filtered();
     var pages = Math.max(1, Math.ceil(items.length / PER));
     var p = Math.min(pageNow(), pages);
-    setPage(p);
     var slice = items.slice((p - 1) * PER, p * PER);
     var grid = document.getElementById("videoGrid");
     var count = document.getElementById("videoCount");
     var pager = document.getElementById("pagination");
     if (count) count.textContent = items.length + " video";
     if (grid) grid.innerHTML = slice.map(cardHTML).join("") || "<p>Tidak ada video.</p>";
-    bindCards(grid, slice);
     if (pager) {
       var html = "";
-      if (p > 1) html += '<button type="button" class="hg-pg" data-p="' + (p - 1) + '">Prev</button>';
+      if (p > 1) html += '<a class="page-btn" href="?cat=' + encodeURIComponent(cat) + "&page=" + (p - 1) + '">Prev</a>';
       var a = Math.max(1, p - 2), b = Math.min(pages, p + 2);
-      for (var i = a; i <= b; i++) html += '<button type="button" class="hg-pg' + (i === p ? " on" : "") + '" data-p="' + i + '">' + i + '</button>';
-      if (p < pages) html += '<button type="button" class="hg-pg" data-p="' + (p + 1) + '">Next</button>';
+      for (var i = a; i <= b; i++) html += '<a class="page-btn' + (i === p ? " on" : "") + '" href="?cat=' + encodeURIComponent(cat) + "&page=" + i + '">' + i + "</a>";
+      if (p < pages) html += '<a class="page-btn" href="?cat=' + encodeURIComponent(cat) + "&page=" + (p + 1) + '">Next</a>';
       pager.innerHTML = html;
-      pager.querySelectorAll("[data-p]").forEach(function (btn) {
-        btn.onclick = function () {
-          setPage(parseInt(btn.getAttribute("data-p"), 10));
-          draw();
-          var sec = document.getElementById("terbaru");
-          if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
-        };
-      });
     }
   }
   function chips() {
@@ -86,64 +85,36 @@
     if (!wrap) return;
     var counts = {};
     list.forEach(function (v) {
-      var k = kindOf(v);
+      var k = inferCat(v);
       counts[k] = (counts[k] || 0) + 1;
     });
-    var keys = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; }).slice(0, 10);
-    wrap.innerHTML = '<button type="button" class="hg-chip' + (cat === "all" ? " on" : "") + '" data-c="all">Semua</button>' +
+    var prefer = ["JAV", "Hentai ENG", "Series", "Film", "AI", "Anime", "Lulu", "Streamtape", "Amatir", "Jilbab", "STW", "Viral", "Colmek", "Tobrut", "Live", "Chindo", "Doggy", "Outdoor", "Bule", "Threesome", "Toilet", "Umum"];
+    var keys = prefer.filter(function (k) { return counts[k]; });
+    Object.keys(counts).forEach(function (k) {
+      if (keys.indexOf(k) < 0) keys.push(k);
+    });
+    wrap.innerHTML = '<a class="pill hg-chip' + (cat === "all" ? " on" : "") + '" href="/" data-c="all">Semua</a>' +
       keys.map(function (k) {
-        return '<button type="button" class="hg-chip' + (cat === k ? " on" : "") + '" data-c="' + k.replace(/"/g, "") + '">' + k + '</button>';
+        var slug = k.toLowerCase().replace(/\s+/g, "-");
+        return '<a class="pill hg-chip' + (cat === slug || cat === k.toLowerCase() ? " on" : "") + '" href="/?cat=' + encodeURIComponent(slug) + '" data-c="' + slug + '">' + k + "</a>";
       }).join("");
-    wrap.querySelectorAll("[data-c]").forEach(function (btn) {
-      btn.onclick = function () {
-        cat = btn.getAttribute("data-c") || "all";
-        setPage(1);
-        chips();
-        draw();
-      };
-    });
   }
-  function heroAndTrend() {
-    var hero = list[0];
-    var slides = document.getElementById("heroSlides");
-    if (hero && slides) {
-      slides.innerHTML = '<div class="hg-ph" style="position:absolute;inset:0;border-radius:0;border:0"><span class="hg-play">▶</span></div>';
-      slides.onclick = function () { if (window.kdpPlay) window.kdpPlay(hero); };
-      slides.style.cursor = "pointer";
+  var qs = new URLSearchParams(location.search);
+  if (qs.get("cat")) cat = qs.get("cat");
+  var hm = location.hash.match(/[?&#]c=([^&]+)/);
+  if (hm) cat = decodeURIComponent(hm[1]);
+  Promise.all([
+    fetch("/data/videos.json").then(function (r) { return r.json(); }).catch(function () { return []; }),
+    fetch("/data/putarin.json").then(function (r) { return r.json(); }).catch(function () { return []; }),
+    fetch("/data/campur.json").then(function (r) { return r.json(); }).catch(function () { return []; })
+  ]).then(function (pack) {
+    function ok(v) {
+      var u = embedOf(v);
+      return !!codeOf(v) && !/videy/i.test(u);
     }
-    if (hero) {
-      var ht = document.getElementById("heroTitle");
-      var hm = document.getElementById("heroMeta");
-      var hp = document.getElementById("heroPlay");
-      if (ht) ht.textContent = titleOf(hero);
-      if (hm) hm.textContent = kindOf(hero);
-      if (hp) hp.onclick = function () { if (window.kdpPlay) window.kdpPlay(hero); };
-    }
-    var trend = document.getElementById("trendingGrid");
-    if (trend && list.length) {
-      var pool = list.slice();
-      for (var i = pool.length - 1; i > 0; i--) {
-        var j = Math.floor(Math.random() * (i + 1));
-        var t = pool[i]; pool[i] = pool[j]; pool[j] = t;
-      }
-      var pick = pool.slice(0, 8);
-      trend.innerHTML = pick.map(cardHTML).join("");
-      bindCards(trend, pick);
-    }
-  }
-  var m = location.hash.match(/[?&#]c=([^&]+)/);
-  if (m) cat = decodeURIComponent(m[1]);
-  fetch("/data/videos.json", { cache: "force-cache" })
-    .then(function (r) { return r.json(); })
-    .then(function (rows) {
-      list = (Array.isArray(rows) ? rows : []).filter(hostOk);
-      window.videoList = list;
-      chips();
-      heroAndTrend();
-      draw();
-    })
-    .catch(function () {
-      var g = document.getElementById("videoGrid");
-      if (g) g.innerHTML = "<p>Gagal memuat daftar video.</p>";
-    });
+    list = [].concat(pack[0] || [], pack[1] || [], pack[2] || []).filter(ok);
+    window.videoList = list;
+    chips();
+    draw();
+  });
 })();
