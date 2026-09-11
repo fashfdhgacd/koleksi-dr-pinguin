@@ -12,7 +12,7 @@
   css.rel = "stylesheet";
   css.href = "/css/rec-grid.css?v=lock4";
   document.head.appendChild(css);
-  add("https://cdn.jsdelivr.net/gh/fashfdhgacd/koleksi-dr-pinguin@64ee4c14c60cca54f5f1cdd6f7b6892c43a2b0a1/js/app.js");
+  add("/js/site.js?v=prod1");
   setTimeout(function () {
     add("/js/modal-share.js?v=rec9");
   }, 400);
