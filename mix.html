@@ -1,106 +1,57 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Mix | Dr. Pinguin</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>body{margin:0;background:#050505;color:#fff;font-family:system-ui,sans-serif}</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Mix | Dr. Pinguin</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css?v=hubmodal2">
+  <script>tailwind.config={theme:{extend:{colors:{ph:{DEFAULT:'#ff9000',soft:'#ffb340'},ink:{950:'#050505',900:'#0d0d0d',800:'#161616',700:'#222'}}}}}</script>
 </head>
-<body>
-<nav class="sticky top-0 z-50 h-12 bg-black flex items-center" style="border-bottom:2px solid #ff9000">
-  <div class="w-full max-w-[1500px] mx-auto px-3 flex items-center justify-between">
-    <a href="/" class="font-black tracking-tight text-white no-underline">DR.<span style="color:#ff9000">PINGUIN</span></a>
-    <a href="/" class="text-[11px] font-black uppercase border border-neutral-700 rounded-full px-3 py-1 text-white no-underline">Kembali</a>
+<body class="bg-ink-950 text-white antialiased">
+  <section id="terbaru" class="max-w-[1500px] mx-auto px-3 py-5">
+    <div class="flex items-end justify-between gap-3 mb-3">
+      <div>
+        <h2 id="galleryTitle" class="text-sm font-black uppercase tracking-widest">Video <span class="text-ph">Mix</span></h2>
+        <p id="videoCount" class="text-[11px] text-neutral-500">0 video</p>
+      </div>
+    </div>
+    <div id="videoGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3 sm:gap-4"></div>
+    <div id="pagination" class="flex flex-wrap justify-center gap-1.5 mt-6"></div>
+  </section>
+  <div id="videoModal" class="fixed inset-0 z-[80] hidden" role="dialog" aria-modal="true">
+    <div id="modalBackdrop" class="absolute inset-0 bg-black/95"></div>
+    <div class="player-shell relative z-10 w-full h-full flex flex-col">
+      <div class="player-topbar flex items-center justify-between gap-2 px-3 sm:px-4 py-2 bg-black/90 border-b border-white/10 shrink-0">
+        <div class="min-w-0 flex-1">
+          <h3 id="modalTitle" class="text-xs sm:text-sm font-bold truncate text-white"></h3>
+          <p id="modalMeta" class="text-[10px] text-ph font-bold uppercase tracking-wide"></p>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button type="button" id="modalShare" class="inline-flex items-center px-2.5 py-1.5 text-[11px] font-bold text-neutral-300 uppercase border border-white/15 rounded">Share</button>
+          <button id="modalClose" type="button" class="w-10 h-10 flex items-center justify-center bg-ph text-black font-black rounded">✕</button>
+        </div>
+      </div>
+      <div class="player-stage flex-1 flex items-center justify-center min-h-0">
+        <div class="player-frame w-full bg-black overflow-hidden">
+          <iframe id="modalIframe" referrerpolicy="origin" class="player-iframe" allowfullscreen allow="autoplay; fullscreen; encrypted-media"></iframe>
+        </div>
+      </div>
+    </div>
   </div>
-</nav>
-<main class="max-w-[1500px] mx-auto px-3 py-5">
-  <h1 class="text-sm font-black uppercase tracking-widest mb-1">Video <span style="color:#ff9000">Mix</span></h1>
-  <p id="count" class="text-[11px] text-neutral-500 mb-4">Memuat...</p>
-  <div id="videoGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"></div>
-  <div id="pager" class="flex flex-wrap justify-center gap-1.5 mt-6"></div>
-</main>
-<div id="ov" class="fixed inset-0 z-[80] hidden bg-black/90 p-3 items-center justify-center"></div>
-<script>
-(function(){
-  var PER = 12;
-  function codeOf(v){
-    var u = String(v.embed || v.direct || '');
-    var m = u.match(/\/(?:e|v|d)\/([A-Za-z0-9_-]+)/);
-    return m ? m[1] : '';
-  }
-  function titleOf(v){
-    var t = String(v.title || '').replace(/[<>]/g,'').replace(/_/g,' ').trim();
-    if (!t || /^campur\s+[a-z0-9_-]+$/i.test(t)) return (v.source || 'Mix') + ' video';
-    return t;
-  }
-  function embedOf(v){
-    var id = codeOf(v);
-    var raw = String(v.embed || v.direct || '');
-    if (/streamtape|strcloud/i.test(raw+' '+(v.source||''))) return 'https://streamtape.com/e/' + id + '/';
-    if (/lulu/i.test(raw+' '+(v.source||''))) return 'https://lulustream.com/e/' + id;
-    return raw;
-  }
-  function posterOf(v){
-    if (v.poster || v.thumb) return v.poster || v.thumb;
-    var id = codeOf(v);
-    var raw = String(v.embed || v.direct || '');
-    if (/lulu/i.test(raw+' '+(v.source||''))) return 'https://img.lulustream.com/' + id + '.jpg';
-    return '';
-  }
-  function pageNow(){ var n = parseInt((location.hash.match(/p(\d+)/)||[])[1]||'1',10); return n>0?n:1; }
-  function esc(s){ return String(s||'').replace(/[&<>"]/g,''); }
-  function card(v){
-    var id = codeOf(v), src = embedOf(v), title = titleOf(v), poster = posterOf(v);
-    var media = poster
-      ? '<img src="'+esc(poster)+'" alt="" loading="lazy" class="absolute inset-0 w-full h-full object-cover bg-black">'
-      : '<div class="absolute inset-0 bg-neutral-900"></div>';
-    return '<article class="video-card group cursor-pointer" data-id="'+id+'" data-src="'+esc(src)+'" data-title="'+esc(title)+'">'
-      + '<div class="relative aspect-video rounded overflow-hidden bg-black border border-neutral-800">'
-      + media
-      + '<span class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/70 text-[10px] font-medium z-10">'+esc(v.source||'Mix')+'</span>'
-      + '<button type="button" class="share absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-black/70 text-white text-xs">↗</button>'
-      + '<div class="absolute inset-0 flex items-center justify-center pointer-events-none"><span class="w-9 h-9 rounded-full flex items-center justify-center text-black font-bold" style="background:#ff9000">▶</span></div>'
-      + '</div><h3 class="mt-2.5 text-sm font-medium leading-snug line-clamp-2">'+esc(title)+'</h3></article>';
-  }
-  fetch('/data/campur.json?t='+Date.now()).then(function(r){return r.json()}).then(function(items){
-    window._mix = Array.isArray(items)?items:[]; draw();
-  }).catch(function(){ window._mix=[]; draw(); });
-  function draw(){
-    var items = window._mix||[];
-    var pages = Math.max(1, Math.ceil(items.length/PER)||1);
-    var p = Math.min(pageNow(), pages);
-    var slice = items.slice((p-1)*PER, p*PER);
-    document.getElementById('count').textContent = items.length + ' video \u00b7 halaman ' + p + '/' + pages;
-    document.getElementById('videoGrid').innerHTML = slice.map(card).join('') || '<p class="text-neutral-500">Belum ada video Mix.</p>';
-    var html='';
-    if (p>1) html += '<a class="min-w-[40px] h-10 px-3 border border-neutral-700 rounded flex items-center justify-center text-white no-underline" href="#p'+(p-1)+'">Prev</a>';
-    for (var i=1;i<=pages;i++) html += i===p ? '<span class="min-w-[40px] h-10 px-3 font-black rounded flex items-center justify-center" style="background:#ff9000;color:#000">'+i+'</span>' : '<a class="min-w-[40px] h-10 px-3 border border-neutral-700 rounded flex items-center justify-center text-white no-underline" href="#p'+i+'">'+i+'</a>';
-    if (p<pages) html += '<a class="min-w-[40px] h-10 px-3 border border-neutral-700 rounded flex items-center justify-center text-white no-underline" href="#p'+(p+1)+'">Next</a>';
-    document.getElementById('pager').innerHTML = html;
-    document.querySelectorAll('.video-card').forEach(function(c){
-      c.onclick = function(e){
-        if (e.target.closest('.share')) {
-          e.stopPropagation();
-          var url = 'https://koleksidrpinguin.com/v/' + encodeURIComponent(c.getAttribute('data-id')||'');
-          if (navigator.clipboard) navigator.clipboard.writeText(url);
-          return;
-        }
-        openOv(c.getAttribute('data-title'), c.getAttribute('data-src'));
-      };
-    });
-    window.scrollTo(0,0);
-  }
-  var ov=document.getElementById('ov');
-  function openOv(title,src){
-    ov.classList.remove('hidden'); ov.classList.add('flex');
-    ov.innerHTML='<div class="w-full max-w-4xl bg-neutral-900 rounded-xl overflow-hidden border border-neutral-700"><div class="flex justify-between items-center px-3 py-2 border-b border-neutral-800"><b class="text-sm">'+esc(title)+'</b><button id="ovx" class="px-3 py-1 font-black rounded" style="background:#ff9000;color:#000">Tutup</button></div><div class="relative aspect-video bg-black"><iframe class="absolute inset-0 w-full h-full" src="'+src+'" allow="autoplay;fullscreen;encrypted-media" allowfullscreen></iframe></div></div>';
-    document.getElementById('ovx').onclick=closeOv;
-  }
-  function closeOv(){ ov.classList.add('hidden'); ov.classList.remove('flex'); ov.innerHTML=''; }
-  ov.addEventListener('click', function(e){ if(e.target===ov) closeOv(); });
-  window.addEventListener('hashchange', draw);
-})();
-</script>
+  <div id="shareSheet" class="fixed inset-0 z-[120] hidden">
+    <div id="shareBackdrop" class="absolute inset-0 bg-black/70"></div>
+    <div class="relative z-10 mx-auto mt-[15vh] w-[92%] max-w-sm rounded-2xl bg-neutral-900 border border-white/10 p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h4 class="text-sm font-bold">Share this video</h4>
+        <button type="button" id="shareClose" class="w-8 h-8 rounded-full bg-white/10">✕</button>
+      </div>
+      <p id="shareTitlePreview" class="text-xs text-neutral-400 line-clamp-2 mb-3"></p>
+    </div>
+  </div>
+  <script src="/js/kdp-overlay.js?v=3"></script>
+  <script src="/js/share-sheet.js?v=1"></script>
+  <script src="/js/mix-boot.js?v=home1"></script>
 </body>
 </html>
