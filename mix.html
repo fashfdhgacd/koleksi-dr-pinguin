@@ -5,9 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mix | Dr. Pinguin</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<style>
-body{margin:0;background:#050505;color:#fff;font-family:system-ui,sans-serif}
-</style>
+<style>body{margin:0;background:#050505;color:#fff;font-family:system-ui,sans-serif}</style>
 </head>
 <body>
 <nav class="sticky top-0 z-50 h-12 bg-black flex items-center" style="border-bottom:2px solid #ff9000">
@@ -43,15 +41,26 @@ body{margin:0;background:#050505;color:#fff;font-family:system-ui,sans-serif}
     if (/lulu/i.test(raw+' '+(v.source||''))) return 'https://lulustream.com/e/' + id;
     return raw;
   }
+  function posterOf(v){
+    if (v.poster || v.thumb) return v.poster || v.thumb;
+    var id = codeOf(v);
+    var raw = String(v.embed || v.direct || '');
+    if (/lulu/i.test(raw+' '+(v.source||''))) return 'https://img.lulustream.com/' + id + '.jpg';
+    return '';
+  }
   function pageNow(){ var n = parseInt((location.hash.match(/p(\d+)/)||[])[1]||'1',10); return n>0?n:1; }
   function esc(s){ return String(s||'').replace(/[&<>"]/g,''); }
   function card(v){
-    var id = codeOf(v), src = embedOf(v), title = titleOf(v);
+    var id = codeOf(v), src = embedOf(v), title = titleOf(v), poster = posterOf(v);
+    var media = poster
+      ? '<img src="'+esc(poster)+'" alt="" loading="lazy" class="absolute inset-0 w-full h-full object-cover bg-black">'
+      : '<div class="absolute inset-0 bg-neutral-900"></div>';
     return '<article class="video-card group cursor-pointer" data-id="'+id+'" data-src="'+esc(src)+'" data-title="'+esc(title)+'">'
       + '<div class="relative aspect-video rounded overflow-hidden bg-black border border-neutral-800">'
-      + '<iframe src="'+esc(src)+'" referrerpolicy="origin" class="absolute inset-0 w-full h-full pointer-events-none" loading="lazy" allow="encrypted-media; picture-in-picture" allowfullscreen frameborder="0"></iframe>'
+      + media
       + '<span class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/70 text-[10px] font-medium z-10">'+esc(v.source||'Mix')+'</span>'
       + '<button type="button" class="share absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-black/70 text-white text-xs">↗</button>'
+      + '<div class="absolute inset-0 flex items-center justify-center pointer-events-none"><span class="w-9 h-9 rounded-full flex items-center justify-center text-black font-bold" style="background:#ff9000">▶</span></div>'
       + '</div><h3 class="mt-2.5 text-sm font-medium leading-snug line-clamp-2">'+esc(title)+'</h3></article>';
   }
   fetch('/data/campur.json?t='+Date.now()).then(function(r){return r.json()}).then(function(items){
