@@ -34,7 +34,7 @@
     if (/putarin|puterin/i.test(raw) && id) return '<img src="/api/poster?id=' + encodeURIComponent(id) + '" alt="" loading="lazy">';
     if (/userbokep/i.test(raw) && id) return '<img src="/api/thumb?h=userbokep&id=' + encodeURIComponent(id) + '" alt="" loading="lazy">';
     if (/indoav/i.test(raw) && id) return '<img src="/api/thumb?h=indoav&id=' + encodeURIComponent(id) + '" alt="" loading="lazy">';
-    if (/lulu/i.test(raw) && id) return '<img src="https://img.lulustream.com/' + esc(id) + '.jpg" alt="" loading="lazy">';
+    if (/lulu/i.test(raw) && id) return '<img src="/p/' + encodeURIComponent(id) + '.jpg" alt="" loading="lazy">';
     return '<img src="/logo.png" alt="" loading="lazy">';
   }
   function shuffle(a) {
@@ -83,6 +83,10 @@
     return { id: id, title: title };
   }
   function fill(force) {
+    if (typeof window.__kdpDrawRecs === "function") {
+      if (force) window.__kdpDrawRecs();
+      return;
+    }
     var modal = document.getElementById("videoModal");
     var hr = document.getElementById("hubRight");
     if (!modal || !hr || modal.classList.contains("hidden") || !pool.length) return;
@@ -119,8 +123,10 @@
     pool = [].concat(arr[0] || [], arr[1] || [], arr[2] || []).filter(function (v) { return rawOf(v) && !blocked(v); });
     var modal = document.getElementById("videoModal");
     if (modal && window.MutationObserver) {
-      new MutationObserver(function () { fill(false); }).observe(modal, { attributes: true, attributeFilter: ["class"] });
+      new MutationObserver(function () { fill(true); }).observe(modal, { attributes: true, attributeFilter: ["class"] });
+      var iframe = document.getElementById("modalIframe");
+      if (iframe) new MutationObserver(function () { fill(true); }).observe(iframe, { attributes: true, attributeFilter: ["src"] });
     }
-    fill(false);
+    fill(true);
   });
 })();
