@@ -5,7 +5,7 @@
     document.body.appendChild(s);
   }
   add("/js/kdp-overlay.js?v=3");
-  add("/js/nav-fix.js?v=1");
+  add("/js/nav-fix.js?v=2");
   add("/js/share-sheet.js?v=1");
   var css = document.createElement("link");
   css.rel = "stylesheet";
