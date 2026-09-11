@@ -79,7 +79,7 @@
     if (/putarin|puterin/i.test(raw) && id) return '<img src="/api/poster?id=' + encodeURIComponent(id) + '" alt="" loading="lazy">';
     if (/userbokep/i.test(raw) && id) return '<img src="/api/thumb?h=userbokep&id=' + encodeURIComponent(id) + '" alt="" loading="lazy">';
     if (/indoav/i.test(raw) && id) return '<img src="/api/thumb?h=indoav&id=' + encodeURIComponent(id) + '" alt="" loading="lazy">';
-    if (/lulu/i.test(raw) && id) return '<img src="https://img.lulustream.com/' + id + '.jpg" alt="" loading="lazy">';
+    if (/lulu/i.test(raw) && id) return '<img src="/p/' + encodeURIComponent(id) + '.jpg" alt="" loading="lazy">';
     if (v && (v.poster || v.thumb)) return '<img src="' + String(v.poster || v.thumb).replace(/"/g, '') + '" alt="" loading="lazy">';
     return '<div style="position:absolute;inset:0;background:#1c1c1c"></div>';
   }
@@ -113,10 +113,30 @@
     }
     return out;
   }
+  function lockKey() { return 'kdp_rec_lock_v1'; }
+  function dumpV(v) {
+    return { title: v.title, embed: v.embed || v.direct, direct: v.direct || v.embed, poster: v.poster || '', thumb: v.thumb || '', category: v.category || '', folder: v.folder || '' };
+  }
+  function loadLock() {
+    try {
+      var x = JSON.parse(sessionStorage.getItem(lockKey()) || '[]');
+      return Array.isArray(x) ? x : [];
+    } catch (e) { return []; }
+  }
+  function saveLock(items) {
+    try { sessionStorage.setItem(lockKey(), JSON.stringify(items.map(dumpV))); } catch (e) {}
+  }
   function nextVideos() {
+    var cur = currentId();
+    var locked = loadLock();
+    if (locked.length >= 8) {
+      return locked.filter(function (v) { return keyFromEmbed(embedOf(v)) !== cur; }).slice(0, 8);
+    }
     var title = cleanTitle(((document.getElementById('hubTitle') || document.getElementById('modalTitle') || {}).textContent || '').trim());
     var used = {};
-    return shuffle(pickBucket(vidList, title, used, 3).concat(pickBucket(putList, title, used, 3), pickBucket(mixList, title, used, 2))).slice(0, 8);
+    var items = shuffle(pickBucket(vidList, title, used, 4).concat(pickBucket(putList, title, used, 4), pickBucket(mixList, title, used, 4))).slice(0, 12);
+    if (items.length) saveLock(items);
+    return items.filter(function (v) { return keyFromEmbed(embedOf(v)) !== cur; }).slice(0, 8);
   }
   function playVideo(v) {
     if (!v || blocked(v) || switching) return;
@@ -135,7 +155,7 @@
     if (hm) hm.innerHTML = '<span>' + (v.folder || v.category || 'Video') + '</span><span>18+</span>';
     iframe.onload = function () { showLoad(false); switching = false; };
     iframe.src = raw;
-    setTimeout(function () { showLoad(false); switching = false; draw(); }, 800);
+    setTimeout(function () { showLoad(false); switching = false; draw(); }, 400);
   }
   function ensureLayout() {
     var shell = document.querySelector('#videoModal .player-shell');
@@ -201,6 +221,7 @@
       });
     }
   }
+  window.__kdpDrawRecs = draw;
   function hook() {
     var modal = document.getElementById('videoModal');
     if (!modal || modal.__hubObs) return;
