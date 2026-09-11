@@ -3,7 +3,7 @@
   var PER = 12;
   var catNow = "all";
   var seriesNow = "";
-  var ORDER = ["Indo", "JAV", "Series", "Hentai ENG", "AI", "Anime", "Film", "Lulu", "Streamtape", "Lainnya"];
+  var ORDER = ["AI", "Indo", "ABG", "JAV", "Series", "Hentai ENG", "Anime", "Film", "Lulu", "Streamtape", "Lainnya"];
   function isFolderCat(c) { return c === "Series" || c === "Hentai ENG"; }
   function codeOf(v) {
     var u = String((v && (v.embed || v.direct)) || "");
@@ -48,15 +48,16 @@
     var raw = String((v && (v.embed || v.direct || v.source || v.category)) || "");
     var t = titleOf(v).toLowerCase();
     var blob = (t + " " + raw + " " + String((v && v.category) || "")).toLowerCase();
-    if (/lulu/i.test(raw) && cfg.label === "Mix") return "Lulu";
-    if (/streamtape|strcloud/i.test(raw) && cfg.label === "Mix") return "Streamtape";
     if (/hentai\s*eng|hentai.?eng|\bhentai\b/.test(blob)) return "Hentai ENG";
     if (isEp(titleOf(v))) return "Series";
+    if (/\bai\b|ai\s*\d|ai-|stable diffusion/i.test(t)) return "AI";
+    if (/\babg\b/.test(t)) return "ABG";
+    if (/^indo\b|bokep indo|\bindo\b|janda|mahasiswa|tante|kakak|adik|pelajar/i.test(t)) return "Indo";
     if (/\bjav\b|[a-z]{2,5}-\d{3}|tokyo[- ]?hot|caribbean|1pondo|heyzo|fc2/i.test(blob)) return "JAV";
-    if (/\bai\b|ai-|stable diffusion/i.test(t)) return "AI";
     if (/anime|doraemon|naruto|one piece|slime|jojo/i.test(t)) return "Anime";
-    if (/^indo\b|bokep indo|\bindo\b/i.test(t)) return "Indo";
     if (/\(20\d\d\)|film|movie/i.test(t)) return "Film";
+    if (/lulu/i.test(raw) && cfg.label === "Mix") return "Lulu";
+    if (/streamtape|strcloud/i.test(raw) && cfg.label === "Mix") return "Streamtape";
     return "Lainnya";
   }
   function esc(s) { return String(s || "").replace(/[&<>"]/g, ""); }
@@ -169,7 +170,6 @@
       if (k !== "all" && keys.indexOf(k) < 0 && counts[k]) keys.push(k);
     });
     if (keys.length === 1 && keys[0] === cfg.label) keys = [];
-    if (cfg.label === "Mix" && keys.length === 1) keys = [];
     if (cfg.label === "Putarin" && keys.indexOf("Hentai ENG") < 0) keys.splice(Math.min(3, keys.length), 0, "Hentai ENG");
     var html = '<button type="button" data-cat="all" class="chip px-3 py-1 rounded-full text-[11px] font-bold border ' + (catNow === "all" ? "bg-ph text-black border-ph" : "border-neutral-700") + '">Semua</button>';
     keys.forEach(function (k) {
