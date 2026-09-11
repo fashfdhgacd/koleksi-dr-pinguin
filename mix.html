@@ -7,36 +7,32 @@
   <link rel="icon" type="image/png" href="/favicon.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/styles.css?v=hubmodal2">
-  <script>tailwind.config={theme:{extend:{colors:{ph:{DEFAULT:'#ff9000',soft:'#ffb340'},ink:{950:'#050505',900:'#0d0d0d',800:'#161616',700:'#222'}}}}}</script>
+  <script>tailwind.config={theme:{extend:{colors:{ph:{DEFAULT:'#ff9000'},ink:{950:'#050505',900:'#0d0d0d'}}}}}</script>
 </head>
 <body class="bg-ink-950 text-white antialiased">
   <section id="terbaru" class="max-w-[1500px] mx-auto px-3 py-5">
-    <div class="flex items-end justify-between gap-3 mb-3">
-      <div>
-        <h2 id="galleryTitle" class="text-sm font-black uppercase tracking-widest">Video <span class="text-ph">Mix</span></h2>
-        <p id="videoCount" class="text-[11px] text-neutral-500">0 video</p>
-      </div>
+    <div class="mb-3">
+      <h2 class="text-sm font-black uppercase tracking-widest">Video <span class="text-ph">Mix</span></h2>
+      <p id="videoCount" class="text-[11px] text-neutral-500">0 video</p>
     </div>
-    <div id="videoGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3 sm:gap-4"></div>
+    <div id="videoGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4"></div>
     <div id="pagination" class="flex flex-wrap justify-center gap-1.5 mt-6"></div>
   </section>
-  <div id="videoModal" class="fixed inset-0 z-[80] hidden" role="dialog" aria-modal="true">
+  <div id="videoModal" class="fixed inset-0 z-[80] hidden">
     <div id="modalBackdrop" class="absolute inset-0 bg-black/95"></div>
-    <div class="player-shell relative z-10 w-full h-full flex flex-col">
-      <div class="player-topbar flex items-center justify-between gap-2 px-3 sm:px-4 py-2 bg-black/90 border-b border-white/10 shrink-0">
+    <div class="relative z-10 w-full h-full flex flex-col">
+      <div class="flex items-center justify-between gap-2 px-3 py-2 bg-black/90 border-b border-white/10">
         <div class="min-w-0 flex-1">
-          <h3 id="modalTitle" class="text-xs sm:text-sm font-bold truncate text-white"></h3>
-          <p id="modalMeta" class="text-[10px] text-ph font-bold uppercase tracking-wide"></p>
+          <h3 id="modalTitle" class="text-sm font-bold truncate"></h3>
+          <p id="modalMeta" class="text-[10px] text-ph font-bold uppercase"></p>
         </div>
-        <div class="flex items-center gap-2 shrink-0">
-          <button type="button" id="modalShare" class="inline-flex items-center px-2.5 py-1.5 text-[11px] font-bold text-neutral-300 uppercase border border-white/15 rounded">Share</button>
-          <button id="modalClose" type="button" class="w-10 h-10 flex items-center justify-center bg-ph text-black font-black rounded">✕</button>
+        <div class="flex items-center gap-2">
+          <button type="button" id="modalShare" class="px-2.5 py-1.5 text-[11px] font-bold uppercase border border-white/15 rounded">Share</button>
+          <button id="modalClose" type="button" class="w-10 h-10 bg-ph text-black font-black rounded">✕</button>
         </div>
       </div>
-      <div class="player-stage flex-1 flex items-center justify-center min-h-0">
-        <div class="player-frame w-full bg-black overflow-hidden">
-          <iframe id="modalIframe" referrerpolicy="origin" class="player-iframe" allowfullscreen allow="autoplay; fullscreen; encrypted-media"></iframe>
-        </div>
+      <div class="flex-1 flex items-center justify-center">
+        <iframe id="modalIframe" class="w-full h-full bg-black" allowfullscreen allow="autoplay; fullscreen; encrypted-media"></iframe>
       </div>
     </div>
   </div>
@@ -47,11 +43,12 @@
         <h4 class="text-sm font-bold">Share this video</h4>
         <button type="button" id="shareClose" class="w-8 h-8 rounded-full bg-white/10">✕</button>
       </div>
-      <p id="shareTitlePreview" class="text-xs text-neutral-400 line-clamp-2 mb-3"></p>
+      <p id="shareTitlePreview" class="text-xs text-neutral-400 line-clamp-2"></p>
     </div>
   </div>
+  <script>window.KDP_GALLERY={file:'/data/campur.json',label:'Mix'};</script>
   <script src="/js/kdp-overlay.js?v=3"></script>
   <script src="/js/share-sheet.js?v=1"></script>
-  <script src="/js/mix-boot.js?v=home1"></script>
+  <script src="/js/gallery-boot.js?v=1"></script>
 </body>
 </html>
