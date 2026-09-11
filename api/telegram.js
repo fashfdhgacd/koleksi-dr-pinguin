@@ -8,12 +8,12 @@ function pickEnv(keys) {
 }
 function getEnv() {
   return {
-    BOT_TOKEN: pickEnv(["BOT_TOKEN", "TELEGRAM_BOT_TOKEN"]),
-    GH_TOKEN: pickEnv(["GH_TOKEN", "GITHUB_TOKEN"]),
-    GH_OWNER: pickEnv(["GH_OWNER", "GITHUB_OWNER"]) || "fashfdhgacd",
-    GH_REPO: pickEnv(["GH_REPO", "GITHUB_REPO"]) || "koleksi-dr-pinguin",
-    GH_PATH: pickEnv(["GH_PATH"]) || "data/videos.json",
-    GH_BRANCH: pickEnv(["GH_BRANCH"]) || "main",
+    BOT_TOKEN: pickEnv(["BOT_TOKEN", "BOT_TOKENN", "TELEGRAM_BOT_TOKEN"]),
+    GH_TOKEN: pickEnv(["GH_TOKEN", "GH_TOKENN", "GITHUB_TOKEN"]),
+    GH_OWNER: pickEnv(["GH_OWNER", "GH_OWNERR", "GITHUB_OWNER"]) || "fashfdhgacd",
+    GH_REPO: pickEnv(["GH_REPO", "GH_REPOO", "GITHUB_REPO"]) || "koleksi-dr-pinguin",
+    GH_PATH: pickEnv(["GH_PATH", "GH_PATHH"]) || "data/videos.json",
+    GH_BRANCH: pickEnv(["GH_BRANCH", "GH_BRANCHH"]) || "main",
     TELEGRAM_USER_ID: pickEnv(["TELEGRAM_USER_ID", "TELEGRAM_ADMIN_ID"]) || "7747474006",
     PUBLIC_HOST: pickEnv(["PUBLIC_HOST"]) || "https://koleksidrpinguin.com"
   };
@@ -46,7 +46,7 @@ module.exports = async function handler(req, res) {
 };
 function isBlockedHost(u) { return /vicek\.id|exastream|mumu\.watch|mumustream/i.test(String(u || "")); }
 function isAllowedHost(u) {
-  return /videy\.co|indoav\.|userbokep\.com|putarin\.(com|biz|xyz)|puterin\.(com|biz|xyz)|lulustream\.com|luluvid\.com|lulu\.st|streamtape\.com|strcloud/i.test(String(u || ""));
+  return /videy\.co|indoav\.|userbokep\.com|putarin\.(com|biz|xyz)|puterin\.(com|biz|xyz)|luluvdo\.com|lulustream\.com|luluvid\.com|lulu\.st|streamtape\.com|strcloud/i.test(String(u || ""));
 }
 function parseShareCount(text, fallback) {
   const m = String(text || "").toLowerCase().match(/\b(5|10|15|20|25|30)\b/);
@@ -117,7 +117,7 @@ function groupUploads(items) {
   for (const it of items) {
     const u = String(it.embed || it.direct || "");
     if (/putarin\.|puterin\./i.test(u)) buckets.putarin.push(it);
-    else if (/lulustream|luluvid|lulu\.st|streamtape|strcloud/i.test(u)) buckets.campur.push(it);
+    else if (/luluvdo|lulustream|luluvid|lulu\.st|streamtape|strcloud/i.test(u)) buckets.campur.push(it);
     else buckets.videos.push(it);
   }
   const out = [];
@@ -205,10 +205,10 @@ function toItem(url) {
   } else if (/putarin\.|puterin\./i.test(low)) {
     category = "Putarin"; source = "Putarin";
     try { const host = new URL(url).origin; id = (url.match(/\/(?:e|v|watch)\/([A-Za-z0-9_-]+)/i) || [])[1] || ""; embed = host + "/e/" + id; direct = host + "/v/" + id; } catch (_) {}
-  } else if (/lulustream|luluvid|lulu\.st/i.test(low)) {
+  } else if (/luluvdo|lulustream|luluvid|lulu\.st/i.test(low)) {
     category = "Campur"; source = "Lulustream";
-    id = ((url.match(/\/(?:e|v|d)\/([A-Za-z0-9]+)/i) || [])[1]) || url.split("/").pop();
-    embed = "https://lulustream.com/e/" + id;
+    id = ((url.match(/\/(?:e|v|d)\/([A-Za-z0-9]+)/i) || [])[1]) || String(url.split("/").pop() || "").replace(/\.html$/i, "");
+    embed = "https://luluvdo.com/e/" + id;
     direct = embed;
   } else if (/streamtape|strcloud/i.test(low)) {
     category = "Campur"; source = "Streamtape";
