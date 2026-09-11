@@ -18,17 +18,17 @@
     var id = codeOf(v);
     var raw = String((v && (v.embed || v.direct)) || "");
     if (/streamtape|strcloud/i.test(raw)) return "https://streamtape.com/e/" + id + "/";
-    if (/lulu/i.test(raw)) return "https://lulustream.com/e/" + id;
+    if (/lulu/i.test(raw)) return "https://luluvdo.com/e/" + id;
     if (/putarin|puterin/i.test(raw)) {
       try { return new URL(raw).origin + "/e/" + id; } catch (_) { return raw.replace(/\/v\//, "/e/"); }
     }
     return raw.replace(/\/d\//, "/e/");
   }
   function posterOf(v) {
-    if (v && (v.poster || v.thumb)) return v.poster || v.thumb;
     var id = codeOf(v);
-    var raw = String((v && (v.embed || v.direct)) || "");
-    if (/lulu/i.test(raw)) return "https://img.lulustream.com/" + id + ".jpg";
+    var raw = String((v && (v.embed || v.direct || v.source)) || "");
+    if (/lulu/i.test(raw) && id) return "/api/thumb?h=lulu&id=" + encodeURIComponent(id);
+    if (v && (v.poster || v.thumb) && !/img\.lulustream\.com\/[A-Za-z0-9]+\.jpg/.test(String(v.poster || v.thumb || ""))) return v.poster || v.thumb;
     if (/putarin|puterin/i.test(raw) && id) return "/api/poster?id=" + encodeURIComponent(id);
     if (/userbokep/i.test(raw) && id) return "/api/thumb?h=userbokep&id=" + encodeURIComponent(id);
     if (/indoav/i.test(raw) && id) return "/api/thumb?h=indoav&id=" + encodeURIComponent(id);
