@@ -3,7 +3,7 @@
   var PER = 12;
   var catNow = "all";
   var seriesNow = "";
-  var ORDER = ["JAV", "Series", "Film", "AI", "Anime", "Lulu", "Streamtape", "Lainnya"];
+  var ORDER = ["Indo", "JAV", "Series", "Hentai ENG", "AI", "Anime", "Film", "Lulu", "Streamtape", "Lainnya"];
   function codeOf(v) {
     var u = String((v && (v.embed || v.direct)) || "");
     var m = u.match(/[?&]id=([A-Za-z0-9_-]+)/) || u.match(/\/(?:e|v|d|watch)\/([A-Za-z0-9_-]+)/);
@@ -43,14 +43,17 @@
     return t.replace(/\s+/g, " ").trim() || "Series";
   }
   function kindOf(v) {
-    var raw = String((v && (v.embed || v.direct || v.source)) || "");
+    var raw = String((v && (v.embed || v.direct || v.source || v.category)) || "");
     var t = titleOf(v).toLowerCase();
+    var blob = (t + " " + raw + " " + String((v && v.category) || "")).toLowerCase();
     if (/lulu/i.test(raw) && cfg.label === "Mix") return "Lulu";
     if (/streamtape|strcloud/i.test(raw) && cfg.label === "Mix") return "Streamtape";
+    if (/hentai\s*eng|hentai.?eng|\bhentai\b/.test(blob)) return "Hentai ENG";
     if (isEp(titleOf(v))) return "Series";
-    if (/\bjav\b|tokyo[- ]?hot|caribbean|1pondo|heyzo|prestige|start-|meyd-|ssis-|pred-|mide-|ipx-|ipzz-|fc2|uncensored|japan/i.test(t + " " + raw)) return "JAV";
+    if (/\bjav\b|[a-z]{2,5}-\d{3}|tokyo[- ]?hot|caribbean|1pondo|heyzo|fc2/i.test(blob)) return "JAV";
     if (/\bai\b|ai-|stable diffusion/i.test(t)) return "AI";
-    if (/anime|hentai|doraemon|naruto|one piece|slime|jojo/i.test(t)) return "Anime";
+    if (/anime|doraemon|naruto|one piece|slime|jojo/i.test(t)) return "Anime";
+    if (/^indo\b|bokep indo|\bindo\b/i.test(t)) return "Indo";
     if (/\(20\d\d\)|film|movie/i.test(t)) return "Film";
     return "Lainnya";
   }
@@ -165,9 +168,11 @@
     });
     if (keys.length === 1 && keys[0] === cfg.label) keys = [];
     if (cfg.label === "Mix" && keys.length === 1) keys = [];
+    if (cfg.label === "Putarin" && keys.indexOf("Hentai ENG") < 0) keys.splice(Math.min(3, keys.length), 0, "Hentai ENG");
     var html = '<button type="button" data-cat="all" class="chip px-3 py-1 rounded-full text-[11px] font-bold border ' + (catNow === "all" ? "bg-ph text-black border-ph" : "border-neutral-700") + '">Semua</button>';
     keys.forEach(function (k) {
-      html += '<button type="button" data-cat="' + esc(k) + '" class="chip px-3 py-1 rounded-full text-[11px] font-bold border whitespace-nowrap ' + (catNow === k ? "bg-ph text-black border-ph" : "border-neutral-700") + '">' + esc(k) + '</button>';
+      var lab = k === "Hentai ENG" ? "Hentai ENG" : k;
+      html += '<button type="button" data-cat="' + esc(k) + '" class="chip px-3 py-1 rounded-full text-[11px] font-bold border whitespace-nowrap ' + (catNow === k ? "bg-ph text-black border-ph" : "border-neutral-700") + '">' + esc(lab) + '</button>';
     });
     if (catNow === "Series" && seriesNow) {
       html = '<button type="button" data-cat="Series" data-back="1" class="chip px-3 py-1 rounded-full text-[11px] font-bold border border-neutral-700">← Series</button>' +
