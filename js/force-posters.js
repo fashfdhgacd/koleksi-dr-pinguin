@@ -22,7 +22,8 @@
     return "";
   }
   function swap(card) {
-    var box = card.querySelector(".relative, .ph, .vph, .aspect-video") || card;
+    if (card.closest && card.closest("#hubRight")) return;
+    var box = card.querySelector(".relative, .ph, .aspect-video") || card;
     var media = card.querySelector("iframe, video");
     var raw = "";
     if (media) raw = media.getAttribute("src") || media.getAttribute("data-src") || "";
@@ -59,7 +60,7 @@
     img.src = tries[i++];
   }
   function run() {
-    document.querySelectorAll("#videoGrid .video-card, #trendingGrid .video-card, #searchResults .video-card, .sg .card, #hubRight .vcard").forEach(swap);
+    document.querySelectorAll("#videoGrid .video-card, #trendingGrid .video-card, #searchResults .video-card, .sg .card").forEach(swap);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run);
   else run();
