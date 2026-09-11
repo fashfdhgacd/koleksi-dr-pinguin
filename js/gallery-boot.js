@@ -4,6 +4,7 @@
   var catNow = "all";
   var seriesNow = "";
   var ORDER = ["Indo", "JAV", "Series", "Hentai ENG", "AI", "Anime", "Film", "Lulu", "Streamtape", "Lainnya"];
+  function isFolderCat(c) { return c === "Series" || c === "Hentai ENG"; }
   function codeOf(v) {
     var u = String((v && (v.embed || v.direct)) || "");
     var m = u.match(/[?&]id=([A-Za-z0-9_-]+)/) || u.match(/\/(?:e|v|d|watch)\/([A-Za-z0-9_-]+)/);
@@ -40,6 +41,7 @@
   function seriesName(v) {
     var t = titleOf(v);
     t = t.replace(/s\d{1,2}\s*e\d{1,3}.*$/i, "").replace(/episode\s*\d+.*$/i, "").replace(/\s+[\u2013\-]\s+.*$/, "");
+    t = t.replace(/^hentai\s*eng\s*[-:]?\s*/i, "");
     return t.replace(/\s+/g, " ").trim() || "Series";
   }
   function kindOf(v) {
@@ -97,7 +99,7 @@
     return '<article class="video-card group cursor-pointer" data-series="' + esc(name) + '">' +
       '<div class="relative aspect-video rounded overflow-hidden bg-black border border-neutral-800">' +
       media +
-      '<span class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/70 text-[10px] font-medium z-10">Series</span>' +
+      '<span class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/70 text-[10px] font-medium z-10">' + esc(catNow) + '</span>' +
       '<span class="absolute bottom-2 right-2 px-2 py-0.5 rounded-md text-[10px] font-black" style="background:#ff9000;color:#000">' + list.length + ' eps</span>' +
       '<div class="absolute inset-0 flex items-center justify-center pointer-events-none"><span class="w-9 h-9 rounded-full flex items-center justify-center text-black font-bold" style="background:#ff9000">▶</span></div>' +
       '</div><div class="mt-2.5 px-0.5"><h3 class="text-sm font-medium leading-snug line-clamp-2">' + esc(name) + '</h3></div></article>';
@@ -171,11 +173,10 @@
     if (cfg.label === "Putarin" && keys.indexOf("Hentai ENG") < 0) keys.splice(Math.min(3, keys.length), 0, "Hentai ENG");
     var html = '<button type="button" data-cat="all" class="chip px-3 py-1 rounded-full text-[11px] font-bold border ' + (catNow === "all" ? "bg-ph text-black border-ph" : "border-neutral-700") + '">Semua</button>';
     keys.forEach(function (k) {
-      var lab = k === "Hentai ENG" ? "Hentai ENG" : k;
-      html += '<button type="button" data-cat="' + esc(k) + '" class="chip px-3 py-1 rounded-full text-[11px] font-bold border whitespace-nowrap ' + (catNow === k ? "bg-ph text-black border-ph" : "border-neutral-700") + '">' + esc(lab) + '</button>';
+      html += '<button type="button" data-cat="' + esc(k) + '" class="chip px-3 py-1 rounded-full text-[11px] font-bold border whitespace-nowrap ' + (catNow === k ? "bg-ph text-black border-ph" : "border-neutral-700") + '">' + esc(k) + '</button>';
     });
-    if (catNow === "Series" && seriesNow) {
-      html = '<button type="button" data-cat="Series" data-back="1" class="chip px-3 py-1 rounded-full text-[11px] font-bold border border-neutral-700">← Series</button>' +
+    if (isFolderCat(catNow) && seriesNow) {
+      html = '<button type="button" data-cat="' + esc(catNow) + '" data-back="1" class="chip px-3 py-1 rounded-full text-[11px] font-bold border border-neutral-700">← ' + esc(catNow) + '</button>' +
         '<span class="chip px-3 py-1 rounded-full text-[11px] font-bold bg-ph text-black">' + esc(seriesNow) + '</span>';
     }
     wrap.innerHTML = html;
@@ -201,20 +202,20 @@
     if (!grid) return;
     var mode = "videos";
     var groups = {};
-    if (catNow === "Series" && !seriesNow) {
+    if (isFolderCat(catNow) && !seriesNow) {
       groups = groupSeries(items);
       mode = "series";
-    } else if (catNow === "Series" && seriesNow) {
+    } else if (isFolderCat(catNow) && seriesNow) {
       items = items.filter(function (v) { return seriesName(v) === seriesNow; });
     }
     if (mode === "series") {
       var names = Object.keys(groups).sort(function (a, b) { return groups[b].length - groups[a].length; });
       if (count) count.textContent = names.length + " series";
-      grid.innerHTML = names.map(function (n) { return seriesCard(n, groups[n]); }).join("");
+      grid.innerHTML = names.map(function (n) { return seriesCard(n, groups[n]); }).join("") || '<p class="text-neutral-500">Belum ada series.</p>';
       if (pager) pager.innerHTML = "";
       grid.querySelectorAll("[data-series]").forEach(function (card) {
         card.onclick = function () {
-          location.hash = href(1, "Series", card.getAttribute("data-series") || "");
+          location.hash = href(1, catNow, card.getAttribute("data-series") || "");
         };
       });
       return;
