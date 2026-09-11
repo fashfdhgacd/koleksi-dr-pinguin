@@ -2,6 +2,7 @@
   if (window.__modalShare) return;
   window.__modalShare = true;
   var mixList = [], vidList = [], putList = [];
+  var switching = false;
   var recLock = [];
   var fromRec = false;
   function blocked(v) {
@@ -127,11 +128,12 @@
   }
   function playVideo(v) {
     fromRec = true;
-    if (!v || blocked(v)) return;
+    if (!v || blocked(v) || switching) return;
     var raw = embedOf(v);
     var iframe = document.getElementById('modalIframe');
     if (!iframe || !raw) return;
     if (keyFromEmbed(iframe.src) === keyFromEmbed(raw)) return;
+    switching = true;
     showLoad(true);
     var titleEl = document.getElementById('modalTitle');
     var ht = document.getElementById('hubTitle');
@@ -140,9 +142,9 @@
     if (titleEl) titleEl.textContent = t;
     if (ht) ht.textContent = t;
     if (hm) hm.innerHTML = '<span>' + (v.folder || v.category || 'Video') + '</span><span>18+</span>';
-    iframe.onload = function () { showLoad(false); };
+    iframe.onload = function () { showLoad(false); switching = false; };
     iframe.src = raw;
-    setTimeout(function () { showLoad(false); }, 900);
+    setTimeout(function () { showLoad(false); switching = false; draw(); }, 400);
   }
   function ensureLayout() {
     var shell = document.querySelector('#videoModal .player-shell');
@@ -197,7 +199,6 @@
         if (sheet) { sheet.classList.remove('hidden'); sheet.setAttribute('aria-hidden', 'false'); }
       };
     }
-    if (hr && hr.querySelectorAll('.vcard').length >= 6 && recLock.length >= 8) return;
     var items = nextVideos();
     if (hr) {
       hr.innerHTML = '<h2>Rekomendasi</h2><div class="vgrid">' +
