@@ -27,7 +27,7 @@
   function posterOf(v) {
     var id = codeOf(v);
     var raw = String((v && (v.embed || v.direct || v.source)) || "");
-    if (/lulu/i.test(raw) && id) return "/api/thumb?h=lulu&id=" + encodeURIComponent(id);
+    if (/lulu/i.test(raw) && id) return "/p/" + encodeURIComponent(id) + ".jpg";
     if (v && (v.poster || v.thumb) && !/img\.lulustream\.com\/[A-Za-z0-9]+\.jpg/.test(String(v.poster || v.thumb || ""))) return v.poster || v.thumb;
     if (/putarin|puterin/i.test(raw) && id) return "/api/poster?id=" + encodeURIComponent(id);
     if (/userbokep/i.test(raw) && id) return "/api/thumb?h=userbokep&id=" + encodeURIComponent(id);
@@ -220,14 +220,19 @@
     if (count) count.textContent = items.length + " video" + (seriesNow ? " · " + seriesNow : "");
     grid.innerHTML = slice.map(function (v) { return cardHTML(v, seriesNow ? "E" : ""); }).join("") || '<p class="text-neutral-500">Tidak ada video.</p>';
     if (pager) {
-      var html = "";
-      if (p > 1) html += '<a class="min-w-[40px] h-10 px-3 border border-neutral-700 rounded flex items-center justify-center" href="' + href(p - 1, catNow, seriesNow) + '">Prev</a>';
-      for (var i = 1; i <= pages; i++) {
-        html += i === p
-          ? '<span class="min-w-[40px] h-10 px-3 bg-ph text-black font-black rounded flex items-center justify-center">' + i + '</span>'
-          : '<a class="min-w-[40px] h-10 px-3 border border-neutral-700 rounded flex items-center justify-center" href="' + href(i, catNow, seriesNow) + '">' + i + '</a>';
+      function btn(n, label, on) {
+        if (on) return '<span class="min-w-[40px] h-10 px-3 bg-ph text-black font-black rounded flex items-center justify-center">' + label + '</span>';
+        return '<a class="min-w-[40px] h-10 px-3 border border-neutral-700 rounded flex items-center justify-center" href="' + href(n, catNow, seriesNow) + '">' + label + '</a>';
       }
-      if (p < pages) html += '<a class="min-w-[40px] h-10 px-3 border border-neutral-700 rounded flex items-center justify-center" href="' + href(p + 1, catNow, seriesNow) + '">Next</a>';
+      var html = "";
+      if (p > 1) html += btn(p - 1, "Prev", false);
+      var start = Math.max(1, p - 2), end = Math.min(pages, p + 2);
+      if (start > 1) html += btn(1, "1", p === 1);
+      if (start > 2) html += '<span class="px-1 text-neutral-500">…</span>';
+      for (var i = start; i <= end; i++) html += btn(i, String(i), i === p);
+      if (end < pages - 1) html += '<span class="px-1 text-neutral-500">…</span>';
+      if (end < pages) html += btn(pages, String(pages), p === pages);
+      if (p < pages) html += btn(p + 1, "Next", false);
       pager.innerHTML = html;
     }
     grid.querySelectorAll(".video-card").forEach(function (card, idx) {
