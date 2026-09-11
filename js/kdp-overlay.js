@@ -65,6 +65,7 @@
     if (!modal || !iframe) return;
     var raw = embedOf(v);
     modal.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
     var t = String(v.title || "").replace(/\(Koleksi[^)]*Pinguin[^)]*\)/ig, "").replace(/\s+/g, " ").trim();
     var mt = document.getElementById("modalTitle");
     var mm = document.getElementById("modalMeta");
@@ -105,20 +106,21 @@
   }
   Promise.all([
     fetch("/data/putarin.json").then(function (r) { return r.json(); }).catch(function () { return []; }),
-    fetch("/data/campur.json").then(function (r) { return r.json(); }).catch(function () { return []; }),
-    fetch("/data/videos.json").then(function (r) { return r.json(); }).catch(function () { return []; })
+    fetch("/data/campur.json").then(function (r) { return r.json(); }).catch(function () { return []; })
   ]).then(function (arr) {
     catalogs.put = arr[0] || [];
     catalogs.mix = arr[1] || [];
-    catalogs.vid = arr[2] || [];
+    catalogs.vid = [];
     catalogs.ready = true;
     restore();
   });
   document.addEventListener("click", function (e) {
     if (e.target.closest && e.target.closest("#hubRight .vcard")) hideNative();
-    if (e.target.closest && e.target.closest("#modalClose")) {
+    if (e.target.closest && e.target.closest("#modalClose, #modalBackdrop")) {
       hideNative();
-      history.replaceState(null, "", "/");
+      var iframe = document.getElementById("modalIframe");
+      if (iframe) iframe.src = "about:blank";
+      document.body.style.overflow = "";
     }
   }, true);
 })();
