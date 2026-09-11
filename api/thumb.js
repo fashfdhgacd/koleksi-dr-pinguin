@@ -1,6 +1,6 @@
 let cache = { t: 0, map: {} };
 async function loadMaps() {
-  if (cache.map && Object.keys(cache.map).length && Date.now() - cache.t < 5 * 60 * 1000) return cache.map;
+  if (cache.map && Object.keys(cache.map).length && Date.now() - cache.t < 3 * 60 * 1000) return cache.map;
   const base = "https://raw.githubusercontent.com/fashfdhgacd/koleksi-dr-pinguin/main/data/";
   const map = {};
   try {
@@ -59,9 +59,8 @@ module.exports = async function handler(req, res) {
       if (scraped && await sendImage(res, scraped)) return;
     }
   } catch (_) {}
-  res.writeHead(302, {
-    Location: "/logo.png",
-    "Cache-Control": "public, max-age=60"
-  });
-  res.end();
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><rect width="640" height="360" fill="#141414"/><circle cx="320" cy="180" r="34" fill="#ff9000"/><polygon points="310,164 342,180 310,196" fill="#111"/></svg>';
+  res.setHeader("Content-Type", "image/svg+xml; charset=utf-8");
+  res.setHeader("Cache-Control", "public, max-age=30");
+  res.status(200).send(svg);
 };
