@@ -24,7 +24,8 @@ module.exports = async function handler(req, res) {
     const cat = (req.query.cat || '').toLowerCase();
     const limit = Math.min(parseInt(req.query.limit || '20', 10) || 20, 100);
     const page = Math.max(parseInt(req.query.page || '1', 10) || 1, 1);
-    let list = raw.map(norm);
+    const kdp = require('../lib/kdp');
+    let list = raw.filter(v => !kdp.isUnsafe(v)).map(norm);
     if (cat) list = list.filter(v => (v.category || '').toLowerCase() === cat);
     if (q) list = list.filter(v => (v.title + ' ' + v.category).toLowerCase().includes(q));
     const total = list.length;
