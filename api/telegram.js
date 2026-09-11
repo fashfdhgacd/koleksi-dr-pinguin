@@ -113,15 +113,17 @@ async function handleUpdate(update, env) {
   } catch (e) { await reply(env, chatId, "Gagal simpan: " + String(e.message || e)); }
 }
 function groupUploads(items) {
-  const buckets = { videos: [], putarin: [] };
+  const buckets = { videos: [], putarin: [], campur: [] };
   for (const it of items) {
     const u = String(it.embed || it.direct || "");
     if (/putarin\.|puterin\./i.test(u)) buckets.putarin.push(it);
+    else if (/lulustream|luluvid|lulu\.st|streamtape|strcloud/i.test(u)) buckets.campur.push(it);
     else buckets.videos.push(it);
   }
   const out = [];
   if (buckets.videos.length) out.push({ path: "data/videos.json", items: buckets.videos });
   if (buckets.putarin.length) out.push({ path: "data/putarin.json", items: buckets.putarin });
+  if (buckets.campur.length) out.push({ path: "data/campur.json", items: buckets.campur });
   return out;
 }
 function isShareCommand(text) {
@@ -151,9 +153,10 @@ async function readVideos(env, cat) {
   const base = "https://raw.githubusercontent.com/" + env.GH_OWNER + "/" + env.GH_REPO + "/" + (env.GH_BRANCH || "main") + "/";
   const t = Date.now();
   if (cat === "putarin") return readJsonList(base + "data/putarin.json?t=" + t);
+  if (cat === "lulu") return readJsonList(base + "data/campur.json?t=" + t);
   if (cat === "all" || !cat) {
-    const lists = await Promise.all([readJsonList(base + "data/videos.json?t=" + t), readJsonList(base + "data/putarin.json?t=" + t)]);
-    return lists[0].concat(lists[1]);
+    const lists = await Promise.all([readJsonList(base + "data/videos.json?t=" + t), readJsonList(base + "data/putarin.json?t=" + t), readJsonList(base + "data/campur.json?t=" + t)]);
+    return lists[0].concat(lists[1], lists[2]);
   }
   return readJsonList(base + "data/videos.json?t=" + t);
 }
@@ -194,8 +197,8 @@ function toItem(url) {
   const low = url.toLowerCase(); let category = "Amatir"; let source = "Telegram"; let direct = url; let embed = url; let id = "";
   if (low.includes("videy.co")) {
     category = "Videy"; source = "Videy";
-    const m = url.match(/[?&]id=([A-Za-z0-9]+)/);
-    id = (m && m[1]) || "";
+    const mm = url.match(/[?&]id=([A-Za-z0-9]+)/);
+    id = (mm && mm[1]) || "";
     const ext = (id.length === 9 && id.endsWith("2")) ? ".mov" : ".mp4";
     direct = id ? ("https://cdn.videy.co/" + id + ext) : url;
     embed = id ? ("https://videy.co/v/?id=" + id) : url;
@@ -204,12 +207,12 @@ function toItem(url) {
     try { const host = new URL(url).origin; id = (url.match(/\/(?:e|v|watch)\/([A-Za-z0-9_-]+)/i) || [])[1] || ""; embed = host + "/e/" + id; direct = host + "/v/" + id; } catch (_) {}
   } else if (/lulustream|luluvid|lulu\.st/i.test(low)) {
     category = "Campur"; source = "Lulustream";
-    id = (url.match(/\/(?:e|v|d)\/([A-Za-z0-9]+)/i) || url.match(/\/([A-Za-z0-9]{10,})/)) ? (url.match(/\/(?:e|v|d)\/([A-Za-z0-9]+)/i) || [0, url.split("/").pop()])[1] : url.split("/").pop();
+    id = ((url.match(/\/(?:e|v|d)\/([A-Za-z0-9]+)/i) || [])[1]) || url.split("/").pop();
     embed = "https://lulustream.com/e/" + id;
     direct = embed;
   } else if (/streamtape|strcloud/i.test(low)) {
     category = "Campur"; source = "Streamtape";
-    id = (url.match(/\/(?:e|v)\/([A-Za-z0-9]+)/i) || [])[1] || url.split("/").pop();
+    id = ((url.match(/\/(?:e|v)\/([A-Za-z0-9]+)/i) || [])[1]) || url.split("/").pop();
     embed = "https://streamtape.com/e/" + id;
     direct = embed;
   } else {
@@ -226,17 +229,42 @@ function videoKey(v) {
 async function loadJsonFile(env, repo, path) {
   const rawUrl = "https://raw.githubusercontent.com/" + env.GH_OWNER + "/" + repo + "/" + (env.GH_BRANCH || "main") + "/" + path + "?t=" + Date.now();
   const rr = await fetch(rawUrl, { headers: { "User-Agent": "dr-pinguin-tg-bot" } });
-  if (!rr.ok) throw new Error("gagal baca " + path);
+  if (!rr.ok) {
+    if (rr.status === 404) return [];
+    throw new Error("gagal baca " + path);
+  }
   const data = await rr.json();
   return Array.isArray(data) ? data : [];
 }
-async function mergeAndPush(env, repo, path, items) {
+async function putFileViaGit(env, repo, path, text, message) {
+  const owner = env.GH_OWNER;
   const branch = env.GH_BRANCH || "main";
+  const ref = await gh(env, "/repos/" + owner + "/" + repo + "/git/ref/heads/" + branch);
+  const commitSha = ref.object.sha;
+  const commit = await gh(env, "/repos/" + owner + "/" + repo + "/git/commits/" + commitSha);
+  const blob = await gh(env, "/repos/" + owner + "/" + repo + "/git/blobs", {
+    method: "POST",
+    body: JSON.stringify({ content: Buffer.from(text, "utf8").toString("base64"), encoding: "base64" })
+  });
+  const tree = await gh(env, "/repos/" + owner + "/" + repo + "/git/trees", {
+    method: "POST",
+    body: JSON.stringify({ base_tree: commit.tree.sha, tree: [{ path: path, mode: "100644", type: "blob", sha: blob.sha }] })
+  });
+  const next = await gh(env, "/repos/" + owner + "/" + repo + "/git/commits", {
+    method: "POST",
+    body: JSON.stringify({ message: message, tree: tree.sha, parents: [commitSha] })
+  });
+  await gh(env, "/repos/" + owner + "/" + repo + "/git/refs/heads/" + branch, {
+    method: "PATCH",
+    body: JSON.stringify({ sha: next.sha })
+  });
+}
+async function mergeAndPush(env, repo, path, items) {
   const videos = await loadJsonFile(env, repo, path);
   if (path === "data/videos.json" && videos.length < 100) throw new Error("videos.json cuma " + videos.length + " item. Abort.");
-  const meta = await gh(env, "/repos/" + env.GH_OWNER + "/" + repo + "/contents/" + path + "?ref=" + branch);
   const exist = new Set(videos.map(videoKey));
-  let added = 0, skipped = 0; const fresh = [];
+  let added = 0, skipped = 0;
+  const fresh = [];
   for (const it of items) {
     const k = videoKey(it);
     if (exist.has(k)) { skipped += 1; continue; }
@@ -244,10 +272,9 @@ async function mergeAndPush(env, repo, path, items) {
   }
   for (let i = fresh.length - 1; i >= 0; i--) videos.unshift(fresh[i]);
   if (!added) return { added: added, skipped: skipped };
-  await gh(env, "/repos/" + env.GH_OWNER + "/" + repo + "/contents/" + path, {
-    method: "PUT",
-    body: JSON.stringify({ message: "bot: add " + added + " to " + path, content: Buffer.from(JSON.stringify(videos, null, 2), "utf8").toString("base64"), sha: meta.sha, branch: branch })
-  });
+  const compact = path === "data/videos.json";
+  const text = compact ? JSON.stringify(videos) : (JSON.stringify(videos, null, 2) + "\n");
+  await putFileViaGit(env, repo, path, text, "bot: add " + added + " to " + path);
   return { added: added, skipped: skipped };
 }
 async function gh(env, path, opt) {
