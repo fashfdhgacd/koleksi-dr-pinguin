@@ -6,12 +6,12 @@
   "rewrites": [
     { "source": "/putarin", "destination": "/putarin.html" },
     { "source": "/putarin/", "destination": "/putarin.html" },
-    { "source": "/mumu", "destination": "/mumu.html" },
-    { "source": "/mumu/", "destination": "/mumu.html" },
-    { "source": "/campur", "destination": "/mumu.html" },
-    { "source": "/campur/", "destination": "/mumu.html" },
-    { "source": "/mix", "destination": "/mumu.html" },
-    { "source": "/mix/", "destination": "/mumu.html" },
+    { "source": "/mumu", "destination": "/mix.html" },
+    { "source": "/mumu/", "destination": "/mix.html" },
+    { "source": "/campur", "destination": "/mix.html" },
+    { "source": "/campur/", "destination": "/mix.html" },
+    { "source": "/mix", "destination": "/mix.html" },
+    { "source": "/mix/", "destination": "/mix.html" },
     { "source": "/v/:id", "destination": "/api/watch?id=:id" },
     { "source": "/v/:id/", "destination": "/api/watch?id=:id" },
     { "source": "/sitemap-v.xml", "destination": "/api/sitemap-v" }
