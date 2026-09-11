@@ -16,6 +16,9 @@ async function loadMaps() {
   cache = { t: Date.now(), map: map };
   return map;
 }
+function isLulu(host) {
+  return /^(lulu|luluvdo|lulustream|ll|x|cdn)$/i.test(String(host || ""));
+}
 async function luluFromApi(id) {
   const key = String(process.env.LULUSTREAM_KEY || process.env.LULU_KEY || "").trim();
   if (!key || !id) return "";
@@ -35,7 +38,10 @@ async function scrape(host, id) {
     userbokep: "https://tv1.userbokep.com/e/",
     lulu: "https://luluvdo.com/e/",
     luluvdo: "https://luluvdo.com/e/",
-    lulustream: "https://luluvdo.com/e/"
+    lulustream: "https://luluvdo.com/e/",
+    ll: "https://luluvdo.com/e/",
+    x: "https://luluvdo.com/e/",
+    cdn: "https://luluvdo.com/e/"
   };
   const base = allow[String(host || "").toLowerCase()];
   if (!base || !id) return "";
@@ -75,7 +81,7 @@ module.exports = async function handler(req, res) {
       const mapped = map[id];
       if (mapped && await sendImage(res, mapped)) return;
     }
-    if ((host === "lulu" || host === "luluvdo" || host === "lulustream") && id) {
+    if (isLulu(host) && id) {
       const apiImg = await luluFromApi(id);
       if (apiImg && await sendImage(res, apiImg, "https://luluvdo.com/")) return;
       const guessed = [
@@ -89,7 +95,7 @@ module.exports = async function handler(req, res) {
     }
     if (host && id) {
       const scraped = await scrape(host, id);
-      if (scraped && await sendImage(res, scraped, host.indexOf("lulu") >= 0 ? "https://luluvdo.com/" : "")) return;
+      if (scraped && await sendImage(res, scraped, isLulu(host) ? "https://luluvdo.com/" : "")) return;
     }
   } catch (_) {}
   const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><rect width="640" height="360" fill="#141414"/><circle cx="320" cy="180" r="34" fill="#ff9000"/><polygon points="310,164 342,180 310,196" fill="#111"/></svg>';
