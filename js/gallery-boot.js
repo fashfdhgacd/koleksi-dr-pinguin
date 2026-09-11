@@ -1,6 +1,7 @@
 (function () {
   var cfg = window.KDP_GALLERY || { file: "/data/campur.json", label: "Mix" };
   var PER = 12;
+  var catNow = "all";
   function codeOf(v) {
     var u = String((v && (v.embed || v.direct)) || "");
     var m = u.match(/[?&]id=([A-Za-z0-9_-]+)/) || u.match(/\/(?:e|v|d|watch)\/([A-Za-z0-9_-]+)/);
@@ -31,10 +32,31 @@
     if (/indoav/i.test(raw) && id) return "/api/thumb?h=indoav&id=" + encodeURIComponent(id);
     return "";
   }
+  function kindOf(v) {
+    var raw = String((v && (v.embed || v.direct || v.source)) || "");
+    var t = String((v && v.title) || "").toLowerCase();
+    if (/lulu/i.test(raw)) return "Lulu";
+    if (/streamtape|strcloud/i.test(raw)) return "Streamtape";
+    if (/s\d{1,2}\s*e\d{1,3}|episode\s*\d+|eps\.?\s*\d+/i.test(t)) return "Series";
+    if (/\bjav\b|tokyo[- ]?hot|caribbean|1pondo|heyzo|prestige|start-|meyd-|ssis-|pred-|mide-|ipx-|ipzz-|fc2|uncensored|japan/i.test(t + " " + raw)) return "JAV";
+    if (/\bai\b|ai-|stable diffusion|generated/i.test(t)) return "AI";
+    if (/anime|hentai|doraemon|naruto|one piece/i.test(t)) return "Anime";
+    if (/\(20\d\d\)|film|movie/i.test(t)) return "Film";
+    return (v && v.category && v.category !== "Putarin" && v.category !== "Campur") ? v.category : "Lainnya";
+  }
   function esc(s) { return String(s || "").replace(/[&<>"]/g, ""); }
   function pageNow() {
     var n = parseInt((location.hash.match(/p(\d+)/) || [])[1] || "1", 10);
     return n > 0 ? n : 1;
+  }
+  function setPage(p) {
+    var h = "#p" + p;
+    if (catNow && catNow !== "all") h += "&c=" + encodeURIComponent(catNow);
+    location.hash = h;
+  }
+  function readHash() {
+    var c = (location.hash.match(/c=([^&]+)/) || [])[1];
+    if (c) catNow = decodeURIComponent(c);
   }
   function cardHTML(v) {
     var id = codeOf(v);
@@ -45,7 +67,7 @@
     return '<article class="video-card group cursor-pointer" data-id="' + id + '">' +
       '<div class="relative aspect-video rounded overflow-hidden bg-black border border-neutral-800">' +
       media +
-      '<span class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/70 text-[10px] font-medium z-10">' + esc(v.source || cfg.label || "Video") + '</span>' +
+      '<span class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/70 text-[10px] font-medium z-10">' + esc(kindOf(v)) + '</span>' +
       '<button type="button" class="card-share absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-black/70 text-white text-xs">↗</button>' +
       '<div class="absolute inset-0 flex items-center justify-center pointer-events-none"><span class="w-9 h-9 rounded-full flex items-center justify-center text-black font-bold" style="background:#ff9000">▶</span></div>' +
       '</div><div class="mt-2.5 px-0.5"><h3 class="text-sm font-medium leading-snug line-clamp-2">' + esc(titleOf(v)) + '</h3></div></article>';
@@ -58,7 +80,7 @@
     var ext = document.getElementById("modalOpenExternal");
     if (!modal || !frame) return;
     if (title) title.textContent = titleOf(v);
-    if (meta) meta.textContent = v.source || cfg.label || "";
+    if (meta) meta.textContent = kindOf(v);
     if (ext) ext.href = embedOf(v);
     frame.src = embedOf(v);
     modal.classList.remove("hidden");
@@ -72,7 +94,58 @@
     if (modal) modal.classList.add("hidden");
     document.body.style.overflow = "";
   }
-  function draw(items) {
+  function ensureNav() {
+    if (document.getElementById("kdpTopNav")) return;
+    var nav = document.createElement("nav");
+    nav.id = "kdpTopNav";
+    nav.className = "sticky top-0 z-50 h-12 bg-black flex items-center";
+    nav.style.borderBottom = "2px solid #ff9000";
+    nav.innerHTML = '<div class="w-full max-w-[1500px] mx-auto px-3 flex items-center justify-between gap-3">' +
+      '<a href="/" class="font-black tracking-tight text-white no-underline">DR.<span style="color:#ff9000">PINGUIN</span></a>' +
+      '<div class="flex items-center gap-2 text-[11px] font-black uppercase">' +
+      '<a href="/" class="px-2 py-1 rounded border border-neutral-700 text-white no-underline">Home</a>' +
+      '<a href="/putarin" class="px-2 py-1 rounded border border-neutral-700 text-white no-underline">Putarin</a>' +
+      '<a href="/mix" class="px-2 py-1 rounded border border-neutral-700 text-white no-underline">Mix</a>' +
+      '</div></div>';
+    document.body.insertBefore(nav, document.body.firstChild);
+  }
+  function chips(items) {
+    var wrap = document.getElementById("categoryPills");
+    if (!wrap) {
+      wrap = document.createElement("div");
+      wrap.id = "categoryPills";
+      wrap.className = "flex gap-1.5 overflow-x-auto pb-3 mb-3";
+      var grid = document.getElementById("videoGrid");
+      if (grid && grid.parentNode) grid.parentNode.insertBefore(wrap, grid);
+    }
+    var counts = { all: items.length };
+    items.forEach(function (v) {
+      var k = kindOf(v);
+      counts[k] = (counts[k] || 0) + 1;
+    });
+    var keys = Object.keys(counts).filter(function (k) { return k !== "all" && counts[k]; });
+    keys.sort(function (a, b) { return counts[b] - counts[a]; });
+    var html = '<button type="button" data-cat="all" class="chip px-3 py-1 rounded-full text-[11px] font-bold border ' + (catNow === "all" ? "bg-ph text-black border-ph" : "border-neutral-700") + '">Semua ' + counts.all + '</button>';
+    keys.forEach(function (k) {
+      html += '<button type="button" data-cat="' + esc(k) + '" class="chip px-3 py-1 rounded-full text-[11px] font-bold border whitespace-nowrap ' + (catNow === k ? "bg-ph text-black border-ph" : "border-neutral-700") + '">' + esc(k) + " " + counts[k] + '</button>';
+    });
+    wrap.innerHTML = html;
+    wrap.querySelectorAll("[data-cat]").forEach(function (b) {
+      b.onclick = function () {
+        catNow = b.getAttribute("data-cat") || "all";
+        location.hash = "#p1&c=" + encodeURIComponent(catNow);
+      };
+    });
+  }
+  function filtered(items) {
+    if (!catNow || catNow === "all") return items;
+    return items.filter(function (v) { return kindOf(v) === catNow; });
+  }
+  function draw(all) {
+    ensureNav();
+    readHash();
+    chips(all);
+    var items = filtered(all);
     var grid = document.getElementById("videoGrid");
     var count = document.getElementById("videoCount");
     var pager = document.getElementById("pagination");
@@ -80,17 +153,18 @@
     var pages = Math.max(1, Math.ceil(items.length / PER) || 1);
     var p = Math.min(pageNow(), pages);
     var slice = items.slice((p - 1) * PER, p * PER);
-    if (count) count.textContent = items.length + " video";
-    grid.innerHTML = slice.map(cardHTML).join("") || '<p class="text-neutral-500">Belum ada video.</p>';
+    if (count) count.textContent = items.length + " video" + (catNow !== "all" ? " · " + catNow : "");
+    grid.innerHTML = slice.map(cardHTML).join("") || '<p class="text-neutral-500">Tidak ada video di kategori ini.</p>';
     if (pager) {
       var html = "";
-      if (p > 1) html += '<a class="min-w-[40px] h-10 px-3 border border-neutral-700 rounded flex items-center justify-center" href="#p' + (p - 1) + '">Prev</a>';
+      function href(n) { return "#p" + n + (catNow !== "all" ? "&c=" + encodeURIComponent(catNow) : ""); }
+      if (p > 1) html += '<a class="min-w-[40px] h-10 px-3 border border-neutral-700 rounded flex items-center justify-center" href="' + href(p - 1) + '">Prev</a>';
       for (var i = 1; i <= pages; i++) {
         html += i === p
           ? '<span class="min-w-[40px] h-10 px-3 bg-ph text-black font-black rounded flex items-center justify-center">' + i + '</span>'
-          : '<a class="min-w-[40px] h-10 px-3 border border-neutral-700 rounded flex items-center justify-center" href="#p' + i + '">' + i + '</a>';
+          : '<a class="min-w-[40px] h-10 px-3 border border-neutral-700 rounded flex items-center justify-center" href="' + href(i) + '">' + i + '</a>';
       }
-      if (p < pages) html += '<a class="min-w-[40px] h-10 px-3 border border-neutral-700 rounded flex items-center justify-center" href="#p' + (p + 1) + '">Next</a>';
+      if (p < pages) html += '<a class="min-w-[40px] h-10 px-3 border border-neutral-700 rounded flex items-center justify-center" href="' + href(p + 1) + '">Next</a>';
       pager.innerHTML = html;
     }
     grid.querySelectorAll(".video-card").forEach(function (card, idx) {
