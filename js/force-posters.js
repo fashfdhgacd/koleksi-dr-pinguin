@@ -20,12 +20,6 @@
     if (s.indexOf("putarin") >= 0 || s.indexOf("puterin") >= 0) return "putarin";
     return "";
   }
-  function srcFor(id, raw) {
-    var h = hostOf(raw);
-    if (h === "putarin") return "/api/poster?id=" + encodeURIComponent(id);
-    if (h === "indoav" || h === "userbokep") return "/api/thumb?h=" + h + "&id=" + encodeURIComponent(id);
-    return PLACEHOLDER;
-  }
   function swap(card) {
     var box = card.querySelector(".relative, .ph, .vph, .aspect-video") || card;
     var media = card.querySelector("iframe, video");
@@ -46,13 +40,24 @@
     if (img.getAttribute("data-ok") === "1") return;
     img.setAttribute("data-ok", "1");
     if (media) media.style.display = "none";
-    img.onerror = function () { img.onerror = null; img.src = PLACEHOLDER; };
-    img.src = srcFor(id, raw);
+    var h = hostOf(raw);
+    var tries = [];
+    if (h === "putarin") tries.push("/api/poster?id=" + encodeURIComponent(id));
+    if (h === "indoav" || h === "userbokep") {
+      tries.push("/api/thumb?h=" + h + "&id=" + encodeURIComponent(id));
+      tries.push("/api/repair-poster?h=" + h + "&id=" + encodeURIComponent(id));
+    }
+    tries.push(PLACEHOLDER);
+    var i = 0;
+    img.onerror = function () {
+      if (i < tries.length) img.src = tries[i++];
+    };
+    img.src = tries[i++];
   }
   function run() {
     document.querySelectorAll("#videoGrid .video-card, #trendingGrid .video-card, #searchResults .video-card, .sg .card, #hubRight .vcard").forEach(swap);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run);
   else run();
-  setInterval(run, 900);
+  setInterval(run, 1200);
 })();

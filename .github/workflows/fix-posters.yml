@@ -1,0 +1,65 @@
+name: Auto-fix posters
+on:
+  schedule:
+    - cron: "20 0 * * *"
+  workflow_dispatch:
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rescrape broken latest posters
+        run: |
+          python3 << 'PY'
+          import json, re, urllib.request
+          path = "data/latest-posters.json"
+          try:
+              m = json.load(open(path))
+          except Exception:
+              m = {}
+          vids = json.load(open("data/videos.json"))
+          host_of = {}
+          for v in vids:
+              raw = str(v.get("embed") or v.get("direct") or "")
+              mid = re.search(r"/(?:e|v)/([A-Za-z0-9_-]+)", raw)
+              if not mid: continue
+              h = "userbokep" if "userbokep" in raw else ("indoav" if "indoav" in raw else "")
+              if h: host_of[mid.group(1)] = h
+          changed = False
+          ids = list(m.keys())[-20:] or list(host_of.keys())[-12:]
+          for i in ids:
+              url = m.get(i)
+              bad = True
+              if url:
+                  try:
+                      req = urllib.request.Request(url, method="HEAD", headers={"User-Agent":"Mozilla/5.0"})
+                      urllib.request.urlopen(req, timeout=12)
+                      bad = False
+                  except Exception:
+                      bad = True
+              if not bad: continue
+              h = host_of.get(i)
+              if not h: continue
+              base = "https://tv1.userbokep.com/e/" if h=="userbokep" else "https://tv1.indoav.app/e/"
+              try:
+                  html = urllib.request.urlopen(urllib.request.Request(base+i, headers={"User-Agent":"Mozilla/5.0"}), timeout=15).read().decode("utf-8","ignore")
+                  mm = re.search(r'poster="(https://[^"]+)"', html)
+                  if mm:
+                      m[i] = mm.group(1)
+                      changed = True
+                      print("fixed", i)
+              except Exception as e:
+                  print("fail", i, e)
+          if changed:
+              open(path,"w").write(json.dumps(m, indent=2, ensure_ascii=False)+"\n")
+          print("changed", changed)
+          PY
+      - name: Commit if fixed
+        run: |
+          git config user.name "kdp-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add data/latest-posters.json
+          git diff --cached --quiet || git commit -m "auto-fix posters rusak"
+          git push
