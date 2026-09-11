@@ -1,5 +1,5 @@
 const CACHE_MS = 10 * 60 * 1000;
-let mem = { t: 0, put: [], mumu: [], vid: [], posters: {} };
+let mem = { t: 0, put: [], mix: [], vid: [], posters: {} };
 function esc(s) {
   const map = Object.create(null);
   map["\x26"] = "\x26amp;";
@@ -47,12 +47,14 @@ function shuffle(a) {
 }
 function mediaOf(v) {
   const id = keyOf(v);
-  const ready = v.poster || v.thumb || v.thumbnail || (mem.posters && mem.posters[id]);
-  if (ready) return "<img src=\"" + esc(ready) + "\" alt=\"\" loading=\"lazy\">";
   const raw = rawOf(v);
-  if (/mumu\.watch/i.test(raw) && id) return "<img src=\"https://m-cdn.video/hls/" + esc(id) + "/thumbnail.jpg\" alt=\"\" loading=\"lazy\">";
+  if (/indoav/i.test(raw) && id) return "<img src=\"/api/thumb?h=indoav&id=" + encodeURIComponent(id) + "\" alt=\"\" loading=\"lazy\">";
+  if (/userbokep/i.test(raw) && id) return "<img src=\"/api/thumb?h=userbokep&id=" + encodeURIComponent(id) + "\" alt=\"\" loading=\"lazy\">";
   if (/putarin|puterin/i.test(raw) && id) return "<img src=\"/api/poster?id=" + encodeURIComponent(id) + "\" alt=\"\" loading=\"lazy\">";
-  return "";
+  if (/lulu/i.test(raw) && id) return "<img src=\"/p/" + encodeURIComponent(id) + ".jpg\" alt=\"\" loading=\"lazy\">";
+  const ready = v.poster || v.thumb || v.thumbnail || (mem.posters && mem.posters[id]);
+  if (ready && !/embedan\.com/i.test(String(ready))) return "<img src=\"" + esc(ready) + "\" alt=\"\" loading=\"lazy\">";
+  return "<img src=\"/logo.png\" alt=\"\" loading=\"lazy\">";
 }
 function pickRelated(lists, currentId, currentTitle, n) {
   const usedId = {};
@@ -109,16 +111,16 @@ async function catalogs() {
   const owner = process.env.GH_OWNER || "fashfdhgacd";
   const repo = process.env.GH_REPO || "koleksi-dr-pinguin";
   const base = "https://raw.githubusercontent.com/" + owner + "/" + repo + "/main/data/";
-  const [put, mumu, vid, posters] = await Promise.all([
+  const [put, mix, vid, posters] = await Promise.all([
     loadJson(base + "putarin.json"),
-    loadJson(base + "mumu.json"),
+    loadJson(base + "campur.json"),
     loadJson(base + "videos.json"),
     loadMap(base + "posters.json")
   ]);
   mem = {
     t: Date.now(),
     put: put,
-    mumu: mumu,
+    mix: mix,
     posters: posters || {},
     vid: (vid || []).filter(function (v) { return !/videy/i.test(rawOf(v)); })
   };
@@ -129,17 +131,17 @@ module.exports = async function handler(req, res) {
     const id = String((req.query && (req.query.id || req.query.v)) || "").replace(/^\//, "").trim();
     if (!id) { res.writeHead(302, { Location: "/" }); return res.end(); }
     const catas = await catalogs();
-    const all = catas.put.concat(catas.mumu, catas.vid);
+    const all = catas.put.concat(catas.mix, catas.vid);
     const video = all.find(function (v) { return keyOf(v).toLowerCase() === id.toLowerCase(); });
     let title = id, cat = "Video", embed = "", back = "/";
     if (video) {
       title = cleanTitle(video.title);
       cat = video.folder || video.category || "Video";
       embed = rawOf(video).replace("/d/", "/e/");
-      if (/mumu/i.test(embed + " " + cat)) back = "/mumu";
+      if (/campur|mix|lulu|streamtape/i.test(embed + " " + cat)) back = "/campur";
       else if (/putarin|puterin/i.test(embed + " " + cat)) back = "/putarin";
     } else {
-      embed = "https://mumu.watch/e/" + id;
+      embed = "https://panel.putarin.com/e/" + id;
     }
     const origin = "https://koleksidrpinguin.com";
     const page = origin + "/v/" + encodeURIComponent(id);
@@ -155,7 +157,7 @@ module.exports = async function handler(req, res) {
       url: page,
       isFamilyFriendly: false
     }).replace(/</g, "\\u003c");
-    const related = pickRelated([catas.put, catas.mumu, catas.vid], id, title, 8);
+    const related = pickRelated([catas.put, catas.mix, catas.vid], id, title, 8);
     const cards = related.map(function (v) {
       return "<a class=\"card video-card\" href=\"/v/" + encodeURIComponent(keyOf(v)) + "\" data-id=\"" + esc(keyOf(v)) + "\" data-embed=\"" + esc(rawOf(v).replace("/d/", "/e/")) + "\" data-title=\"" + esc(cleanTitle(v.title)) + "\"><div class=\"ph\">" + mediaOf(v) + "</div><h3>" + esc(cleanTitle(v.title)) + "</h3></a>";
     }).join("");
@@ -172,7 +174,7 @@ module.exports = async function handler(req, res) {
       "<meta property=og:video content=\"" + esc(embed) + "\">" +
       "<title>" + esc(title) + " | Dr. Pinguin</title>" +
       "<script type=\"application/ld+json\">" + ld + "</script>" +
-      "<link rel=stylesheet href=\"/css/rec-grid.css?v=lock1\"><style>" +
+      "<link rel=stylesheet href=\"/css/rec-grid.css?v=lock4\"><style>" +
       ":root{--bg:#0b0d12;--acc:#ff9000;--line:#232838}*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:#e8ecf4;font-family:system-ui,sans-serif}a{color:inherit;text-decoration:none}" +
       ".wrap{width:min(1180px,calc(100% - 24px));margin:0 auto}header{border-bottom:1px solid var(--line)}.hd{min-height:52px;display:flex;align-items:center}.logo{font-weight:900}.logo b{color:var(--acc)}" +
       "main{padding:16px 0 40px}.layout{display:grid;grid-template-columns:1fr;gap:16px}@media(min-width:960px){.layout{grid-template-columns:minmax(0,1.7fr) 320px}}" +
@@ -184,7 +186,7 @@ module.exports = async function handler(req, res) {
       "<main class=wrap><div class=layout><div><div class=player>" + player +
       "</div><h1>" + esc(title) + "</h1><div class=acts><button class=p type=button id=btnShare>Bagikan</button><a href=\"" + esc(back) + "\">Kembali</a></div></div>" +
       "<aside class=side><h2>Rekomendasi</h2><div class=sg id=trendingGrid>" + cards + "</div></aside></div></main>" +
-      "<script src=\"/js/share-sheet.js?v=1\"></script><script src=\"/js/poster-map.js?v=hero1\"></script><script src=\"/js/watch-swap.js?v=3\"></script></body></html>";
+      "<script src=\"/js/share-sheet.js?v=1\"></script></body></html>";
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader("Cache-Control", "public, s-maxage=15, stale-while-revalidate=60");
     res.statusCode = 200;
