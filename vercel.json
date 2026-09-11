@@ -11,6 +11,8 @@
     { "source": "/campur/", "destination": "/mix.html" },
     { "source": "/mix", "destination": "/mix.html" },
     { "source": "/mix/", "destination": "/mix.html" },
+    { "source": "/p/:id.jpg", "destination": "/api/thumb?h=x&id=:id" },
+    { "source": "/p/:id", "destination": "/api/thumb?h=x&id=:id" },
     { "source": "/v/:id", "destination": "/api/watch?id=:id" },
     { "source": "/v/:id/", "destination": "/api/watch?id=:id" },
     { "source": "/sitemap-v.xml", "destination": "/api/sitemap-v" }
